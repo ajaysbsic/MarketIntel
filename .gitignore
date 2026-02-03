@@ -1,0 +1,22 @@
+# Build outputs
+bin/
+obj/
+dist/
+node_modules/
+
+# IDE
+.vs/
+*.user
+
+# Docs (exclude entire folder)
+docs/
+
+# Angular
+.angular/cache/
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
