@@ -1,0 +1,19 @@
+2026-02-01 13:31:45.817 +03:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-02-01 13:31:45.852 +03:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-02-01 13:31:45.858 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-02-01 13:31:45.863 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-02-01 13:31:45.880 +03:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-02-01 13:31:45.901 +03:00 [INF] No migrations were applied. The database is already up to date.
+2026-02-01 13:31:45.903 +03:00 [INF] Database migration completed successfully
+2026-02-01 13:31:45.906 +03:00 [INF] Market Intelligence API starting...
+2026-02-01 13:31:45.927 +03:00 [INF] Now listening on: http://localhost:5021
+2026-02-01 13:31:45.930 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-02-01 13:31:45.931 +03:00 [INF] Hosting environment: Development
+2026-02-01 13:31:45.933 +03:00 [INF] Content root path: D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Api

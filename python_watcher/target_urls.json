@@ -1,0 +1,22 @@
+{
+  "targets": [
+    {
+      "company": "Schneider Electric",
+      "url": "https://www.se.com/ww/en/about-us/investor-relations/financial-results.jsp",
+      "region": "Global",
+      "sector": "Energy Management"
+    },
+    {
+      "company": "ABB",
+      "url": "https://new.abb.com/investorrelations/reports-and-presentations",
+      "region": "Global",
+      "sector": "Electrification"
+    },
+    {
+      "company": "Tesla",
+      "url": "https://ir.tesla.com/",
+      "region": "Global",
+      "sector": "EV & Energy Storage"
+    }
+  ]
+}

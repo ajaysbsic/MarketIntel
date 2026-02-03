@@ -1,0 +1,61 @@
+
+{
+  "feeds": [
+    {
+      "name": "Electrek",
+      "url": "https://electrek.co/feed/",
+      "category": "publisher",
+      "region": "global",
+      "type": "rss"
+    },
+    {
+      "name": "InsideEVs (All Articles)",
+      "url": "https://insideevs.com/rss/articles/all",
+      "category": "publisher",
+      "region": "global",
+      "type": "rss"
+    },
+    {
+      "name": "CleanTechnica",
+      "url": "https://cleantechnica.com/feed/",
+      "category": "publisher",
+      "region": "global",
+      "type": "rss"
+    },
+    {
+      "name": "Green Car Reports (Master)",
+      "url": "http://feeds.highgearmedia.com/?sites=greencarreports",
+      "category": "publisher",
+      "region": "global",
+      "type": "rss"
+    },
+    {
+      "name": "Teslarati",
+      "url": "https://teslarati.com/feed/",
+      "category": "publisher",
+      "region": "global",
+      "type": "rss"
+    },
+    {
+      "name": "IEEE Spectrum (All Topics)",
+      "url": "https://spectrum.ieee.org/feeds/feed.rss",
+      "category": "publisher",
+      "region": "global",
+      "type": "rss"
+    },
+    {
+      "name": "Blink Charging – Press Releases",
+      "url": "https://ir.blinkcharging.com/news-events/press-releases/rss",
+      "category": "company",
+      "region": "global",
+      "type": "rss"
+    },
+    {
+      "name": "Charged EVs Magazine",
+      "url": "https://chargedevs.com/feed/",
+      "category": "publisher",
+      "region": "global",
+      "type": "rss"
+    }
+  ]
+}

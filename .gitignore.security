@@ -1,0 +1,20 @@
+# Add these lines to your .gitignore file to prevent committing secrets
+
+# Keep appsettings.json (template with no secrets)
+# But ignore local development settings with real keys
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+# Local user secrets
+**/appsettings.Local.json
+secrets.json
+
+# Azure publish profiles (contain deployment credentials)
+*.pubxml
+*.PublishSettings
+
+# Environment files
+.env
+.env.local
+.env.*.local

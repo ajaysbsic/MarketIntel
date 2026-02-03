@@ -1,0 +1,16 @@
+{
+  "api_endpoint_reports": "https://market-intel-api-grg6ceczgzd2cwdh.southeastasia-01.azurewebsites.net/api/reports/ingest",
+  "api_provider": "google",
+  "google_api_key": "AIzaSyCqynZZDEObvPPE6Wl_lZA3Ezyx_Hneywo",
+  "google_model": "gemini-2.5-flash",
+  "openai_api_key": "sk-proj-YOUR_OPENAI_KEY_HERE",
+  "openai_model": "gpt-4o-mini",
+  "poll_interval_seconds": 3600,
+  "request_timeout_seconds": 60,
+  "download_dir": "/app/downloads",
+  "verify_ssl": true,
+  "max_retries": 3,
+  "enable_analysis": true,
+  "process_existing_on_startup": true,
+  "max_existing_reports_per_company": 3
+}

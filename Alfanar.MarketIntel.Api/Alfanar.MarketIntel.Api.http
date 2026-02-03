@@ -1,0 +1,6 @@
+@Alfanar.MarketIntel.Api_HostAddress = http://localhost:5021
+
+GET {{Alfanar.MarketIntel.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

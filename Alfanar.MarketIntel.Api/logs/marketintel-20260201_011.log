@@ -1,0 +1,313 @@
+2026-02-01 13:35:12.753 +03:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-02-01 13:35:12.794 +03:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-02-01 13:35:12.798 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-02-01 13:35:12.802 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-02-01 13:35:12.816 +03:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-02-01 13:35:12.836 +03:00 [INF] No migrations were applied. The database is already up to date.
+2026-02-01 13:35:12.838 +03:00 [INF] Database migration completed successfully
+2026-02-01 13:35:12.841 +03:00 [INF] Market Intelligence API starting...
+2026-02-01 13:35:12.861 +03:00 [INF] Now listening on: http://localhost:5021
+2026-02-01 13:35:12.864 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-02-01 13:35:12.866 +03:00 [INF] Hosting environment: Development
+2026-02-01 13:35:12.867 +03:00 [INF] Content root path: D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Api
+2026-02-01 13:35:22.890 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1 - null null
+2026-02-01 13:35:22.922 +03:00 [WRN] Failed to determine the https port for redirect.
+2026-02-01 13:35:22.930 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:35:22.942 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:35:22.950 +03:00 [INF] Google AI Analyzer initialized with model: gemini-2.5-flash, Caching: false, Streaming: true
+2026-02-01 13:35:23.732 +03:00 [INF] Executed DbCommand (16ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[CompanyName], [t].[CreatedUtc], [t].[DownloadUrl], [t].[ErrorMessage], [t].[ExtractedText], [t].[FilePath], [t].[FileSizeBytes], [t].[FiscalQuarter], [t].[FiscalYear], [t].[IsProcessed], [t].[Language], [t].[Metadata], [t].[PageCount], [t].[ProcessedUtc], [t].[ProcessingStatus], [t].[PublishedDate], [t].[Region], [t].[ReportType], [t].[RequiredOcr], [t].[Sector], [t].[SourceUrl], [t].[Title], [t].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+LEFT JOIN [ReportAnalyses] AS [r] ON [t].[Id] = [r].[FinancialReportId]
+ORDER BY [t].[c] DESC
+2026-02-01 13:35:23.817 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-02-01 13:35:23.834 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType43`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:35:23.863 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 914.8734ms
+2026-02-01 13:35:23.868 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:35:23.874 +03:00 [INF] HTTP GET /api/reports responded 200 in 959.7683 ms
+2026-02-01 13:35:23.880 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1 - 200 null application/json; charset=utf-8 991.9159ms
+2026-02-01 13:35:27.951 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 1149
+2026-02-01 13:35:27.967 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:35:27.976 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:35:28.191 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[@__sourceUrl_0='?' (Size = 2000)], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [FinancialReports] AS [f]
+        WHERE [f].[SourceUrl] = @__sourceUrl_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-02-01 13:35:28.200 +03:00 [INF] Start processing HTTP request GET https://example.com/test-report.pdf
+2026-02-01 13:35:28.214 +03:00 [INF] Sending HTTP request GET https://example.com/test-report.pdf
+2026-02-01 13:35:28.630 +03:00 [INF] Received HTTP response headers after 409.4112ms - 404
+2026-02-01 13:35:28.638 +03:00 [INF] End processing HTTP request after 437.7622ms - 404
+2026-02-01 13:35:28.644 +03:00 [WRN] Failed to download or store report from https://example.com/test-report.pdf: Failed to download report from https://example.com/test-report.pdf. Status: 404 Not Found
+2026-02-01 13:35:28.650 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:35:28.658 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 675.4861ms
+2026-02-01 13:35:28.663 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:35:28.667 +03:00 [INF] HTTP POST /api/reports/ingest responded 400 in 700.6517 ms
+2026-02-01 13:35:28.672 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 400 null application/json; charset=utf-8 720.2214ms
+2026-02-01 13:35:54.578 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 1081
+2026-02-01 13:35:54.585 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:35:54.590 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:35:54.759 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@__sourceUrl_0='?' (Size = 2000)], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [FinancialReports] AS [f]
+        WHERE [f].[SourceUrl] = @__sourceUrl_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-02-01 13:35:54.767 +03:00 [INF] Start processing HTTP request GET https://example.com/test.pdf
+2026-02-01 13:35:54.771 +03:00 [INF] Sending HTTP request GET https://example.com/test.pdf
+2026-02-01 13:35:54.885 +03:00 [INF] Received HTTP response headers after 107.881ms - 404
+2026-02-01 13:35:54.891 +03:00 [INF] End processing HTTP request after 124.222ms - 404
+2026-02-01 13:35:54.896 +03:00 [WRN] Failed to download or store report from https://example.com/test.pdf: Failed to download report from https://example.com/test.pdf. Status: 404 Not Found
+2026-02-01 13:35:54.901 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:35:54.907 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 309.9161ms
+2026-02-01 13:35:54.910 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:35:54.913 +03:00 [INF] HTTP POST /api/reports/ingest responded 400 in 329.0649 ms
+2026-02-01 13:35:54.916 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 400 null application/json; charset=utf-8 338.6746ms
+2026-02-01 13:36:18.666 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 1028
+2026-02-01 13:36:18.672 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:36:18.676 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:36:18.920 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType41`1[[System.Collections.Generic.List`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:36:18.926 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 243.4636ms
+2026-02-01 13:36:18.932 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:36:18.938 +03:00 [INF] HTTP POST /api/reports/ingest responded 400 in 266.1532 ms
+2026-02-01 13:36:18.942 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 400 null application/json; charset=utf-8 275.7011ms
+2026-02-01 13:36:40.666 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 1098
+2026-02-01 13:36:40.673 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:36:40.677 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:36:40.821 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@__sourceUrl_0='?' (Size = 2000)], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [FinancialReports] AS [f]
+        WHERE [f].[SourceUrl] = @__sourceUrl_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-02-01 13:36:40.829 +03:00 [INF] Start processing HTTP request GET https://www.example.com/test.pdf
+2026-02-01 13:36:40.833 +03:00 [INF] Sending HTTP request GET https://www.example.com/test.pdf
+2026-02-01 13:36:41.243 +03:00 [INF] Received HTTP response headers after 403.9224ms - 404
+2026-02-01 13:36:41.251 +03:00 [INF] End processing HTTP request after 421.6838ms - 404
+2026-02-01 13:36:41.259 +03:00 [WRN] Failed to download or store report from https://www.example.com/test.pdf: Failed to download report from https://www.example.com/test.pdf. Status: 404 Not Found
+2026-02-01 13:36:41.263 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:36:41.268 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 585.8979ms
+2026-02-01 13:36:41.272 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:36:41.276 +03:00 [INF] HTTP POST /api/reports/ingest responded 400 in 602.9119 ms
+2026-02-01 13:36:41.279 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 400 null application/json; charset=utf-8 613.1962ms
+2026-02-01 13:37:01.786 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 408
+2026-02-01 13:37:01.792 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:37:01.795 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:37:01.942 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@__sourceUrl_0='?' (Size = 2000)], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [FinancialReports] AS [f]
+        WHERE [f].[SourceUrl] = @__sourceUrl_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-02-01 13:37:01.948 +03:00 [INF] Start processing HTTP request GET https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
+2026-02-01 13:37:01.952 +03:00 [INF] Sending HTTP request GET https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
+2026-02-01 13:37:02.329 +03:00 [INF] Received HTTP response headers after 372.3821ms - 200
+2026-02-01 13:37:02.337 +03:00 [INF] End processing HTTP request after 389.2785ms - 200
+2026-02-01 13:37:02.881 +03:00 [INF] Blob saved: Test Company/2024/dummy.pdf (13264 bytes)
+2026-02-01 13:37:02.977 +03:00 [INF] Executed DbCommand (15ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (Size = 200), @p2='?' (DbType = DateTime2), @p3='?' (Size = 2000), @p4='?' (Size = 2000), @p5='?' (Size = 4000), @p6='?' (Size = 1000), @p7='?' (DbType = Int64), @p8='?' (Size = 10), @p9='?' (DbType = Int32), @p10='?' (DbType = Boolean), @p11='?' (Size = 10), @p12='?' (Size = 4000), @p13='?' (DbType = Int32), @p14='?' (DbType = DateTime2), @p15='?' (Size = 50), @p16='?' (DbType = DateTime2), @p17='?' (Size = 100), @p18='?' (Size = 100), @p19='?' (DbType = Boolean), @p20='?' (Size = 100), @p21='?' (Size = 2000), @p22='?' (Size = 500), @p23='?' (DbType = DateTime2)], CommandType='"Text"', CommandTimeout='30']
+SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+INSERT INTO [FinancialReports] ([Id], [CompanyName], [CreatedUtc], [DownloadUrl], [ErrorMessage], [ExtractedText], [FilePath], [FileSizeBytes], [FiscalQuarter], [FiscalYear], [IsProcessed], [Language], [Metadata], [PageCount], [ProcessedUtc], [ProcessingStatus], [PublishedDate], [Region], [ReportType], [RequiredOcr], [Sector], [SourceUrl], [Title], [UpdatedUtc])
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23);
+2026-02-01 13:37:02.987 +03:00 [INF] Successfully ingested report: Azure Blob Storage Test for Test Company
+2026-02-01 13:37:02.993 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.FinancialReportDto'.
+2026-02-01 13:37:02.997 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 1196.9602ms
+2026-02-01 13:37:03.000 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:37:03.004 +03:00 [INF] HTTP POST /api/reports/ingest responded 200 in 1212.8948 ms
+2026-02-01 13:37:03.008 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 200 null application/json; charset=utf-8 1222.1813ms
+2026-02-01 13:37:33.578 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports/f649e28c-8030-4e44-a91e-6b8f7b0cc6b8 - null null
+2026-02-01 13:37:33.584 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetById (Alfanar.MarketIntel.Api)'
+2026-02-01 13:37:33.589 +03:00 [INF] Route matched with {action = "GetById", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetById(System.Guid, Boolean) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:37:33.776 +03:00 [WRN] Compiling a query which loads related collections for more than one collection navigation, either via 'Include' or through projection, but no 'QuerySplittingBehavior' has been configured. By default, Entity Framework will use 'QuerySplittingBehavior.SingleQuery', which can potentially result in slow query performance. See https://go.microsoft.com/fwlink/?linkid=2134277 for more information. To identify the query that's triggering this warning call 'ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))'.
+2026-02-01 13:37:33.803 +03:00 [INF] Executed DbCommand (16ms) [Parameters=[@__id_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[CompanyName], [t].[CreatedUtc], [t].[DownloadUrl], [t].[ErrorMessage], [t].[ExtractedText], [t].[FilePath], [t].[FileSizeBytes], [t].[FiscalQuarter], [t].[FiscalYear], [t].[IsProcessed], [t].[Language], [t].[Metadata], [t].[PageCount], [t].[ProcessedUtc], [t].[ProcessingStatus], [t].[PublishedDate], [t].[Region], [t].[ReportType], [t].[RequiredOcr], [t].[Sector], [t].[SourceUrl], [t].[Title], [t].[UpdatedUtc], [t].[Id0], [r0].[Id], [r0].[Content], [r0].[CreatedUtc], [r0].[ExtractionConfidence], [r0].[FinancialReportId], [r0].[KeyDataPoints], [r0].[OrderIndex], [r0].[PageNumbers], [r0].[SectionType], [r0].[Summary], [r0].[Title], [t].[AiModel], [t].[AnalysisConfidence], [t].[CompetitivePosition], [t].[CreatedUtc0], [t].[ExecutiveSummary], [t].[FinancialMetrics], [t].[FinancialReportId], [t].[InvestmentThesis], [t].[KeyHighlights], [t].[MarketOutlook], [t].[ProcessingTimeMs], [t].[RelatedEntities], [t].[RiskFactors], [t].[SentimentLabel], [t].[SentimentScore], [t].[StrategicInitiatives], [t].[Tags], [t].[TokensUsed], [t].[UpdatedUtc0], [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+FROM (
+    SELECT TOP(1) [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], [r].[Id] AS [Id0], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc] AS [CreatedUtc0], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc] AS [UpdatedUtc0]
+    FROM [FinancialReports] AS [f]
+    LEFT JOIN [ReportAnalyses] AS [r] ON [f].[Id] = [r].[FinancialReportId]
+    WHERE [f].[Id] = @__id_0
+) AS [t]
+LEFT JOIN [ReportSections] AS [r0] ON [t].[Id] = [r0].[FinancialReportId]
+LEFT JOIN [NewsArticles] AS [n] ON [t].[Id] = [n].[RelatedFinancialReportId]
+ORDER BY [t].[Id], [t].[Id0], [r0].[OrderIndex], [r0].[Id]
+2026-02-01 13:37:33.812 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.FinancialReportDto'.
+2026-02-01 13:37:33.817 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetById (Alfanar.MarketIntel.Api) in 222.2989ms
+2026-02-01 13:37:33.821 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetById (Alfanar.MarketIntel.Api)'
+2026-02-01 13:37:33.824 +03:00 [INF] HTTP GET /api/reports/f649e28c-8030-4e44-a91e-6b8f7b0cc6b8 responded 200 in 240.3528 ms
+2026-02-01 13:37:33.827 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports/f649e28c-8030-4e44-a91e-6b8f7b0cc6b8 - 200 null application/json; charset=utf-8 248.546ms
+2026-02-01 13:37:48.286 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports/f649e28c-8030-4e44-a91e-6b8f7b0cc6b8 - null null
+2026-02-01 13:37:48.292 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetById (Alfanar.MarketIntel.Api)'
+2026-02-01 13:37:48.295 +03:00 [INF] Route matched with {action = "GetById", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetById(System.Guid, Boolean) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:37:48.497 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@__id_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[CompanyName], [t].[CreatedUtc], [t].[DownloadUrl], [t].[ErrorMessage], [t].[ExtractedText], [t].[FilePath], [t].[FileSizeBytes], [t].[FiscalQuarter], [t].[FiscalYear], [t].[IsProcessed], [t].[Language], [t].[Metadata], [t].[PageCount], [t].[ProcessedUtc], [t].[ProcessingStatus], [t].[PublishedDate], [t].[Region], [t].[ReportType], [t].[RequiredOcr], [t].[Sector], [t].[SourceUrl], [t].[Title], [t].[UpdatedUtc], [t].[Id0], [r0].[Id], [r0].[Content], [r0].[CreatedUtc], [r0].[ExtractionConfidence], [r0].[FinancialReportId], [r0].[KeyDataPoints], [r0].[OrderIndex], [r0].[PageNumbers], [r0].[SectionType], [r0].[Summary], [r0].[Title], [t].[AiModel], [t].[AnalysisConfidence], [t].[CompetitivePosition], [t].[CreatedUtc0], [t].[ExecutiveSummary], [t].[FinancialMetrics], [t].[FinancialReportId], [t].[InvestmentThesis], [t].[KeyHighlights], [t].[MarketOutlook], [t].[ProcessingTimeMs], [t].[RelatedEntities], [t].[RiskFactors], [t].[SentimentLabel], [t].[SentimentScore], [t].[StrategicInitiatives], [t].[Tags], [t].[TokensUsed], [t].[UpdatedUtc0], [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+FROM (
+    SELECT TOP(1) [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], [r].[Id] AS [Id0], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc] AS [CreatedUtc0], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc] AS [UpdatedUtc0]
+    FROM [FinancialReports] AS [f]
+    LEFT JOIN [ReportAnalyses] AS [r] ON [f].[Id] = [r].[FinancialReportId]
+    WHERE [f].[Id] = @__id_0
+) AS [t]
+LEFT JOIN [ReportSections] AS [r0] ON [t].[Id] = [r0].[FinancialReportId]
+LEFT JOIN [NewsArticles] AS [n] ON [t].[Id] = [n].[RelatedFinancialReportId]
+ORDER BY [t].[Id], [t].[Id0], [r0].[OrderIndex], [r0].[Id]
+2026-02-01 13:37:48.504 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.FinancialReportDto'.
+2026-02-01 13:37:48.508 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetById (Alfanar.MarketIntel.Api) in 208.6401ms
+2026-02-01 13:37:48.512 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetById (Alfanar.MarketIntel.Api)'
+2026-02-01 13:37:48.515 +03:00 [INF] HTTP GET /api/reports/f649e28c-8030-4e44-a91e-6b8f7b0cc6b8 responded 200 in 223.0204 ms
+2026-02-01 13:37:48.518 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports/f649e28c-8030-4e44-a91e-6b8f7b0cc6b8 - 200 null application/json; charset=utf-8 231.7232ms
+2026-02-01 13:38:26.241 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1 - null null
+2026-02-01 13:38:26.247 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:38:26.250 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:38:26.409 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[CompanyName], [t].[CreatedUtc], [t].[DownloadUrl], [t].[ErrorMessage], [t].[ExtractedText], [t].[FilePath], [t].[FileSizeBytes], [t].[FiscalQuarter], [t].[FiscalYear], [t].[IsProcessed], [t].[Language], [t].[Metadata], [t].[PageCount], [t].[ProcessedUtc], [t].[ProcessingStatus], [t].[PublishedDate], [t].[Region], [t].[ReportType], [t].[RequiredOcr], [t].[Sector], [t].[SourceUrl], [t].[Title], [t].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+LEFT JOIN [ReportAnalyses] AS [r] ON [t].[Id] = [r].[FinancialReportId]
+ORDER BY [t].[c] DESC
+2026-02-01 13:38:26.416 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-02-01 13:38:26.422 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType43`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:38:26.427 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 171.9054ms
+2026-02-01 13:38:26.432 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:38:26.437 +03:00 [INF] HTTP GET /api/reports responded 200 in 190.4356 ms
+2026-02-01 13:38:26.441 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1 - 200 null application/json; charset=utf-8 199.619ms
+2026-02-01 13:38:26.452 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 296
+2026-02-01 13:38:26.457 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:38:26.461 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:38:26.612 +03:00 [INF] Executing BadRequestObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ValidationProblemDetails'.
+2026-02-01 13:38:26.626 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 160.0092ms
+2026-02-01 13:38:26.630 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:38:26.633 +03:00 [INF] HTTP POST /api/reports/ingest responded 400 in 175.9557 ms
+2026-02-01 13:38:26.636 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 400 null application/problem+json; charset=utf-8 184.0466ms
+2026-02-01 13:38:49.031 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1 - null null
+2026-02-01 13:38:49.043 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:38:49.046 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:38:49.205 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[CompanyName], [t].[CreatedUtc], [t].[DownloadUrl], [t].[ErrorMessage], [t].[ExtractedText], [t].[FilePath], [t].[FileSizeBytes], [t].[FiscalQuarter], [t].[FiscalYear], [t].[IsProcessed], [t].[Language], [t].[Metadata], [t].[PageCount], [t].[ProcessedUtc], [t].[ProcessingStatus], [t].[PublishedDate], [t].[Region], [t].[ReportType], [t].[RequiredOcr], [t].[Sector], [t].[SourceUrl], [t].[Title], [t].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+LEFT JOIN [ReportAnalyses] AS [r] ON [t].[Id] = [r].[FinancialReportId]
+ORDER BY [t].[c] DESC
+2026-02-01 13:38:49.214 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-02-01 13:38:49.219 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType43`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:38:49.225 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 174.6983ms
+2026-02-01 13:38:49.229 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:38:49.233 +03:00 [INF] HTTP GET /api/reports responded 200 in 189.9753 ms
+2026-02-01 13:38:49.235 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1 - 200 null application/json; charset=utf-8 204.019ms
+2026-02-01 13:38:49.241 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 296
+2026-02-01 13:38:49.246 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:38:49.249 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:38:49.394 +03:00 [INF] Executing BadRequestObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ValidationProblemDetails'.
+2026-02-01 13:38:49.399 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 145.6795ms
+2026-02-01 13:38:49.404 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:38:49.409 +03:00 [INF] HTTP POST /api/reports/ingest responded 400 in 162.7161 ms
+2026-02-01 13:38:49.413 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 400 null application/problem+json; charset=utf-8 171.6692ms
+2026-02-01 13:39:13.322 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1 - null null
+2026-02-01 13:39:13.328 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:39:13.332 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:39:13.491 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[CompanyName], [t].[CreatedUtc], [t].[DownloadUrl], [t].[ErrorMessage], [t].[ExtractedText], [t].[FilePath], [t].[FileSizeBytes], [t].[FiscalQuarter], [t].[FiscalYear], [t].[IsProcessed], [t].[Language], [t].[Metadata], [t].[PageCount], [t].[ProcessedUtc], [t].[ProcessingStatus], [t].[PublishedDate], [t].[Region], [t].[ReportType], [t].[RequiredOcr], [t].[Sector], [t].[SourceUrl], [t].[Title], [t].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+LEFT JOIN [ReportAnalyses] AS [r] ON [t].[Id] = [r].[FinancialReportId]
+ORDER BY [t].[c] DESC
+2026-02-01 13:39:13.499 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-02-01 13:39:13.506 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType43`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:39:13.510 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 172.3349ms
+2026-02-01 13:39:13.514 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:39:13.518 +03:00 [INF] HTTP GET /api/reports responded 200 in 190.7421 ms
+2026-02-01 13:39:13.521 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1 - 200 null application/json; charset=utf-8 199.0707ms
+2026-02-01 13:39:13.526 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 448
+2026-02-01 13:39:13.531 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:39:13.534 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:39:13.672 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@__sourceUrl_0='?' (Size = 2000)], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [FinancialReports] AS [f]
+        WHERE [f].[SourceUrl] = @__sourceUrl_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-02-01 13:39:13.677 +03:00 [WRN] Duplicate report URL attempted: https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
+2026-02-01 13:39:13.681 +03:00 [INF] Executing ConflictObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:39:13.687 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 148.3674ms
+2026-02-01 13:39:13.692 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:39:13.697 +03:00 [INF] HTTP POST /api/reports/ingest responded 409 in 166.4300 ms
+2026-02-01 13:39:13.701 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 409 null application/json; charset=utf-8 174.6078ms
+2026-02-01 13:39:30.907 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/reports/ingest - application/json 370
+2026-02-01 13:39:30.915 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:39:30.919 +03:00 [INF] Route matched with {action = "IngestReport", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] IngestReport(Alfanar.MarketIntel.Application.DTOs.IngestReportRequest) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:39:31.064 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@__sourceUrl_0='?' (Size = 2000)], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [FinancialReports] AS [f]
+        WHERE [f].[SourceUrl] = @__sourceUrl_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-02-01 13:39:31.074 +03:00 [WRN] Duplicate report URL attempted: https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
+2026-02-01 13:39:31.079 +03:00 [INF] Executing ConflictObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:39:31.086 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api) in 163.0132ms
+2026-02-01 13:39:31.092 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.IngestReport (Alfanar.MarketIntel.Api)'
+2026-02-01 13:39:31.097 +03:00 [INF] HTTP POST /api/reports/ingest responded 409 in 181.8975 ms
+2026-02-01 13:39:31.102 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/reports/ingest - 409 null application/json; charset=utf-8 194.9924ms
+2026-02-01 13:39:57.416 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=5 - null null
+2026-02-01 13:39:57.423 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:39:57.426 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-02-01 13:39:57.570 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[CompanyName], [t].[CreatedUtc], [t].[DownloadUrl], [t].[ErrorMessage], [t].[ExtractedText], [t].[FilePath], [t].[FileSizeBytes], [t].[FiscalQuarter], [t].[FiscalYear], [t].[IsProcessed], [t].[Language], [t].[Metadata], [t].[PageCount], [t].[ProcessedUtc], [t].[ProcessingStatus], [t].[PublishedDate], [t].[Region], [t].[ReportType], [t].[RequiredOcr], [t].[Sector], [t].[SourceUrl], [t].[Title], [t].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+LEFT JOIN [ReportAnalyses] AS [r] ON [t].[Id] = [r].[FinancialReportId]
+ORDER BY [t].[c] DESC
+2026-02-01 13:39:57.601 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-02-01 13:39:57.607 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType43`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-01 13:39:57.612 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 181.0412ms
+2026-02-01 13:39:57.615 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-02-01 13:39:57.618 +03:00 [INF] HTTP GET /api/reports responded 200 in 195.9581 ms
+2026-02-01 13:39:57.621 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=5 - 200 null application/json; charset=utf-8 205.0369ms

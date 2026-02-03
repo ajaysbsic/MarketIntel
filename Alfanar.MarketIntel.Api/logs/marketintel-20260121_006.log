@@ -1,0 +1,377 @@
+2026-01-21 11:00:31.844 +03:00 [INF] Executed DbCommand (15ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-01-21 11:00:31.925 +03:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2026-01-21 11:00:31.961 +03:00 [INF] Executed DbCommand (25ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result
+2026-01-21 11:00:32.029 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END;
+2026-01-21 11:00:32.056 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-01-21 11:00:32.070 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-01-21 11:00:32.093 +03:00 [INF] Executed DbCommand (13ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-01-21 11:00:32.110 +03:00 [INF] No migrations were applied. The database is already up to date.
+2026-01-21 11:00:32.123 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result
+2026-01-21 11:00:32.137 +03:00 [INF] Database migration completed successfully
+2026-01-21 11:00:32.148 +03:00 [INF] Market Intelligence API starting...
+2026-01-21 11:00:32.199 +03:00 [INF] Now listening on: http://localhost:5021
+2026-01-21 11:00:32.207 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-01-21 11:00:32.209 +03:00 [INF] Hosting environment: Development
+2026-01-21 11:00:32.212 +03:00 [INF] Content root path: D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Api
+2026-01-21 11:00:37.386 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null null
+2026-01-21 11:00:37.395 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 11:00:37.520 +03:00 [WRN] Failed to determine the https port for redirect.
+2026-01-21 11:00:37.553 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:00:37.553 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:00:37.599 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:00:37.600 +03:00 [INF] HTTP OPTIONS /notifications-hub/negotiate responded 204 in 105.2797 ms
+2026-01-21 11:00:37.639 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 204 null null 256.1719ms
+2026-01-21 11:00:37.644 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null 0
+2026-01-21 11:00:37.663 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 11:00:37.727 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:00:37.747 +03:00 [INF] Executing endpoint '/notifications-hub/negotiate'
+2026-01-21 11:00:37.782 +03:00 [INF] Executed endpoint '/notifications-hub/negotiate'
+2026-01-21 11:00:37.791 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/notifications-hub?id=rR7NJF4EO68rnYnC4uFnBA - null null
+2026-01-21 11:00:37.819 +03:00 [INF] HTTP POST /notifications-hub/negotiate responded 200 in 93.6015 ms
+2026-01-21 11:00:37.827 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:00:37.851 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 200 316 application/json 207.3607ms
+2026-01-21 11:00:37.853 +03:00 [INF] Executing endpoint '/notifications-hub'
+2026-01-21 11:00:37.941 +03:00 [INF] Client connected: 5GBeMqe1DEHbk0E9oFs-yw from ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"]
+2026-01-21 11:00:38.487 +03:00 [INF] Executed DbCommand (71ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 11:00:38.727 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 11:00:38.807 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 1075.1591ms
+2026-01-21 11:00:38.836 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:00:38.860 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 1368.2825 ms
+2026-01-21 11:00:38.888 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 1492.8797ms
+2026-01-21 11:01:03.243 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - null null
+2026-01-21 11:01:03.243 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - null null
+2026-01-21 11:01:03.247 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/alerts - null null
+2026-01-21 11:01:03.340 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:01:03.353 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:01:03.371 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:01:03.463 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 11:01:03.466 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 11:01:03.470 +03:00 [INF] HTTP GET /api/alerts responded 404 in 99.3744 ms
+2026-01-21 11:01:03.547 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/alerts - 404 0 null 300.3937ms
+2026-01-21 11:01:03.557 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-01-21 11:01:03.558 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "News"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.NewsFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.NewsController (Alfanar.MarketIntel.Api).
+2026-01-21 11:01:03.610 +03:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5021/api/alerts, Response status code: 404
+2026-01-21 11:01:03.624 +03:00 [INF] Google AI Analyzer initialized with model: gemini-2.5-flash
+2026-01-21 11:01:03.650 +03:00 [INF] File storage initialized at: storage/reports
+2026-01-21 11:01:03.872 +03:00 [INF] Executed DbCommand (30ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [f0].[Id], [f0].[CompanyName], [f0].[CreatedUtc], [f0].[DownloadUrl], [f0].[ErrorMessage], [f0].[ExtractedText], [f0].[FilePath], [f0].[FileSizeBytes], [f0].[FiscalQuarter], [f0].[FiscalYear], [f0].[IsProcessed], [f0].[Language], [f0].[Metadata], [f0].[PageCount], [f0].[ProcessedUtc], [f0].[ProcessingStatus], [f0].[PublishedDate], [f0].[Region], [f0].[ReportType], [f0].[RequiredOcr], [f0].[Sector], [f0].[SourceUrl], [f0].[Title], [f0].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [f0]
+LEFT JOIN [ReportAnalyses] AS [r] ON [f0].[Id] = [r].[FinancialReportId]
+ORDER BY [f0].[c] DESC
+2026-01-21 11:01:03.904 +03:00 [INF] Executed DbCommand (34ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [n1].[Id], [n1].[BodyText], [n1].[Category], [n1].[ClassificationConfidence], [n1].[CreatedUtc], [n1].[IsProcessed], [n1].[ProcessedUtc], [n1].[PublishedUtc], [n1].[Region], [n1].[RelatedFinancialReportId], [n1].[RssFeedId], [n1].[Source], [n1].[Summary], [n1].[Title], [n1].[Url], [s].[NewsArticleId], [s].[TagId], [s].[Id], [s].[CreatedUtc], [s].[Name], [s].[NormalizedName]
+FROM (
+    SELECT [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+    FROM [NewsArticles] AS [n]
+    ORDER BY [n].[PublishedUtc] DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [n1]
+LEFT JOIN (
+    SELECT [n0].[NewsArticleId], [n0].[TagId], [t].[Id], [t].[CreatedUtc], [t].[Name], [t].[NormalizedName]
+    FROM [NewsArticleTags] AS [n0]
+    INNER JOIN [Tags] AS [t] ON [n0].[TagId] = [t].[Id]
+) AS [s] ON [n1].[Id] = [s].[NewsArticleId]
+ORDER BY [n1].[PublishedUtc] DESC, [n1].[Id], [s].[NewsArticleId], [s].[TagId]
+2026-01-21 11:01:04.284 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-01-21 11:01:04.313 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NewsArticles] AS [n]
+2026-01-21 11:01:04.325 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 11:01:04.374 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.NewsArticleDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 11:01:04.432 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 819.9375ms
+2026-01-21 11:01:04.437 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api) in 814.0545ms
+2026-01-21 11:01:04.474 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 11:01:04.479 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 11:01:04.529 +03:00 [INF] HTTP GET /api/reports responded 200 in 1189.4744 ms
+2026-01-21 11:01:04.530 +03:00 [INF] HTTP GET /api/news responded 200 in 1177.1483 ms
+2026-01-21 11:01:04.573 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 1330.1126ms
+2026-01-21 11:01:04.573 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 1330.1088ms
+2026-01-21 11:01:44.532 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 11:01:44.562 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:01:44.589 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:01:44.618 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 11:01:44.670 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 11:01:44.724 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 11:01:44.748 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 94.9106ms
+2026-01-21 11:01:44.794 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:01:44.834 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 272.5457 ms
+2026-01-21 11:01:44.850 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 317.3697ms
+2026-01-21 11:01:51.716 +03:00 [INF] Client disconnected: 5GBeMqe1DEHbk0E9oFs-yw
+2026-01-21 11:01:51.736 +03:00 [INF] Executed endpoint '/notifications-hub'
+2026-01-21 11:01:51.754 +03:00 [INF] HTTP GET /notifications-hub responded 101 in 73927.8097 ms
+2026-01-21 11:01:51.771 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/notifications-hub?id=rR7NJF4EO68rnYnC4uFnBA - 101 null null 73980.1507ms
+2026-01-21 11:01:51.795 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null null
+2026-01-21 11:01:51.863 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:01:51.841 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 11:01:51.950 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:01:51.939 +03:00 [INF] HTTP OPTIONS /notifications-hub/negotiate responded 204 in 75.5734 ms
+2026-01-21 11:01:52.011 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null 0
+2026-01-21 11:01:52.009 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 204 null null 214.5574ms
+2026-01-21 11:01:52.005 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:01:52.076 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:01:52.092 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 11:01:52.145 +03:00 [INF] Executing endpoint '/notifications-hub/negotiate'
+2026-01-21 11:01:52.158 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 11:01:52.208 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/notifications-hub?id=P-6pgI_eFL1YXshT4FqPDw - null null
+2026-01-21 11:01:52.198 +03:00 [INF] Executed endpoint '/notifications-hub/negotiate'
+2026-01-21 11:01:52.211 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 11:01:52.285 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:01:52.286 +03:00 [INF] HTTP POST /notifications-hub/negotiate responded 200 in 209.7475 ms
+2026-01-21 11:01:52.334 +03:00 [INF] Executing endpoint '/notifications-hub'
+2026-01-21 11:01:52.330 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 181.7987ms
+2026-01-21 11:01:52.341 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 200 316 application/json 329.6398ms
+2026-01-21 11:01:52.383 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:01:52.388 +03:00 [INF] Client connected: a55LEPJ82tMKltuTECog6A from ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"]
+2026-01-21 11:01:52.449 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 499.2701 ms
+2026-01-21 11:01:52.467 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 625.4247ms
+2026-01-21 11:04:11.853 +03:00 [INF] Client disconnected: a55LEPJ82tMKltuTECog6A
+2026-01-21 11:04:11.864 +03:00 [INF] Executed endpoint '/notifications-hub'
+2026-01-21 11:04:11.881 +03:00 [INF] HTTP GET /notifications-hub responded 101 in 139596.1849 ms
+2026-01-21 11:04:11.897 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/notifications-hub?id=P-6pgI_eFL1YXshT4FqPDw - 101 null null 139688.8612ms
+2026-01-21 11:04:11.934 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null null
+2026-01-21 11:04:11.960 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:11.977 +03:00 [INF] HTTP OPTIONS /notifications-hub/negotiate responded 204 in 17.4085 ms
+2026-01-21 11:04:11.991 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 204 null null 57.0374ms
+2026-01-21 11:04:11.995 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null 0
+2026-01-21 11:04:12.039 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 11:04:12.048 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:12.098 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:12.102 +03:00 [INF] Executing endpoint '/notifications-hub/negotiate'
+2026-01-21 11:04:12.135 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:04:12.139 +03:00 [INF] Executed endpoint '/notifications-hub/negotiate'
+2026-01-21 11:04:12.149 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/notifications-hub?id=UytjoK1FpEuXZb6CAO70mA - null null
+2026-01-21 11:04:12.179 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 11:04:12.181 +03:00 [INF] HTTP POST /notifications-hub/negotiate responded 200 in 133.1698 ms
+2026-01-21 11:04:12.187 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:12.242 +03:00 [INF] Executing endpoint '/notifications-hub'
+2026-01-21 11:04:12.241 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 200 316 application/json 245.9256ms
+2026-01-21 11:04:12.239 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 11:04:12.314 +03:00 [INF] Client connected: tJQb8GsuZpkyFVbGpK_aGQ from ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"]
+2026-01-21 11:04:12.333 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 11:04:12.387 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 153.8917ms
+2026-01-21 11:04:12.416 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:04:12.439 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 340.9307 ms
+2026-01-21 11:04:12.451 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 412.295ms
+2026-01-21 11:04:51.747 +03:00 [INF] Client disconnected: tJQb8GsuZpkyFVbGpK_aGQ
+2026-01-21 11:04:51.777 +03:00 [INF] Executed endpoint '/notifications-hub'
+2026-01-21 11:04:51.816 +03:00 [INF] HTTP GET /notifications-hub responded 101 in 39629.6767 ms
+2026-01-21 11:04:51.835 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/notifications-hub?id=UytjoK1FpEuXZb6CAO70mA - 101 null null 39686.4489ms
+2026-01-21 11:04:51.885 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null null
+2026-01-21 11:04:51.905 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:51.938 +03:00 [INF] HTTP OPTIONS /notifications-hub/negotiate responded 204 in 33.0956 ms
+2026-01-21 11:04:51.946 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 11:04:51.992 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 204 null null 106.6309ms
+2026-01-21 11:04:51.996 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null 0
+2026-01-21 11:04:52.003 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:52.089 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:52.092 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:04:52.114 +03:00 [INF] Executing endpoint '/notifications-hub/negotiate'
+2026-01-21 11:04:52.115 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 11:04:52.145 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 11:04:52.139 +03:00 [INF] Executed endpoint '/notifications-hub/negotiate'
+2026-01-21 11:04:52.148 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/notifications-hub?id=1KihhlvnKYF9-FcYBCBpag - null null
+2026-01-21 11:04:52.185 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 11:04:52.186 +03:00 [INF] HTTP POST /notifications-hub/negotiate responded 200 in 96.5060 ms
+2026-01-21 11:04:52.234 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:52.236 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 94.2899ms
+2026-01-21 11:04:52.240 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 200 316 application/json 243.5219ms
+2026-01-21 11:04:52.276 +03:00 [INF] Executing endpoint '/notifications-hub'
+2026-01-21 11:04:52.277 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 11:04:52.298 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 294.6683 ms
+2026-01-21 11:04:52.307 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 360.9917ms
+2026-01-21 11:04:52.308 +03:00 [INF] Client connected: zpn-fimlS6i6AkLIlQmGtA from ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"]
+2026-01-21 11:04:58.986 +03:00 [INF] Application is shutting down...
+2026-01-21 11:04:58.991 +03:00 [INF] Connection id "0HNIOOCKPTSFD", Request id "0HNIOOCKPTSFD:00000001": the application aborted the connection.
+2026-01-21 11:04:59.006 +03:00 [INF] Client disconnected: zpn-fimlS6i6AkLIlQmGtA
+2026-01-21 11:04:59.009 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null null
+2026-01-21 11:04:59.045 +03:00 [INF] Executed endpoint '/notifications-hub'
+2026-01-21 11:04:59.048 +03:00 [INF] CORS policy execution successful.
+2026-01-21 11:04:59.059 +03:00 [INF] HTTP GET /notifications-hub responded 101 in 6825.7588 ms
+2026-01-21 11:04:59.060 +03:00 [INF] HTTP OPTIONS /notifications-hub/negotiate responded 204 in 12.3109 ms
+2026-01-21 11:04:59.072 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/notifications-hub?id=1KihhlvnKYF9-FcYBCBpag - 101 null null 6924.0848ms
+2026-01-21 11:04:59.073 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 204 null null 63.6668ms
+2026-01-21 11:05:06.565 +03:00 [INF] Executed DbCommand (11ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-01-21 11:05:06.614 +03:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-01-21 11:05:06.628 +03:00 [INF] Executed DbCommand (12ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-01-21 11:05:06.671 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-01-21 11:05:06.678 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-01-21 11:05:06.679 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-01-21 11:05:06.687 +03:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-01-21 11:05:06.692 +03:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-01-21 11:05:06.694 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-01-21 11:05:06.695 +03:00 [INF] Database migration completed successfully {}
+2026-01-21 11:05:06.698 +03:00 [INF] Market Intelligence API starting... {}
+2026-01-21 11:05:06.735 +03:00 [INF] Now listening on: http://localhost:5021 {"EventId":{"Id":14,"Name":"ListeningOnAddress"},"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-01-21 11:05:06.736 +03:00 [INF] Application started. Press Ctrl+C to shut down. {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-01-21 11:05:06.737 +03:00 [INF] Hosting environment: Development {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-01-21 11:05:06.737 +03:00 [INF] Content root path: D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Api {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-01-21 11:05:17.214 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNIOOF53QHAU:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAU"}
+2026-01-21 11:05:17.250 +03:00 [WRN] Failed to determine the https port for redirect. {"EventId":{"Id":3,"Name":"FailedToDeterminePort"},"SourceContext":"Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware","RequestId":"0HNIOOF53QHAU:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAU"}
+2026-01-21 11:05:17.251 +03:00 [INF] CORS policy execution successful. {"EventId":{"Id":4,"Name":"PolicySuccess"},"SourceContext":"Microsoft.AspNetCore.Cors.Infrastructure.CorsService","RequestId":"0HNIOOF53QHAU:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAU"}
+2026-01-21 11:05:17.253 +03:00 [INF] HTTP OPTIONS /notifications-hub/negotiate responded 204 in 15.8013 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNIOOF53QHAU:00000001","ConnectionId":"0HNIOOF53QHAU"}
+2026-01-21 11:05:17.256 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 204 null null 43.168ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNIOOF53QHAU:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAU"}
+2026-01-21 11:05:17.260 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null 0 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNIOOF53QHAV:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAV"}
+2026-01-21 11:05:17.262 +03:00 [INF] CORS policy execution successful. {"EventId":{"Id":4,"Name":"PolicySuccess"},"SourceContext":"Microsoft.AspNetCore.Cors.Infrastructure.CorsService","RequestId":"0HNIOOF53QHAV:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAV"}
+2026-01-21 11:05:17.264 +03:00 [INF] Executing endpoint '/notifications-hub/negotiate' {"EventId":{"Name":"ExecutingEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNIOOF53QHAV:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAV"}
+2026-01-21 11:05:17.269 +03:00 [INF] Executed endpoint '/notifications-hub/negotiate' {"EventId":{"Id":1,"Name":"ExecutedEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNIOOF53QHAV:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAV"}
+2026-01-21 11:05:17.269 +03:00 [INF] HTTP POST /notifications-hub/negotiate responded 200 in 7.8795 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNIOOF53QHAV:00000001","ConnectionId":"0HNIOOF53QHAV"}
+2026-01-21 11:05:17.269 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 200 316 application/json 9.2208ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNIOOF53QHAV:00000001","RequestPath":"/notifications-hub/negotiate","ConnectionId":"0HNIOOF53QHAV"}
+2026-01-21 11:05:17.278 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/notifications-hub?id=x80IN7xDfH631EXDCG-4wA - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNIOOF53QHB0:00000001","RequestPath":"/notifications-hub","ConnectionId":"0HNIOOF53QHB0"}
+2026-01-21 11:05:17.282 +03:00 [INF] CORS policy execution successful. {"EventId":{"Id":4,"Name":"PolicySuccess"},"SourceContext":"Microsoft.AspNetCore.Cors.Infrastructure.CorsService","RequestId":"0HNIOOF53QHB0:00000001","RequestPath":"/notifications-hub","ConnectionId":"0HNIOOF53QHB0"}
+2026-01-21 11:05:17.282 +03:00 [INF] Executing endpoint '/notifications-hub' {"EventId":{"Name":"ExecutingEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNIOOF53QHB0:00000001","RequestPath":"/notifications-hub","ConnectionId":"0HNIOOF53QHB0"}
+2026-01-21 11:05:17.300 +03:00 [INF] Client connected: -L_-OMGHhJjeu19kzH2kVg from ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"] {"SourceContext":"Alfanar.MarketIntel.Api.Hubs.NotificationsHub","TransportConnectionId":"-L_-OMGHhJjeu19kzH2kVg","RequestId":"0HNIOOF53QHB0:00000001","RequestPath":"/notifications-hub"}
+2026-01-21 11:31:03.042 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=10 - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNIOOF53QHB1:00000001","RequestPath":"/api/reports","ConnectionId":"0HNIOOF53QHB1"}
+2026-01-21 11:31:03.044 +03:00 [INF] CORS policy execution successful. {"EventId":{"Id":4,"Name":"PolicySuccess"},"SourceContext":"Microsoft.AspNetCore.Cors.Infrastructure.CorsService","RequestId":"0HNIOOF53QHB1:00000001","RequestPath":"/api/reports","ConnectionId":"0HNIOOF53QHB1"}
+2026-01-21 11:31:03.044 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)' {"EventId":{"Name":"ExecutingEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNIOOF53QHB1:00000001","RequestPath":"/api/reports","ConnectionId":"0HNIOOF53QHB1"}
+2026-01-21 11:31:03.058 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api). {"EventId":{"Id":102,"Name":"ControllerActionExecuting"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker","ActionId":"484c237a-f883-4aa0-a0eb-1ea219eb1c23","ActionName":"Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)","RequestId":"0HNIOOF53QHB1:00000001","RequestPath":"/api/reports","ConnectionId":"0HNIOOF53QHB1"}
+2026-01-21 11:31:03.061 +03:00 [INF] Google AI Analyzer initialized with model: gemini-2.5-flash {"SourceContext":"Alfanar.MarketIntel.Application.Services.GoogleAiDocumentAnalyzer","ActionId":"484c237a-f883-4aa0-a0eb-1ea219eb1c23","ActionName":"Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)","RequestId":"0HNIOOF53QHB1:00000001","RequestPath":"/api/reports","ConnectionId":"0HNIOOF53QHB1"}
+2026-01-21 11:31:03.062 +03:00 [INF] File storage initialized at: storage/reports {"SourceContext":"Alfanar.MarketIntel.Application.Services.LocalFileStorageService","ActionId":"484c237a-f883-4aa0-a0eb-1ea219eb1c23","ActionName":"Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)","RequestId":"0HNIOOF53QHB1:00000001","RequestPath":"/api/reports","ConnectionId":"0HNIOOF53QHB1"}
+2026-01-21 11:31:18.777 +03:00 [ERR] An error occurred using the connection to database 'MarketIntel_Dev' on server '(localdb)\MSSQLLocalDB'. {"EventId":{"Id":20004,"Name":"Microsoft.EntityFrameworkCore.Database.Connection.ConnectionError"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Connection","ActionId":"484c237a-f883-4aa0-a0eb-1ea219eb1c23","ActionName":"Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)","RequestId":"0HNIOOF53QHB1:00000001","RequestPath":"/api/reports","ConnectionId":"0HNIOOF53QHB1"}
+2026-01-21 11:31:18.785 +03:00 [ERR] An exception occurred while iterating over the results of a query for context type 'Alfanar.MarketIntel.Infrastructure.Persistence.MarketIntelDbContext'.
+Microsoft.Data.SqlClient.SqlException (0x80131904): Connection Timeout Expired.  The timeout period elapsed while attempting to consume the pre-login handshake acknowledgement.  This could be because the pre-login handshake failed or the server was unable to respond back in time.  The duration spent while attempting to connect to this server was - [Pre-Login] initialization=15511; handshake=1; 
+ ---> System.ComponentModel.Win32Exception (258): The wait operation timed out.
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParserStateObject.ThrowExceptionAndWarning(Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParserStateObject.ReadSniError(TdsParserStateObject stateObj, UInt32 error)
+   at Microsoft.Data.SqlClient.TdsParserStateObject.ReadSniSyncOverAsync()
+   at Microsoft.Data.SqlClient.TdsParserStateObject.TryReadNetworkPacket()
+   at Microsoft.Data.SqlClient.TdsParser.ConsumePreLoginHandshake(SqlConnectionEncryptOption encrypt, Boolean trustServerCert, Boolean integratedSecurity, Boolean& marsCapable, Boolean& fedAuthRequired, Boolean tlsFirst, String serverCertificateFilename)
+   at Microsoft.Data.SqlClient.TdsParser.Connect(ServerInfo serverInfo, SqlInternalConnectionTds connHandler, TimeoutTimer timeout, SqlConnectionString connectionOptions, Boolean withFailover)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+   at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+   at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+   at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+   at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+   at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+   at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenAsync(CancellationToken cancellationToken, Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+ClientConnectionId:d4e1f099-a160-48f0-9827-75aafc13d40c
+Error Number:-2,State:0,Class:11 {"EventId":{"Id":10100,"Name":"Microsoft.EntityFrameworkCore.Query.QueryIterationFailed"},"SourceContext":"Microsoft.EntityFrameworkCore.Query","ActionId":"484c237a-f883-4aa0-a0eb-1ea219eb1c23","ActionName":"Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)","RequestId":"0HNIOOF53QHB1:00000001","RequestPath":"/api/reports","ConnectionId":"0HNIOOF53QHB1"}
+Microsoft.Data.SqlClient.SqlException (0x80131904): Connection Timeout Expired.  The timeout period elapsed while attempting to consume the pre-login handshake acknowledgement.  This could be because the pre-login handshake failed or the server was unable to respond back in time.  The duration spent while attempting to connect to this server was - [Pre-Login] initialization=15511; handshake=1; 
+ ---> System.ComponentModel.Win32Exception (258): The wait operation timed out.
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParserStateObject.ThrowExceptionAndWarning(Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParserStateObject.ReadSniError(TdsParserStateObject stateObj, UInt32 error)
+   at Microsoft.Data.SqlClient.TdsParserStateObject.ReadSniSyncOverAsync()
+   at Microsoft.Data.SqlClient.TdsParserStateObject.TryReadNetworkPacket()
+   at Microsoft.Data.SqlClient.TdsParser.ConsumePreLoginHandshake(SqlConnectionEncryptOption encrypt, Boolean trustServerCert, Boolean integratedSecurity, Boolean& marsCapable, Boolean& fedAuthRequired, Boolean tlsFirst, String serverCertificateFilename)
+   at Microsoft.Data.SqlClient.TdsParser.Connect(ServerInfo serverInfo, SqlInternalConnectionTds connHandler, TimeoutTimer timeout, SqlConnectionString connectionOptions, Boolean withFailover)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+   at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+   at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+   at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+   at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+   at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+   at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternalAsync(Boolean errorsExpected, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenAsync(CancellationToken cancellationToken, Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+ClientConnectionId:d4e1f099-a160-48f0-9827-75aafc13d40c
+Error Number:-2,State:0,Class:11

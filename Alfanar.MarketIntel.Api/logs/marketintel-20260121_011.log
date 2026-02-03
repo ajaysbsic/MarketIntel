@@ -1,0 +1,558 @@
+2026-01-21 13:11:33.226 +03:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-01-21 13:11:33.260 +03:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2026-01-21 13:11:33.269 +03:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result
+2026-01-21 13:11:33.298 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END;
+2026-01-21 13:11:33.302 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-01-21 13:11:33.302 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-01-21 13:11:33.307 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-01-21 13:11:33.310 +03:00 [INF] No migrations were applied. The database is already up to date.
+2026-01-21 13:11:33.311 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result
+2026-01-21 13:11:33.311 +03:00 [INF] Database migration completed successfully
+2026-01-21 13:11:33.313 +03:00 [INF] Market Intelligence API starting...
+2026-01-21 13:11:33.338 +03:00 [INF] Now listening on: http://localhost:5021
+2026-01-21 13:11:33.339 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-01-21 13:11:33.339 +03:00 [INF] Hosting environment: Development
+2026-01-21 13:11:33.339 +03:00 [INF] Content root path: D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Api
+2026-01-21 13:11:39.794 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 13:11:39.817 +03:00 [WRN] Failed to determine the https port for redirect.
+2026-01-21 13:11:39.818 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 13:11:39.826 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 13:11:40.042 +03:00 [INF] Executed DbCommand (15ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 13:11:40.090 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 13:11:40.105 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 277.2537ms
+2026-01-21 13:11:40.105 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 13:11:40.107 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 299.6544 ms
+2026-01-21 13:11:40.109 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 316.1315ms
+2026-01-21 13:11:52.507 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/alerts/recent - null null
+2026-01-21 13:11:52.509 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:11:52.513 +03:00 [INF] Route matched with {action = "GetRecent", controller = "Alerts"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetRecent(Int32) on controller Alfanar.MarketIntel.Api.Controllers.AlertsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:11:52.571 +03:00 [INF] Executed DbCommand (13ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s0].[Id], [s0].[AcknowledgedAt], [s0].[AcknowledgedBy], [s0].[ActualValue], [s0].[AlertType], [s0].[CompanyName], [s0].[CreatedAt], [s0].[FinancialReportId], [s0].[IsAcknowledged], [s0].[Message], [s0].[Metadata], [s0].[Severity], [s0].[ThresholdValue], [s0].[Title], [s0].[TriggerKeywords], [s0].[TriggerMetric], [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc]
+FROM (
+    SELECT TOP(@p) [s].[Id], [s].[AcknowledgedAt], [s].[AcknowledgedBy], [s].[ActualValue], [s].[AlertType], [s].[CompanyName], [s].[CreatedAt], [s].[FinancialReportId], [s].[IsAcknowledged], [s].[Message], [s].[Metadata], [s].[Severity], [s].[ThresholdValue], [s].[Title], [s].[TriggerKeywords], [s].[TriggerMetric]
+    FROM [SmartAlerts] AS [s]
+    ORDER BY [s].[CreatedAt] DESC
+) AS [s0]
+LEFT JOIN [FinancialReports] AS [f] ON [s0].[FinancialReportId] = [f].[Id]
+ORDER BY [s0].[CreatedAt] DESC
+2026-01-21 13:11:52.572 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Alfanar.MarketIntel.Domain.Entities.SmartAlert, Alfanar.MarketIntel.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-01-21 13:11:52.585 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api) in 71.8046ms
+2026-01-21 13:11:52.585 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:11:52.585 +03:00 [INF] HTTP GET /api/alerts/recent responded 200 in 76.8934 ms
+2026-01-21 13:11:52.585 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/alerts/recent - 200 null application/json; charset=utf-8 78.6893ms
+2026-01-21 13:12:56.428 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=10 - null null
+2026-01-21 13:12:56.431 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:12:56.432 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:12:56.442 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:12:56.445 +03:00 [INF] Google AI Analyzer initialized with model: gemini-2.5-flash
+2026-01-21 13:12:56.446 +03:00 [INF] File storage initialized at: storage/reports
+2026-01-21 13:12:56.488 +03:00 [INF] Executed DbCommand (6ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [f0].[Id], [f0].[CompanyName], [f0].[CreatedUtc], [f0].[DownloadUrl], [f0].[ErrorMessage], [f0].[ExtractedText], [f0].[FilePath], [f0].[FileSizeBytes], [f0].[FiscalQuarter], [f0].[FiscalYear], [f0].[IsProcessed], [f0].[Language], [f0].[Metadata], [f0].[PageCount], [f0].[ProcessedUtc], [f0].[ProcessingStatus], [f0].[PublishedDate], [f0].[Region], [f0].[ReportType], [f0].[RequiredOcr], [f0].[Sector], [f0].[SourceUrl], [f0].[Title], [f0].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [f0]
+LEFT JOIN [ReportAnalyses] AS [r] ON [f0].[Id] = [r].[FinancialReportId]
+ORDER BY [f0].[c] DESC
+2026-01-21 13:12:56.560 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-01-21 13:12:56.564 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:12:56.572 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 130.6061ms
+2026-01-21 13:12:56.572 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:12:56.573 +03:00 [INF] HTTP GET /api/reports responded 200 in 143.0005 ms
+2026-01-21 13:12:56.573 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=10 - 200 null application/json; charset=utf-8 144.5805ms
+2026-01-21 13:12:58.517 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 13:12:58.518 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:12:58.518 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 13:12:58.518 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 13:12:58.523 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 13:12:58.524 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 13:12:58.525 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 6.6124ms
+2026-01-21 13:12:58.525 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 13:12:58.525 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 7.3404 ms
+2026-01-21 13:12:58.525 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 7.8287ms
+2026-01-21 13:13:54.971 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/feeds - null null
+2026-01-21 13:13:54.971 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:13:54.972 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.RssFeedsController.GetAll (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:54.977 +03:00 [INF] Route matched with {action = "GetAll", controller = "RssFeeds"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetAll() on controller Alfanar.MarketIntel.Api.Controllers.RssFeedsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:13:54.989 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [r].[Id], [r].[Category], [r].[CreatedUtc], [r].[IsActive], [r].[LastETag], [r].[LastFetchedUtc], [r].[LastModified], [r].[Name], [r].[Region], [r].[Url]
+FROM [RssFeeds] AS [r]
+ORDER BY [r].[Name]
+2026-01-21 13:13:54.999 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.RssFeedDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-01-21 13:13:55.001 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.RssFeedsController.GetAll (Alfanar.MarketIntel.Api) in 24.1565ms
+2026-01-21 13:13:55.001 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.RssFeedsController.GetAll (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:55.001 +03:00 [INF] HTTP GET /api/feeds responded 200 in 29.9500 ms
+2026-01-21 13:13:55.001 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/feeds - 200 null application/json; charset=utf-8 30.4454ms
+2026-01-21 13:13:57.287 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=10 - null null
+2026-01-21 13:13:57.287 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:13:57.287 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:57.287 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:13:57.288 +03:00 [INF] File storage initialized at: storage/reports
+2026-01-21 13:13:57.291 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [f0].[Id], [f0].[CompanyName], [f0].[CreatedUtc], [f0].[DownloadUrl], [f0].[ErrorMessage], [f0].[ExtractedText], [f0].[FilePath], [f0].[FileSizeBytes], [f0].[FiscalQuarter], [f0].[FiscalYear], [f0].[IsProcessed], [f0].[Language], [f0].[Metadata], [f0].[PageCount], [f0].[ProcessedUtc], [f0].[ProcessingStatus], [f0].[PublishedDate], [f0].[Region], [f0].[ReportType], [f0].[RequiredOcr], [f0].[Sector], [f0].[SourceUrl], [f0].[Title], [f0].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [f0]
+LEFT JOIN [ReportAnalyses] AS [r] ON [f0].[Id] = [r].[FinancialReportId]
+ORDER BY [f0].[c] DESC
+2026-01-21 13:13:57.329 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-01-21 13:13:57.329 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:13:57.330 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 42.3428ms
+2026-01-21 13:13:57.330 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:57.330 +03:00 [INF] HTTP GET /api/reports responded 200 in 42.9453 ms
+2026-01-21 13:13:57.330 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=10 - 200 null application/json; charset=utf-8 43.272ms
+2026-01-21 13:13:57.779 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=10 - null null
+2026-01-21 13:13:57.779 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:13:57.779 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:57.779 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:13:57.787 +03:00 [INF] File storage initialized at: storage/reports
+2026-01-21 13:13:57.790 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [f0].[Id], [f0].[CompanyName], [f0].[CreatedUtc], [f0].[DownloadUrl], [f0].[ErrorMessage], [f0].[ExtractedText], [f0].[FilePath], [f0].[FileSizeBytes], [f0].[FiscalQuarter], [f0].[FiscalYear], [f0].[IsProcessed], [f0].[Language], [f0].[Metadata], [f0].[PageCount], [f0].[ProcessedUtc], [f0].[ProcessingStatus], [f0].[PublishedDate], [f0].[Region], [f0].[ReportType], [f0].[RequiredOcr], [f0].[Sector], [f0].[SourceUrl], [f0].[Title], [f0].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [f0]
+LEFT JOIN [ReportAnalyses] AS [r] ON [f0].[Id] = [r].[FinancialReportId]
+ORDER BY [f0].[c] DESC
+2026-01-21 13:13:57.796 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-01-21 13:13:57.797 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:13:57.797 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 17.7154ms
+2026-01-21 13:13:57.797 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:57.797 +03:00 [INF] HTTP GET /api/reports responded 200 in 18.1495 ms
+2026-01-21 13:13:57.797 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=10 - 200 null application/json; charset=utf-8 18.468ms
+2026-01-21 13:13:58.208 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=10 - null null
+2026-01-21 13:13:58.208 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:13:58.208 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:58.215 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "News"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.NewsFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.NewsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:13:58.241 +03:00 [INF] Executed DbCommand (9ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [n1].[Id], [n1].[BodyText], [n1].[Category], [n1].[ClassificationConfidence], [n1].[CreatedUtc], [n1].[IsProcessed], [n1].[ProcessedUtc], [n1].[PublishedUtc], [n1].[Region], [n1].[RelatedFinancialReportId], [n1].[RssFeedId], [n1].[Source], [n1].[Summary], [n1].[Title], [n1].[Url], [s].[NewsArticleId], [s].[TagId], [s].[Id], [s].[CreatedUtc], [s].[Name], [s].[NormalizedName]
+FROM (
+    SELECT [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+    FROM [NewsArticles] AS [n]
+    ORDER BY [n].[PublishedUtc] DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [n1]
+LEFT JOIN (
+    SELECT [n0].[NewsArticleId], [n0].[TagId], [t].[Id], [t].[CreatedUtc], [t].[Name], [t].[NormalizedName]
+    FROM [NewsArticleTags] AS [n0]
+    INNER JOIN [Tags] AS [t] ON [n0].[TagId] = [t].[Id]
+) AS [s] ON [n1].[Id] = [s].[NewsArticleId]
+ORDER BY [n1].[PublishedUtc] DESC, [n1].[Id], [s].[NewsArticleId], [s].[TagId]
+2026-01-21 13:13:58.270 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NewsArticles] AS [n]
+2026-01-21 13:13:58.271 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.NewsArticleDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:13:58.273 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api) in 57.5588ms
+2026-01-21 13:13:58.273 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:58.273 +03:00 [INF] HTTP GET /api/news responded 200 in 64.9887 ms
+2026-01-21 13:13:58.273 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=10 - 200 null application/json; charset=utf-8 65.3221ms
+2026-01-21 13:13:58.982 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - null null
+2026-01-21 13:13:58.982 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:13:58.982 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:58.982 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:13:58.982 +03:00 [INF] File storage initialized at: storage/reports
+2026-01-21 13:13:58.983 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - null null
+2026-01-21 13:13:58.983 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/alerts/recent - null null
+2026-01-21 13:13:58.983 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:13:58.983 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:58.983 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "News"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.NewsFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.NewsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:13:58.984 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:13:58.984 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:58.984 +03:00 [INF] Route matched with {action = "GetRecent", controller = "Alerts"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetRecent(Int32) on controller Alfanar.MarketIntel.Api.Controllers.AlertsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:13:58.985 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [f0].[Id], [f0].[CompanyName], [f0].[CreatedUtc], [f0].[DownloadUrl], [f0].[ErrorMessage], [f0].[ExtractedText], [f0].[FilePath], [f0].[FileSizeBytes], [f0].[FiscalQuarter], [f0].[FiscalYear], [f0].[IsProcessed], [f0].[Language], [f0].[Metadata], [f0].[PageCount], [f0].[ProcessedUtc], [f0].[ProcessingStatus], [f0].[PublishedDate], [f0].[Region], [f0].[ReportType], [f0].[RequiredOcr], [f0].[Sector], [f0].[SourceUrl], [f0].[Title], [f0].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [f0]
+LEFT JOIN [ReportAnalyses] AS [r] ON [f0].[Id] = [r].[FinancialReportId]
+ORDER BY [f0].[c] DESC
+2026-01-21 13:13:58.991 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s0].[Id], [s0].[AcknowledgedAt], [s0].[AcknowledgedBy], [s0].[ActualValue], [s0].[AlertType], [s0].[CompanyName], [s0].[CreatedAt], [s0].[FinancialReportId], [s0].[IsAcknowledged], [s0].[Message], [s0].[Metadata], [s0].[Severity], [s0].[ThresholdValue], [s0].[Title], [s0].[TriggerKeywords], [s0].[TriggerMetric], [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc]
+FROM (
+    SELECT TOP(@p) [s].[Id], [s].[AcknowledgedAt], [s].[AcknowledgedBy], [s].[ActualValue], [s].[AlertType], [s].[CompanyName], [s].[CreatedAt], [s].[FinancialReportId], [s].[IsAcknowledged], [s].[Message], [s].[Metadata], [s].[Severity], [s].[ThresholdValue], [s].[Title], [s].[TriggerKeywords], [s].[TriggerMetric]
+    FROM [SmartAlerts] AS [s]
+    ORDER BY [s].[CreatedAt] DESC
+) AS [s0]
+LEFT JOIN [FinancialReports] AS [f] ON [s0].[FinancialReportId] = [f].[Id]
+ORDER BY [s0].[CreatedAt] DESC
+2026-01-21 13:13:58.992 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Alfanar.MarketIntel.Domain.Entities.SmartAlert, Alfanar.MarketIntel.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-01-21 13:13:58.992 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api) in 7.6156ms
+2026-01-21 13:13:58.992 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:58.992 +03:00 [INF] HTTP GET /api/alerts/recent responded 200 in 8.1332 ms
+2026-01-21 13:13:58.992 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/alerts/recent - 200 null application/json; charset=utf-8 8.9236ms
+2026-01-21 13:13:59.005 +03:00 [INF] Executed DbCommand (12ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [n1].[Id], [n1].[BodyText], [n1].[Category], [n1].[ClassificationConfidence], [n1].[CreatedUtc], [n1].[IsProcessed], [n1].[ProcessedUtc], [n1].[PublishedUtc], [n1].[Region], [n1].[RelatedFinancialReportId], [n1].[RssFeedId], [n1].[Source], [n1].[Summary], [n1].[Title], [n1].[Url], [s].[NewsArticleId], [s].[TagId], [s].[Id], [s].[CreatedUtc], [s].[Name], [s].[NormalizedName]
+FROM (
+    SELECT [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+    FROM [NewsArticles] AS [n]
+    ORDER BY [n].[PublishedUtc] DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [n1]
+LEFT JOIN (
+    SELECT [n0].[NewsArticleId], [n0].[TagId], [t].[Id], [t].[CreatedUtc], [t].[Name], [t].[NormalizedName]
+    FROM [NewsArticleTags] AS [n0]
+    INNER JOIN [Tags] AS [t] ON [n0].[TagId] = [t].[Id]
+) AS [s] ON [n1].[Id] = [s].[NewsArticleId]
+ORDER BY [n1].[PublishedUtc] DESC, [n1].[Id], [s].[NewsArticleId], [s].[TagId]
+2026-01-21 13:13:59.008 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-01-21 13:13:59.008 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:13:59.014 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 31.2963ms
+2026-01-21 13:13:59.014 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:59.014 +03:00 [INF] HTTP GET /api/reports responded 200 in 31.9250 ms
+2026-01-21 13:13:59.014 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 32.2806ms
+2026-01-21 13:13:59.024 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NewsArticles] AS [n]
+2026-01-21 13:13:59.024 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.NewsArticleDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:13:59.027 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api) in 43.3562ms
+2026-01-21 13:13:59.027 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:13:59.027 +03:00 [INF] HTTP GET /api/news responded 200 in 43.7057 ms
+2026-01-21 13:13:59.027 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 43.9474ms
+2026-01-21 13:14:00.509 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=10 - null null
+2026-01-21 13:14:00.510 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:14:00.510 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:14:00.510 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "News"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.NewsFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.NewsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:14:00.517 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [n1].[Id], [n1].[BodyText], [n1].[Category], [n1].[ClassificationConfidence], [n1].[CreatedUtc], [n1].[IsProcessed], [n1].[ProcessedUtc], [n1].[PublishedUtc], [n1].[Region], [n1].[RelatedFinancialReportId], [n1].[RssFeedId], [n1].[Source], [n1].[Summary], [n1].[Title], [n1].[Url], [s].[NewsArticleId], [s].[TagId], [s].[Id], [s].[CreatedUtc], [s].[Name], [s].[NormalizedName]
+FROM (
+    SELECT [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+    FROM [NewsArticles] AS [n]
+    ORDER BY [n].[PublishedUtc] DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [n1]
+LEFT JOIN (
+    SELECT [n0].[NewsArticleId], [n0].[TagId], [t].[Id], [t].[CreatedUtc], [t].[Name], [t].[NormalizedName]
+    FROM [NewsArticleTags] AS [n0]
+    INNER JOIN [Tags] AS [t] ON [n0].[TagId] = [t].[Id]
+) AS [s] ON [n1].[Id] = [s].[NewsArticleId]
+ORDER BY [n1].[PublishedUtc] DESC, [n1].[Id], [s].[NewsArticleId], [s].[TagId]
+2026-01-21 13:14:00.518 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NewsArticles] AS [n]
+2026-01-21 13:14:00.518 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.NewsArticleDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:14:00.518 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api) in 7.6124ms
+2026-01-21 13:14:00.518 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:14:00.518 +03:00 [INF] HTTP GET /api/news responded 200 in 8.5691 ms
+2026-01-21 13:14:00.518 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=10 - 200 null application/json; charset=utf-8 8.8907ms
+2026-01-21 13:14:01.063 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - null null
+2026-01-21 13:14:01.063 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:14:01.063 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - null null
+2026-01-21 13:14:01.063 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:14:01.063 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/alerts/recent - null null
+2026-01-21 13:14:01.063 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:14:01.063 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:14:01.063 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:14:01.063 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:14:01.063 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:14:01.063 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "News"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.NewsFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.NewsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:14:01.063 +03:00 [INF] Route matched with {action = "GetRecent", controller = "Alerts"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetRecent(Int32) on controller Alfanar.MarketIntel.Api.Controllers.AlertsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:14:01.063 +03:00 [INF] File storage initialized at: storage/reports
+2026-01-21 13:14:01.065 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s0].[Id], [s0].[AcknowledgedAt], [s0].[AcknowledgedBy], [s0].[ActualValue], [s0].[AlertType], [s0].[CompanyName], [s0].[CreatedAt], [s0].[FinancialReportId], [s0].[IsAcknowledged], [s0].[Message], [s0].[Metadata], [s0].[Severity], [s0].[ThresholdValue], [s0].[Title], [s0].[TriggerKeywords], [s0].[TriggerMetric], [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc]
+FROM (
+    SELECT TOP(@p) [s].[Id], [s].[AcknowledgedAt], [s].[AcknowledgedBy], [s].[ActualValue], [s].[AlertType], [s].[CompanyName], [s].[CreatedAt], [s].[FinancialReportId], [s].[IsAcknowledged], [s].[Message], [s].[Metadata], [s].[Severity], [s].[ThresholdValue], [s].[Title], [s].[TriggerKeywords], [s].[TriggerMetric]
+    FROM [SmartAlerts] AS [s]
+    ORDER BY [s].[CreatedAt] DESC
+) AS [s0]
+LEFT JOIN [FinancialReports] AS [f] ON [s0].[FinancialReportId] = [f].[Id]
+ORDER BY [s0].[CreatedAt] DESC
+2026-01-21 13:14:01.065 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [f0].[Id], [f0].[CompanyName], [f0].[CreatedUtc], [f0].[DownloadUrl], [f0].[ErrorMessage], [f0].[ExtractedText], [f0].[FilePath], [f0].[FileSizeBytes], [f0].[FiscalQuarter], [f0].[FiscalYear], [f0].[IsProcessed], [f0].[Language], [f0].[Metadata], [f0].[PageCount], [f0].[ProcessedUtc], [f0].[ProcessingStatus], [f0].[PublishedDate], [f0].[Region], [f0].[ReportType], [f0].[RequiredOcr], [f0].[Sector], [f0].[SourceUrl], [f0].[Title], [f0].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [f0]
+LEFT JOIN [ReportAnalyses] AS [r] ON [f0].[Id] = [r].[FinancialReportId]
+ORDER BY [f0].[c] DESC
+2026-01-21 13:14:01.065 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Alfanar.MarketIntel.Domain.Entities.SmartAlert, Alfanar.MarketIntel.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-01-21 13:14:01.065 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api) in 2.2574ms
+2026-01-21 13:14:01.066 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:14:01.066 +03:00 [INF] HTTP GET /api/alerts/recent responded 200 in 2.6266 ms
+2026-01-21 13:14:01.066 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [n1].[Id], [n1].[BodyText], [n1].[Category], [n1].[ClassificationConfidence], [n1].[CreatedUtc], [n1].[IsProcessed], [n1].[ProcessedUtc], [n1].[PublishedUtc], [n1].[Region], [n1].[RelatedFinancialReportId], [n1].[RssFeedId], [n1].[Source], [n1].[Summary], [n1].[Title], [n1].[Url], [s].[NewsArticleId], [s].[TagId], [s].[Id], [s].[CreatedUtc], [s].[Name], [s].[NormalizedName]
+FROM (
+    SELECT [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+    FROM [NewsArticles] AS [n]
+    ORDER BY [n].[PublishedUtc] DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [n1]
+LEFT JOIN (
+    SELECT [n0].[NewsArticleId], [n0].[TagId], [t].[Id], [t].[CreatedUtc], [t].[Name], [t].[NormalizedName]
+    FROM [NewsArticleTags] AS [n0]
+    INNER JOIN [Tags] AS [t] ON [n0].[TagId] = [t].[Id]
+) AS [s] ON [n1].[Id] = [s].[NewsArticleId]
+ORDER BY [n1].[PublishedUtc] DESC, [n1].[Id], [s].[NewsArticleId], [s].[TagId]
+2026-01-21 13:14:01.066 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/alerts/recent - 200 null application/json; charset=utf-8 3.4897ms
+2026-01-21 13:14:01.076 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-01-21 13:14:01.076 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:14:01.077 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 13.9033ms
+2026-01-21 13:14:01.077 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:14:01.077 +03:00 [INF] HTTP GET /api/reports responded 200 in 14.3860 ms
+2026-01-21 13:14:01.077 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 14.674ms
+2026-01-21 13:14:01.086 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NewsArticles] AS [n]
+2026-01-21 13:14:01.086 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.NewsArticleDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:14:01.089 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api) in 25.2815ms
+2026-01-21 13:14:01.089 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:14:01.089 +03:00 [INF] HTTP GET /api/news responded 200 in 25.7011 ms
+2026-01-21 13:14:01.089 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 25.9821ms
+2026-01-21 13:17:21.261 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 13:17:21.261 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 13:17:21.261 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 13:17:21.263 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 13:17:21.264 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 13:17:21.264 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 3.021ms
+2026-01-21 13:17:21.264 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 13:17:21.264 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 3.4125 ms
+2026-01-21 13:17:21.264 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 3.7243ms
+2026-01-21 13:18:22.903 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null null
+2026-01-21 13:18:22.904 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:22.904 +03:00 [INF] HTTP OPTIONS /notifications-hub/negotiate responded 204 in 0.7135 ms
+2026-01-21 13:18:22.905 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 204 null null 1.0572ms
+2026-01-21 13:18:22.907 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null 0
+2026-01-21 13:18:22.907 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:22.907 +03:00 [INF] Executing endpoint '/notifications-hub/negotiate'
+2026-01-21 13:18:22.909 +03:00 [INF] Executed endpoint '/notifications-hub/negotiate'
+2026-01-21 13:18:22.909 +03:00 [INF] HTTP POST /notifications-hub/negotiate responded 200 in 2.4699 ms
+2026-01-21 13:18:22.909 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 200 316 application/json 2.819ms
+2026-01-21 13:18:22.918 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/notifications-hub?id=O6kr6d4B3UXRTEW-Zmx3qg - null null
+2026-01-21 13:18:22.918 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:22.918 +03:00 [INF] Executing endpoint '/notifications-hub'
+2026-01-21 13:18:22.926 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - null null
+2026-01-21 13:18:22.926 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:22.926 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:22.927 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:18:22.927 +03:00 [INF] File storage initialized at: storage/reports
+2026-01-21 13:18:22.927 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - null null
+2026-01-21 13:18:22.927 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:22.927 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:22.927 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "News"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.NewsFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.NewsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:18:22.928 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/alerts/recent - null null
+2026-01-21 13:18:22.928 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:22.928 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:22.928 +03:00 [INF] Route matched with {action = "GetRecent", controller = "Alerts"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetRecent(Int32) on controller Alfanar.MarketIntel.Api.Controllers.AlertsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:18:22.929 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [f0].[Id], [f0].[CompanyName], [f0].[CreatedUtc], [f0].[DownloadUrl], [f0].[ErrorMessage], [f0].[ExtractedText], [f0].[FilePath], [f0].[FileSizeBytes], [f0].[FiscalQuarter], [f0].[FiscalYear], [f0].[IsProcessed], [f0].[Language], [f0].[Metadata], [f0].[PageCount], [f0].[ProcessedUtc], [f0].[ProcessingStatus], [f0].[PublishedDate], [f0].[Region], [f0].[ReportType], [f0].[RequiredOcr], [f0].[Sector], [f0].[SourceUrl], [f0].[Title], [f0].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [f0]
+LEFT JOIN [ReportAnalyses] AS [r] ON [f0].[Id] = [r].[FinancialReportId]
+ORDER BY [f0].[c] DESC
+2026-01-21 13:18:22.935 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [n1].[Id], [n1].[BodyText], [n1].[Category], [n1].[ClassificationConfidence], [n1].[CreatedUtc], [n1].[IsProcessed], [n1].[ProcessedUtc], [n1].[PublishedUtc], [n1].[Region], [n1].[RelatedFinancialReportId], [n1].[RssFeedId], [n1].[Source], [n1].[Summary], [n1].[Title], [n1].[Url], [s].[NewsArticleId], [s].[TagId], [s].[Id], [s].[CreatedUtc], [s].[Name], [s].[NormalizedName]
+FROM (
+    SELECT [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+    FROM [NewsArticles] AS [n]
+    ORDER BY [n].[PublishedUtc] DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [n1]
+LEFT JOIN (
+    SELECT [n0].[NewsArticleId], [n0].[TagId], [t].[Id], [t].[CreatedUtc], [t].[Name], [t].[NormalizedName]
+    FROM [NewsArticleTags] AS [n0]
+    INNER JOIN [Tags] AS [t] ON [n0].[TagId] = [t].[Id]
+) AS [s] ON [n1].[Id] = [s].[NewsArticleId]
+ORDER BY [n1].[PublishedUtc] DESC, [n1].[Id], [s].[NewsArticleId], [s].[TagId]
+2026-01-21 13:18:22.937 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s0].[Id], [s0].[AcknowledgedAt], [s0].[AcknowledgedBy], [s0].[ActualValue], [s0].[AlertType], [s0].[CompanyName], [s0].[CreatedAt], [s0].[FinancialReportId], [s0].[IsAcknowledged], [s0].[Message], [s0].[Metadata], [s0].[Severity], [s0].[ThresholdValue], [s0].[Title], [s0].[TriggerKeywords], [s0].[TriggerMetric], [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc]
+FROM (
+    SELECT TOP(@p) [s].[Id], [s].[AcknowledgedAt], [s].[AcknowledgedBy], [s].[ActualValue], [s].[AlertType], [s].[CompanyName], [s].[CreatedAt], [s].[FinancialReportId], [s].[IsAcknowledged], [s].[Message], [s].[Metadata], [s].[Severity], [s].[ThresholdValue], [s].[Title], [s].[TriggerKeywords], [s].[TriggerMetric]
+    FROM [SmartAlerts] AS [s]
+    ORDER BY [s].[CreatedAt] DESC
+) AS [s0]
+LEFT JOIN [FinancialReports] AS [f] ON [s0].[FinancialReportId] = [f].[Id]
+ORDER BY [s0].[CreatedAt] DESC
+2026-01-21 13:18:22.937 +03:00 [INF] Client connected: h33alXJ8S7cc5tXRPKe75Q from ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"]
+2026-01-21 13:18:22.938 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Alfanar.MarketIntel.Domain.Entities.SmartAlert, Alfanar.MarketIntel.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-01-21 13:18:22.938 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api) in 9.8175ms
+2026-01-21 13:18:22.938 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:22.938 +03:00 [INF] HTTP GET /api/alerts/recent responded 200 in 10.1414 ms
+2026-01-21 13:18:22.938 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/alerts/recent - 200 null application/json; charset=utf-8 10.3494ms
+2026-01-21 13:18:22.938 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-01-21 13:18:22.938 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:18:22.939 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 12.5671ms
+2026-01-21 13:18:22.939 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:22.939 +03:00 [INF] HTTP GET /api/reports responded 200 in 12.9400 ms
+2026-01-21 13:18:22.939 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 13.1723ms
+2026-01-21 13:18:22.954 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NewsArticles] AS [n]
+2026-01-21 13:18:22.954 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.NewsArticleDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:18:22.956 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api) in 28.393ms
+2026-01-21 13:18:22.956 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:22.956 +03:00 [INF] HTTP GET /api/news responded 200 in 28.7977 ms
+2026-01-21 13:18:22.956 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 28.9903ms
+2026-01-21 13:18:23.209 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null null
+2026-01-21 13:18:23.209 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:23.210 +03:00 [INF] HTTP OPTIONS /notifications-hub/negotiate responded 204 in 0.1678 ms
+2026-01-21 13:18:23.210 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 204 null null 0.4568ms
+2026-01-21 13:18:23.211 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - null 0
+2026-01-21 13:18:23.211 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:23.211 +03:00 [INF] Executing endpoint '/notifications-hub/negotiate'
+2026-01-21 13:18:23.211 +03:00 [INF] Executed endpoint '/notifications-hub/negotiate'
+2026-01-21 13:18:23.211 +03:00 [INF] HTTP POST /notifications-hub/negotiate responded 200 in 0.4431 ms
+2026-01-21 13:18:23.211 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/notifications-hub/negotiate?negotiateVersion=1 - 200 316 application/json 0.6319ms
+2026-01-21 13:18:23.263 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/notifications-hub?id=-KLpyTDwpKymAYQn5ERuDg - null null
+2026-01-21 13:18:23.263 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:23.263 +03:00 [INF] Executing endpoint '/notifications-hub'
+2026-01-21 13:18:23.271 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - null null
+2026-01-21 13:18:23.272 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:23.272 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:23.272 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "Reports"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.ReportFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.ReportsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:18:23.272 +03:00 [INF] File storage initialized at: storage/reports
+2026-01-21 13:18:23.272 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - null null
+2026-01-21 13:18:23.273 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:23.273 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:23.273 +03:00 [INF] Route matched with {action = "GetFiltered", controller = "News"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetFiltered(Alfanar.MarketIntel.Application.DTOs.NewsFilterDto) on controller Alfanar.MarketIntel.Api.Controllers.NewsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:18:23.273 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/alerts/recent - null null
+2026-01-21 13:18:23.273 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:23.273 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:23.273 +03:00 [INF] Route matched with {action = "GetRecent", controller = "Alerts"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetRecent(Int32) on controller Alfanar.MarketIntel.Api.Controllers.AlertsController (Alfanar.MarketIntel.Api).
+2026-01-21 13:18:23.275 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s0].[Id], [s0].[AcknowledgedAt], [s0].[AcknowledgedBy], [s0].[ActualValue], [s0].[AlertType], [s0].[CompanyName], [s0].[CreatedAt], [s0].[FinancialReportId], [s0].[IsAcknowledged], [s0].[Message], [s0].[Metadata], [s0].[Severity], [s0].[ThresholdValue], [s0].[Title], [s0].[TriggerKeywords], [s0].[TriggerMetric], [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc]
+FROM (
+    SELECT TOP(@p) [s].[Id], [s].[AcknowledgedAt], [s].[AcknowledgedBy], [s].[ActualValue], [s].[AlertType], [s].[CompanyName], [s].[CreatedAt], [s].[FinancialReportId], [s].[IsAcknowledged], [s].[Message], [s].[Metadata], [s].[Severity], [s].[ThresholdValue], [s].[Title], [s].[TriggerKeywords], [s].[TriggerMetric]
+    FROM [SmartAlerts] AS [s]
+    ORDER BY [s].[CreatedAt] DESC
+) AS [s0]
+LEFT JOIN [FinancialReports] AS [f] ON [s0].[FinancialReportId] = [f].[Id]
+ORDER BY [s0].[CreatedAt] DESC
+2026-01-21 13:18:23.275 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [f0].[Id], [f0].[CompanyName], [f0].[CreatedUtc], [f0].[DownloadUrl], [f0].[ErrorMessage], [f0].[ExtractedText], [f0].[FilePath], [f0].[FileSizeBytes], [f0].[FiscalQuarter], [f0].[FiscalYear], [f0].[IsProcessed], [f0].[Language], [f0].[Metadata], [f0].[PageCount], [f0].[ProcessedUtc], [f0].[ProcessingStatus], [f0].[PublishedDate], [f0].[Region], [f0].[ReportType], [f0].[RequiredOcr], [f0].[Sector], [f0].[SourceUrl], [f0].[Title], [f0].[UpdatedUtc], [r].[Id], [r].[AiModel], [r].[AnalysisConfidence], [r].[CompetitivePosition], [r].[CreatedUtc], [r].[ExecutiveSummary], [r].[FinancialMetrics], [r].[FinancialReportId], [r].[InvestmentThesis], [r].[KeyHighlights], [r].[MarketOutlook], [r].[ProcessingTimeMs], [r].[RelatedEntities], [r].[RiskFactors], [r].[SentimentLabel], [r].[SentimentScore], [r].[StrategicInitiatives], [r].[Tags], [r].[TokensUsed], [r].[UpdatedUtc]
+FROM (
+    SELECT [f].[Id], [f].[CompanyName], [f].[CreatedUtc], [f].[DownloadUrl], [f].[ErrorMessage], [f].[ExtractedText], [f].[FilePath], [f].[FileSizeBytes], [f].[FiscalQuarter], [f].[FiscalYear], [f].[IsProcessed], [f].[Language], [f].[Metadata], [f].[PageCount], [f].[ProcessedUtc], [f].[ProcessingStatus], [f].[PublishedDate], [f].[Region], [f].[ReportType], [f].[RequiredOcr], [f].[Sector], [f].[SourceUrl], [f].[Title], [f].[UpdatedUtc], COALESCE([f].[PublishedDate], [f].[CreatedUtc]) AS [c]
+    FROM [FinancialReports] AS [f]
+    ORDER BY COALESCE([f].[PublishedDate], [f].[CreatedUtc]) DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [f0]
+LEFT JOIN [ReportAnalyses] AS [r] ON [f0].[Id] = [r].[FinancialReportId]
+ORDER BY [f0].[c] DESC
+2026-01-21 13:18:23.276 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Alfanar.MarketIntel.Domain.Entities.SmartAlert, Alfanar.MarketIntel.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-01-21 13:18:23.276 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api) in 2.7645ms
+2026-01-21 13:18:23.276 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.AlertsController.GetRecent (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:23.276 +03:00 [INF] HTTP GET /api/alerts/recent responded 200 in 3.0609 ms
+2026-01-21 13:18:23.276 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/alerts/recent - 200 null application/json; charset=utf-8 3.2482ms
+2026-01-21 13:18:23.276 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@p='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [n1].[Id], [n1].[BodyText], [n1].[Category], [n1].[ClassificationConfidence], [n1].[CreatedUtc], [n1].[IsProcessed], [n1].[ProcessedUtc], [n1].[PublishedUtc], [n1].[Region], [n1].[RelatedFinancialReportId], [n1].[RssFeedId], [n1].[Source], [n1].[Summary], [n1].[Title], [n1].[Url], [s].[NewsArticleId], [s].[TagId], [s].[Id], [s].[CreatedUtc], [s].[Name], [s].[NormalizedName]
+FROM (
+    SELECT [n].[Id], [n].[BodyText], [n].[Category], [n].[ClassificationConfidence], [n].[CreatedUtc], [n].[IsProcessed], [n].[ProcessedUtc], [n].[PublishedUtc], [n].[Region], [n].[RelatedFinancialReportId], [n].[RssFeedId], [n].[Source], [n].[Summary], [n].[Title], [n].[Url]
+    FROM [NewsArticles] AS [n]
+    ORDER BY [n].[PublishedUtc] DESC
+    OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY
+) AS [n1]
+LEFT JOIN (
+    SELECT [n0].[NewsArticleId], [n0].[TagId], [t].[Id], [t].[CreatedUtc], [t].[Name], [t].[NormalizedName]
+    FROM [NewsArticleTags] AS [n0]
+    INNER JOIN [Tags] AS [t] ON [n0].[TagId] = [t].[Id]
+) AS [s] ON [n1].[Id] = [s].[NewsArticleId]
+ORDER BY [n1].[PublishedUtc] DESC, [n1].[Id], [s].[NewsArticleId], [s].[TagId]
+2026-01-21 13:18:23.294 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [FinancialReports] AS [f]
+2026-01-21 13:18:23.295 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.FinancialReportDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:18:23.296 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api) in 23.7625ms
+2026-01-21 13:18:23.296 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.ReportsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:23.296 +03:00 [INF] HTTP GET /api/reports responded 200 in 24.3791 ms
+2026-01-21 13:18:23.296 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/reports?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 24.7457ms
+2026-01-21 13:18:23.305 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NewsArticles] AS [n]
+2026-01-21 13:18:23.305 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType35`7[[System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.NewsArticleDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-01-21 13:18:23.308 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api) in 34.9208ms
+2026-01-21 13:18:23.308 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.NewsController.GetFiltered (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:23.308 +03:00 [INF] HTTP GET /api/news responded 200 in 35.3562 ms
+2026-01-21 13:18:23.308 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/news?page=1&pageSize=1000 - 200 null application/json; charset=utf-8 35.6153ms
+2026-01-21 13:18:23.329 +03:00 [INF] Client connected: 6RKOWA3VJwUB7a-YDF-blg from ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"]
+2026-01-21 13:18:37.485 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - null null
+2026-01-21 13:18:37.485 +03:00 [INF] CORS policy execution successful.
+2026-01-21 13:18:37.486 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:37.486 +03:00 [INF] Route matched with {action = "GetCompanyContact", controller = "CompanyContact"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetCompanyContact(System.String) on controller Alfanar.MarketIntel.Api.Controllers.CompanyContactController (Alfanar.MarketIntel.Api).
+2026-01-21 13:18:37.487 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@ToLower='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT [c1].[Id], [c1].[Company], [c1].[CreatedAt], [c1].[HeadquartersAddressLine1], [c1].[HeadquartersAddressLine2], [c1].[HeadquartersCity], [c1].[HeadquartersCountry], [c1].[HeadquartersCountryCode], [c1].[HeadquartersLandmark], [c1].[HeadquartersPoBox], [c1].[HeadquartersPostalCode], [c1].[MainPhone], [c1].[PhoneAvailabilityDays], [c1].[PhoneAvailabilityHours], [c1].[PhoneAvailabilityTimezone], [c1].[SalesEmail], [c1].[SupportEmail], [c1].[TollFreePhone], [c1].[UpdatedAt], [c0].[Id], [c0].[Area], [c0].[Building], [c0].[BuildingNumber], [c0].[City], [c0].[CompanyContactInfoId], [c0].[CompanyName], [c0].[Country], [c0].[CreatedAt], [c0].[District], [c0].[Floor], [c0].[OfficeType], [c0].[PoBox], [c0].[Region], [c0].[Street], [c0].[Tower], [c0].[UpdatedAt]
+FROM (
+    SELECT TOP(1) [c].[Id], [c].[Company], [c].[CreatedAt], [c].[HeadquartersAddressLine1], [c].[HeadquartersAddressLine2], [c].[HeadquartersCity], [c].[HeadquartersCountry], [c].[HeadquartersCountryCode], [c].[HeadquartersLandmark], [c].[HeadquartersPoBox], [c].[HeadquartersPostalCode], [c].[MainPhone], [c].[PhoneAvailabilityDays], [c].[PhoneAvailabilityHours], [c].[PhoneAvailabilityTimezone], [c].[SalesEmail], [c].[SupportEmail], [c].[TollFreePhone], [c].[UpdatedAt]
+    FROM [CompanyContactInfo] AS [c]
+    WHERE LOWER([c].[Company]) = @ToLower
+) AS [c1]
+LEFT JOIN [CompanyOffices] AS [c0] ON [c1].[Id] = [c0].[CompanyContactInfoId]
+ORDER BY [c1].[Id]
+2026-01-21 13:18:37.488 +03:00 [INF] Executing OkObjectResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.CompanyContactInfoDto'.
+2026-01-21 13:18:37.488 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api) in 2.2164ms
+2026-01-21 13:18:37.488 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.CompanyContactController.GetCompanyContact (Alfanar.MarketIntel.Api)'
+2026-01-21 13:18:37.488 +03:00 [INF] HTTP GET /api/companycontact/alfanar responded 200 in 2.5852 ms
+2026-01-21 13:18:37.488 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/api/companycontact/alfanar - 200 null application/json; charset=utf-8 2.8647ms
+2026-01-21 13:18:53.165 +03:00 [INF] Client disconnected: 6RKOWA3VJwUB7a-YDF-blg
+2026-01-21 13:18:53.166 +03:00 [INF] Executed endpoint '/notifications-hub'
+2026-01-21 13:18:53.167 +03:00 [INF] HTTP GET /notifications-hub responded 101 in 29904.0050 ms
+2026-01-21 13:18:53.167 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/notifications-hub?id=-KLpyTDwpKymAYQn5ERuDg - 101 null null 29904.3904ms
