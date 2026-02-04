@@ -170,12 +170,27 @@ class FinancialReportCrawler:
                 logger.info(f"Found {len(result.pdf_links)} PDFs on {current_url}")
                 self.found_pdfs.extend(result.pdf_links)
             
-            # Add internal links to queue
+            # Add internal links to queue (prioritize links matching include patterns)
+            priority_links = []
+            regular_links = []
+            
             for link in result.internal_links:
                 if link not in self.visited:
-                    # Check if link matches include patterns
                     if self._should_follow_link(link, base_domain):
-                        queue.append((link, depth + 1))
+                        # Prioritize links matching include patterns
+                        is_priority = any(re.search(pattern, link.lower()) for pattern in self.config.include_patterns)
+                        if is_priority:
+                            priority_links.append((link, depth + 1))
+                        else:
+                            regular_links.append((link, depth + 1))
+            
+            # Add priority links first (to front of queue for BFS)
+            for link_tuple in priority_links:
+                queue.append(link_tuple)
+            
+            # Then add regular links
+            for link_tuple in regular_links:
+                queue.append(link_tuple)
             
             # Rate limiting
             time.sleep(self.config.delay_seconds)
@@ -354,12 +369,10 @@ class FinancialReportCrawler:
             if re.search(pattern, url_lower):
                 return False
         
-        # Check include patterns
-        for pattern in self.config.include_patterns:
-            if re.search(pattern, url_lower, re.IGNORECASE):
-                return True
-        
-        return False
+        # CHANGED: Follow ALL internal links (don't require include_patterns match)
+        # This allows discovery of investor relations pages from homepage
+        # The include_patterns are still used to extract PDFs (_is_relevant_document)
+        return True
     
     def _classify_report_type(self, text: str, url: str) -> str:
         """Classify the type of financial report"""

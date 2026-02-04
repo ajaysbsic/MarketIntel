@@ -1,4 +1,4 @@
-using Alfanar.MarketIntel.Api.Hubs;
+﻿using Alfanar.MarketIntel.Api.Hubs;
 using Alfanar.MarketIntel.Application.DTOs;
 using Alfanar.MarketIntel.Application.Interfaces;
 using FluentValidation;
@@ -40,6 +40,17 @@ public class ReportsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> IngestReport([FromBody] IngestReportRequest request)
     {
+        _logger.LogInformation(" IngestReport API called: {Title}", request.Title);
+        _logger.LogInformation("   Metadata: {MetadataCount} keys", request.Metadata?.Count ?? 0);
+        if (request.Metadata != null)
+        {
+            _logger.LogInformation("   Keys: {Keys}", string.Join(", ", request.Metadata.Keys));
+            if (request.Metadata.TryGetValue("analysis", out var analysis))
+            {
+                _logger.LogInformation("    Analysis found: type={Type}", analysis?.GetType().Name ?? "null");
+            }
+        }
+
         var validationResult = await _validator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
@@ -175,6 +186,37 @@ public class ReportsController : ControllerBase
             return NotFound(new { message = result.Error });
 
         return Ok(result.Data);
+    }
+
+    /// <summary>
+    /// DEBUG: Get latest report with analysis and raw metadata for verification
+    /// </summary>
+    [HttpGet("debug/latest")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetLatestDebug()
+    {
+        var latest = await _reportService.GetRecentReportsAsync(1);
+        if (!latest.IsSuccess || latest.Data == null || latest.Data.Count == 0)
+            return NotFound("No reports found");
+
+        var report = latest.Data.First();
+        
+        // Get analysis count from DB
+        var analysis = await _reportService.GetAnalysisAsync(report.Id);
+        
+        return Ok(new
+        {
+            Report = new
+            {
+                report.Id,
+                report.Title,
+                report.CompanyName,
+                report.CreatedUtc
+            },
+            AnalysisInDb = analysis.IsSuccess ? analysis.Data : null,
+            HasAnalysisRecord = analysis.IsSuccess && analysis.Data != null
+        });
     }
 
     /// <summary>
@@ -463,4 +505,55 @@ public class ReportsController : ControllerBase
             return StatusCode(500, new { message = "An error occurred during batch analysis" });
         }
     }
+
+    /// <summary>
+    /// Extract analysis from saved report metadata for reports that have analysis but no ReportAnalyses record
+    /// This is a fallback mechanism to extract analysis that was included in the report metadata but wasn't extracted during ingestion
+    /// </summary>
+    [HttpPost("extract-from-metadata")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ExtractAnalysisFromMetadata([FromQuery] int maxCount = 50)
+    {
+        try
+        {
+            _logger.LogInformation(" Extraction from metadata requested for up to {MaxCount} reports", maxCount);
+
+            // This will be handled by the ReportService - we need to add a method to get reports with analysis in metadata
+            var result = await _reportService.ExtractAnalysisFromMetadataAsync(maxCount);
+
+            if (!result.IsSuccess)
+                return BadRequest(new { message = result.Error });
+
+            return Ok(result.Data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, " Exception during extraction from metadata");
+            return StatusCode(500, new { message = "An error occurred during extraction from metadata" });
+        }
+    }
+
+    /// <summary>
+    /// DIAGNOSTIC: Test SaveChangesAsync directly with demo data
+    /// </summary>
+    [HttpPost("test-save-analysis")]
+    public async Task<IActionResult> TestSaveAnalysis()
+    {
+        _logger.LogInformation(" TEST ENDPOINT: TestSaveAnalysis called");
+        try
+        {
+            var testResult = await _reportService.TestSaveAnalysisAsync();
+            if (!testResult.IsSuccess)
+                return BadRequest(new { message = testResult.Error });
+
+            return Ok(testResult.Data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, " TEST ENDPOINT: Exception occurred");
+            return StatusCode(500, new { message = $"Test failed: {ex.Message}", innerException = ex.InnerException?.Message });
+        }
+    }
 }
+

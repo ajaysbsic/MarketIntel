@@ -1,4 +1,4 @@
-using Alfanar.MarketIntel.Application.Common;
+﻿using Alfanar.MarketIntel.Application.Common;
 using Alfanar.MarketIntel.Application.Interfaces;
 using Alfanar.MarketIntel.Domain.Entities;
 using Microsoft.Extensions.Caching.Distributed;
@@ -84,7 +84,7 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
                     var cachedResult = await _cache.GetStringAsync(cacheKey);
                     if (!string.IsNullOrWhiteSpace(cachedResult))
                     {
-                        _logger.LogInformation("✓ Cache hit for {Company} {ReportType}", companyName, reportType);
+                        _logger.LogInformation(" Cache hit for {Company} {ReportType}", companyName, reportType);
                         var cachedAnalysis = JsonSerializer.Deserialize<ReportAnalysis>(cachedResult);
                         if (cachedAnalysis != null)
                             return Result<ReportAnalysis>.Success(cachedAnalysis);
@@ -102,12 +102,12 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
             Result<string> analysisResult;
             if (_enableStreamingAnalysis)
             {
-                _logger.LogInformation("📡 Using streaming analysis for {Company} {ReportType}", companyName, reportType);
+                _logger.LogInformation(" Using streaming analysis for {Company} {ReportType}", companyName, reportType);
                 analysisResult = await AnalyzeWithStreamingAsync(prompt);
             }
             else
             {
-                _logger.LogInformation("→ Using standard analysis for {Company} {ReportType}", companyName, reportType);
+                _logger.LogInformation(" Using standard analysis for {Company} {ReportType}", companyName, reportType);
                 analysisResult = await AnalyzeWithStandardAsync(prompt);
             }
 
@@ -118,7 +118,7 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
             if (string.IsNullOrWhiteSpace(content))
                 return Result<ReportAnalysis>.Failure("Empty response from AI");
 
-            _logger.LogInformation("✓ Received response from Google AI ({Chars} chars)", content.Length);
+            _logger.LogInformation(" Received response from Google AI ({Chars} chars)", content.Length);
 
             // Parse JSON response - handle markdown wrapped JSON
             var jsonContent = ExtractJsonFromResponse(content);
@@ -170,7 +170,7 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
                         AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)
                     };
                     await _cache.SetStringAsync(cacheKey, serialized, cacheOptions);
-                    _logger.LogInformation("💾 Analysis cached for {Company} (24 hours)", companyName);
+                    _logger.LogInformation(" Analysis cached for {Company} (24 hours)", companyName);
                 }
                 catch (Exception ex)
                 {
@@ -178,7 +178,7 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
                 }
             }
 
-            _logger.LogInformation("✓ Analysis completed for {Company} in {Ms}ms", companyName, analysis.ProcessingTimeMs);
+            _logger.LogInformation(" Analysis completed for {Company} in {Ms}ms", companyName, analysis.ProcessingTimeMs);
             return Result<ReportAnalysis>.Success(analysis);
         }
         catch (Exception ex)
@@ -281,7 +281,7 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
 
             foreach (var (chunk, index) in chunks.Select((c, i) => (c, i)))
             {
-                _logger.LogInformation("📡 Processing chunk {Chunk} of {Total}", index + 1, chunks.Count);
+                _logger.LogInformation(" Processing chunk {Chunk} of {Total}", index + 1, chunks.Count);
                 var result = await CallGeminiApiAsync(chunk);
                 if (result.IsSuccess && !string.IsNullOrWhiteSpace(result.Data))
                 {
@@ -334,7 +334,7 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("❌ Google AI API error ({StatusCode}): {Error}", response.StatusCode, errorContent);
+                _logger.LogError(" Google AI API error ({StatusCode}): {Error}", response.StatusCode, errorContent);
                 return Result<string>.Failure($"Google AI API error: {response.StatusCode}");
             }
 
@@ -343,13 +343,13 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
             // Check for safety issues
             if (result.TryGetProperty("promptFeedback", out var feedback))
             {
-                _logger.LogWarning("⚠️  Google AI prompt feedback: {Feedback}", feedback.GetRawText());
+                _logger.LogWarning("  Google AI prompt feedback: {Feedback}", feedback.GetRawText());
             }
 
             // Extract content from response
             if (!result.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
             {
-                _logger.LogError("❌ No candidates in Google AI response");
+                _logger.LogError(" No candidates in Google AI response");
                 return Result<string>.Failure("No analysis returned");
             }
 
@@ -365,7 +365,7 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Error calling Gemini API");
+            _logger.LogError(ex, " Error calling Gemini API");
             return Result<string>.Failure($"API call failed: {ex.Message}");
         }
     }

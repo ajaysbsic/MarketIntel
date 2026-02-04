@@ -17,5 +17,5 @@ RUN mkdir -p logs
 # Set Python path so src modules can be imported
 ENV PYTHONPATH=/app/src
 
-# Default command (can be overridden)
-CMD ["python", "src/rss_watcher.py"]
+# Default command - run the report watcher (v3 with intelligent crawler)
+CMD ["python", "src/report_watcher_v3.py"]

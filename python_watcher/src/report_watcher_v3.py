@@ -106,6 +106,7 @@ class ReportWatcherV3:
             'total_processed': 0,
             'total_new': 0,
             'total_errors': 0,
+            'analysis_attempts': 0,
             'existing_processed': 0,
             'pages_crawled': 0,
             'pdfs_found': 0
@@ -229,6 +230,15 @@ class ReportWatcherV3:
         
         for pdf in pdfs:
             fiscal_year = pdf.get('fiscal_year', 0)
+            # Convert to int if it's a string, handle None values
+            if fiscal_year is not None:
+                try:
+                    fiscal_year = int(fiscal_year) if isinstance(fiscal_year, str) else fiscal_year
+                except (ValueError, TypeError):
+                    fiscal_year = 0
+            else:
+                fiscal_year = 0
+            
             # Include current year or max 2 previous years
             if fiscal_year >= (current_year - 2):
                 filtered.append(pdf)
@@ -237,7 +247,7 @@ class ReportWatcherV3:
         
         # If nothing recent found, use the most recent available
         if not filtered and pdfs:
-            pdfs_sorted = sorted(pdfs, key=lambda x: x.get('fiscal_year', 0), reverse=True)
+            pdfs_sorted = sorted(pdfs, key=lambda x: int(x.get('fiscal_year', 0)) if x.get('fiscal_year') else 0, reverse=True)
             filtered = [pdfs_sorted[0]]
             logger.info(f"  ?? No recent reports found, using oldest available: {filtered[0]['title'][:40]} ({filtered[0].get('fiscal_year', 'N/A')})")
         
@@ -321,7 +331,7 @@ class ReportWatcherV3:
                 pdfs_sorted = sorted(
                     filtered_pdfs,
                     key=lambda x: (
-                        x.get('fiscal_year') or 0,
+                        int(x.get('fiscal_year', 0)) if x.get('fiscal_year') else 0,
                         x.get('fiscal_quarter', 'Q0')  # Q4 > Q3 > Q2 > Q1
                     ),
                     reverse=True
@@ -403,18 +413,28 @@ class ReportWatcherV3:
             
             logger.info(f"? Extracted {len(extraction['text'])} characters from {extraction['page_count']} pages")
             
-            # Analyze with AI (if enabled)
+            # Analyze with AI (if enabled and text is substantial)
             analysis = None
+            min_text_length = self.config.get('min_text_length_for_analysis', 5000)
+            max_analyses_per_run = self.config.get('max_analyses_per_run', 1)
+            
             if self.analyzer and self.config.get('enable_analysis', True):
-                logger.info(f"?? Analyzing document with AI...")
-                try:
-                    analysis = self.analyzer.analyze_report(
-                        extraction['text'],
-                        company_name
-                    )
-                    logger.info(f"? AI analysis complete")
-                except Exception as e:
-                    logger.warning(f"??  AI analysis failed: {e}")
+                if self.stats.get('analysis_attempts', 0) >= max_analyses_per_run:
+                    logger.warning(f"⏭️  Skipping analysis (max_analyses_per_run={max_analyses_per_run} reached)")
+                # Skip analysis for short/low-value documents to save API quota
+                elif len(extraction['text']) < min_text_length:
+                    logger.warning(f"⏭️  Skipping analysis (text too short: {len(extraction['text'])} chars < {min_text_length})")
+                else:
+                    logger.info(f"?? Analyzing document with AI...")
+                    try:
+                        self.stats['analysis_attempts'] += 1
+                        analysis = self.analyzer.analyze_report(
+                            extraction['text'],
+                            company_name
+                        )
+                        logger.info(f"? AI analysis complete")
+                    except Exception as e:
+                        logger.warning(f"??  AI analysis failed: {e}")
             
             # Prepare API payload
             payload = self._build_api_payload(
@@ -456,6 +476,8 @@ class ReportWatcherV3:
     ) -> Dict:
         """Build API payload for report ingestion"""
         
+        import base64
+        
         payload = {
             'companyName': pdf_info.get('company', 'Unknown'),
             'reportType': pdf_info.get('report_type', 'Financial Report'),
@@ -472,6 +494,17 @@ class ReportWatcherV3:
             'requiredOcr': extraction['required_ocr'],
             'language': 'en'
         }
+        
+        # Add PDF content as base64 (so API doesn't need to re-download from source URL)
+        if download_result and 'file_path' in download_result:
+            try:
+                with open(download_result['file_path'], 'rb') as f:
+                    pdf_bytes = f.read()
+                pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
+                payload['pdfContentBase64'] = pdf_base64
+                logger.info(f"   ✓ Added PDF content as base64 ({len(pdf_base64)} chars)")
+            except Exception as e:
+                logger.warning(f"Failed to encode PDF as base64: {e}")
         
         # Add metadata
         metadata = {

@@ -21,6 +21,7 @@ public interface IReportService
     Task<Result<ReportAnalysisDto>> GetAnalysisAsync(Guid reportId);
     Task<Result<ReportAnalysisDto>> GenerateAnalysisAsync(Guid reportId);
     Task<Result<List<ReportSectionDto>>> GetSectionsAsync(Guid reportId);
+    Task<Result<object>> TestSaveAnalysisAsync(); // DIAGNOSTIC: Test SaveChangesAsync with demo data
     
     // Statistics and metadata
     Task<Result<List<string>>> GetDistinctCompaniesAsync();
@@ -28,6 +29,7 @@ public interface IReportService
     Task<Result<List<string>>> GetDistinctSectorsAsync();
     Task<Result<Dictionary<string, int>>> GetReportCountByCompanyAsync();
     Task<Result<Dictionary<string, int>>> GetReportCountByStatusAsync();
+    Task<Result<object>> ExtractAnalysisFromMetadataAsync(int maxCount = 50);
     
     // File operations
     Task<Result<string>> GetFilePathAsync(Guid reportId);

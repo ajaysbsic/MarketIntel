@@ -22,4 +22,9 @@ public class IngestReportRequest
     public string? ExtractedText { get; set; }
     public bool RequiredOcr { get; set; } = false;
     public Dictionary<string, object>? Metadata { get; set; }
+    
+    /// <summary>
+    /// Base64-encoded PDF content (used when DownloadUrl is inaccessible from server)
+    /// </summary>
+    public string? PdfContentBase64 { get; set; }
 }

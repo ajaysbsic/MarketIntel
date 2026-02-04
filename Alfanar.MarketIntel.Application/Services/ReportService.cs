@@ -1,4 +1,4 @@
-using Alfanar.MarketIntel.Application.Common;
+﻿using Alfanar.MarketIntel.Application.Common;
 using Alfanar.MarketIntel.Application.DTOs;
 using Alfanar.MarketIntel.Application.Interfaces;
 using Alfanar.MarketIntel.Application.Services;
@@ -105,6 +105,164 @@ public class ReportService : IReportService
             // Save report
             await _reportRepository.AddAsync(report);
             await _reportRepository.SaveChangesAsync();
+            _logger.LogInformation(" Report saved, DbContext state: {DbContextState}", _context.ChangeTracker.HasChanges() ? "HasChanges" : "NoChanges");
+
+            // Extract and save AI analysis if provided in metadata
+            if (request.Metadata != null)
+            {
+                _logger.LogInformation(" Metadata received with {KeyCount} keys: {Keys}", 
+                    request.Metadata.Count, 
+                    string.Join(", ", request.Metadata.Keys));
+                
+                if (request.Metadata.ContainsKey("analysis"))
+                {
+                    var analysisValue = request.Metadata["analysis"];
+                    _logger.LogInformation(" 'analysis' key found! Type: {Type}", analysisValue?.GetType().Name ?? "null");
+                }
+            }
+            
+            if (request.Metadata != null && request.Metadata.TryGetValue("analysis", out var analysisObj))
+            {
+                _logger.LogInformation(" Found 'analysis' key in metadata, Type: {Type}", analysisObj?.GetType().Name);
+                try
+                {
+                    // Handle both JsonElement and Dictionary types
+                    Dictionary<string, object>? analysisData = null;
+                    
+                    if (analysisObj is JsonElement jsonElement)
+                    {
+                        // If it's a JsonElement, convert to string first then deserialize
+                        var jsonString = jsonElement.GetRawText();
+                        _logger.LogInformation(" JsonElement raw text (first 200 chars): {Json}", 
+                            jsonString.Length > 200 ? jsonString.Substring(0, 200) + "..." : jsonString);
+                        analysisData = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString);
+                        _logger.LogInformation(" Deserialized to Dictionary with {Count} keys", analysisData?.Count ?? 0);
+                    }
+                    else if (analysisObj is Dictionary<string, object> dict)
+                    {
+                        analysisData = dict;
+                        _logger.LogInformation(" Analysis is already a Dictionary with {Count} keys", dict.Count);
+                    }
+                    else if (analysisObj != null)
+                    {
+                        // Try to serialize and deserialize as last resort
+                        var jsonString = JsonSerializer.Serialize(analysisObj);
+                        _logger.LogInformation(" Serializing unknown type to JSON (first 200 chars): {Json}",
+                            jsonString.Length > 200 ? jsonString.Substring(0, 200) + "..." : jsonString);
+                        analysisData = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString);
+                    }
+                    
+                    if (analysisData != null && analysisData.Count > 0)
+                    {
+                        _logger.LogInformation(" Creating ReportAnalysis from metadata with {FieldCount} fields: {Fields}", 
+                            analysisData.Count,
+                            string.Join(", ", analysisData.Keys));
+                        
+                        // Log all field values for debugging
+                        foreach (var kvp in analysisData)
+                        {
+                            var valueType = kvp.Value?.GetType().Name ?? "null";
+                            _logger.LogDebug("  {Key}: {Type}", kvp.Key, valueType);
+                        }
+                        
+                        var execSummary = GetStringValue(analysisData, "executive_summary");
+                        var sentiment = GetStringValue(analysisData, "sentiment_label") ?? GetStringValue(analysisData, "sentiment");
+                        var mainRisks = GetStringValue(analysisData, "main_risks") ?? GetStringValue(analysisData, "risk_factors");
+                        var sentimentScore = GetDoubleValue(analysisData, "sentiment_score");
+                        
+                        _logger.LogInformation(" Extracted values - Summary: {SummaryLen} chars, Sentiment: {Sentiment}, SentimentScore: {Score}, Risks: {RisksLen} chars",
+                            execSummary?.Length ?? 0, 
+                            sentiment ?? "null",
+                            sentimentScore,
+                            mainRisks?.Length ?? 0);
+                        
+                        // Extract key highlights - default to empty array if not provided
+                        string keyHighlightsJson = "[]";
+                        if (analysisData.TryGetValue("key_highlights", out var highlights))
+                        {
+                            if (highlights is JsonElement je)
+                            {
+                                keyHighlightsJson = je.GetRawText();
+                            }
+                            else
+                            {
+                                keyHighlightsJson = JsonSerializer.Serialize(highlights);
+                            }
+                            _logger.LogInformation("    key_highlights extracted: {Length} chars", keyHighlightsJson.Length);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("    key_highlights not found, using empty array default");
+                        }
+
+                        var analysis = new ReportAnalysis
+                        {
+                            Id = Guid.NewGuid(),
+                            FinancialReportId = report.Id,
+                            ExecutiveSummary = execSummary ?? "",
+                            KeyHighlights = keyHighlightsJson,  // FIXED: Always set, never null
+                            StrategicInitiatives = GetStringValue(analysisData, "strategic_initiatives"),
+                            MarketOutlook = GetStringValue(analysisData, "market_outlook"),
+                            RiskFactors = mainRisks,
+                            CompetitivePosition = GetStringValue(analysisData, "competitive_position"),
+                            InvestmentThesis = GetStringValue(analysisData, "investment_thesis"),
+                            SentimentScore = sentimentScore,
+                            // Try 'sentiment_label' first (from Python watcher), then fall back to 'sentiment'
+                            SentimentLabel = sentiment ?? "Neutral",
+                            AiModel = GetStringValue(analysisData, "model") ?? "gemini-2.5-flash",
+                            CreatedUtc = DateTime.UtcNow
+                        };
+
+                        _logger.LogInformation(" Adding ReportAnalysis to context...");
+                        _logger.LogInformation("   Analysis ID: {AnalysisId}, ReportId: {ReportId}, Summary length: {SummaryLen}", 
+                            analysis.Id, analysis.FinancialReportId, analysis.ExecutiveSummary?.Length ?? 0);
+                        
+                        // Check DbContext state before adding
+                        _logger.LogInformation("   DbContext state BEFORE add: ChangeTracker.HasChanges={HasChanges}, ChangeTracker.Entries.Count={EntryCount}",
+                            _context.ChangeTracker.HasChanges(), _context.ChangeTracker.Entries().Count());
+                        
+                        await _context.ReportAnalyses.AddAsync(analysis);
+                        
+                        _logger.LogInformation("    Added to context, entity state: {State}", 
+                            _context.Entry(analysis).State);
+                        _logger.LogInformation("   DbContext state AFTER add: ChangeTracker.HasChanges={HasChanges}, ChangeTracker.Entries.Count={EntryCount}",
+                            _context.ChangeTracker.HasChanges(), _context.ChangeTracker.Entries().Count());
+                        
+                        _logger.LogInformation(" Saving changes to database...");
+                        try
+                        {
+                            int saveResult = await _context.SaveChangesAsync();
+                            _logger.LogInformation("    SaveChangesAsync returned: {Result} (number of entities saved)", saveResult);
+                        }
+                        catch (Exception saveEx)
+                        {
+                            _logger.LogError(saveEx, "    SaveChangesAsync threw exception: {ExceptionType}: {Message}", 
+                                saveEx.GetType().Name, saveEx.Message);
+                            throw; // Re-throw to let the outer catch handle it
+                        }
+                        
+                        _logger.LogInformation(" Successfully saved AI analysis for report {Id} with sentiment {Sentiment}", 
+                            report.Id, analysis.SentimentLabel);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(" Analysis data was null or empty (Count: {Count})", analysisData?.Count ?? -1);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, " Failed to extract AI analysis from metadata for report {Id}. Exception type: {ExceptionType}, Message: {Message}", 
+                        report.Id, ex.GetType().Name, ex.Message);
+                    if (ex.InnerException != null)
+                    {
+                        _logger.LogError(ex.InnerException, "   Inner exception");
+                    }
+                }
+            }
+            else
+            {
+                _logger.LogDebug(" No 'analysis' key found in metadata for report {Title}", report.Title);
+            }
 
             _logger.LogInformation(
                 "Successfully ingested report: {Title} for {Company}",
@@ -117,7 +275,9 @@ public class ReportService : IReportService
                 _ = Task.Run(async () => await ProcessReportAsync(report.Id));
             }
 
-            return Result<FinancialReportDto>.Success(MapToDto(report));
+            await ExtractAnalysisFromSavedMetadataAsync(report.Id);
+
+            return Result<FinancialReportDto>.Success(MapToDto(report, includeRelated: true));
         }
         catch (Exception ex)
         {
@@ -594,6 +754,61 @@ public class ReportService : IReportService
         }
     }
 
+    public async Task<Result<object>> ExtractAnalysisFromMetadataAsync(int maxCount = 50)
+    {
+        try
+        {
+            _logger.LogInformation(" Batch extracting analysis from metadata for up to {MaxCount} reports", maxCount);
+
+            // Get all reports that have analysis in metadata but no ReportAnalyses record
+            var reports = await _context.FinancialReports
+                .Where(r => !_context.ReportAnalyses.Any(ra => ra.FinancialReportId == r.Id))
+                .Take(maxCount)
+                .ToListAsync();
+
+            _logger.LogInformation("Found {Count} reports without analysis records", reports.Count);
+
+            int extractedCount = 0;
+            var errors = new List<string>();
+
+            foreach (var report in reports)
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(report.Metadata))
+                        continue;
+
+                    if (!report.Metadata.Contains("\"analysis\""))
+                        continue;
+
+                    await ExtractAnalysisFromSavedMetadataAsync(report.Id);
+                    extractedCount++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error extracting analysis for report {Id}", report.Id);
+                    errors.Add($"Report {report.Id}: {ex.Message}");
+                }
+            }
+
+            _logger.LogInformation(" Batch extraction complete: {Extracted} extracted, {Errors} errors", extractedCount, errors.Count);
+
+            return Result<object>.Success(new
+            {
+                message = "Batch extraction complete",
+                totalProcessed = reports.Count,
+                extracted = extractedCount,
+                failed = reports.Count - extractedCount,
+                errors = errors.Any() ? errors : null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, " Exception during batch extraction from metadata");
+            return Result<object>.Failure($"Failed to extract analysis from metadata: {ex.Message}");
+        }
+    }
+
     public async Task<Result<string>> GetFilePathAsync(Guid reportId)
     {
         try
@@ -648,42 +863,78 @@ public class ReportService : IReportService
 
     private async Task<Result<StoredFile>> DownloadAndStoreReportAsync(IngestReportRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.DownloadUrl))
-        {
-            return Result<StoredFile>.Failure("Download URL is required to ingest reports");
-        }
-
         try
         {
-            var client = _httpClientFactory.CreateClient("report-ingestion-downloader");
-            client.Timeout = TimeSpan.FromSeconds(60);
-
-            using var response = await client.GetAsync(request.DownloadUrl, HttpCompletionOption.ResponseHeadersRead);
-            if (!response.IsSuccessStatusCode)
+            MemoryStream? pdfStream = null;
+            string fileName;
+            
+            // If PDF content is provided as base64, use it directly
+            if (!string.IsNullOrWhiteSpace(request.PdfContentBase64))
             {
-                return Result<StoredFile>.Failure($"Failed to download report from {request.DownloadUrl}. Status: {(int)response.StatusCode} {response.ReasonPhrase}");
+                _logger.LogInformation("Using provided PDF content (base64) instead of downloading");
+                
+                byte[] pdfBytes = Convert.FromBase64String(request.PdfContentBase64);
+                pdfStream = new MemoryStream(pdfBytes);
+                
+                // Generate filename from title or URL
+                if (!string.IsNullOrWhiteSpace(request.Title))
+                {
+                    var sanitizedTitle = SanitizePathSegment(request.Title).Replace(' ', '_');
+                    fileName = sanitizedTitle.Length > 150 ? sanitizedTitle[..150] + ".pdf" : sanitizedTitle + ".pdf";
+                }
+                else if (!string.IsNullOrWhiteSpace(request.DownloadUrl) && Uri.TryCreate(request.DownloadUrl, UriKind.Absolute, out var uri))
+                {
+                    fileName = Path.GetFileName(uri.LocalPath);
+                }
+                else
+                {
+                    fileName = $"report_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+                }
+                
+                fileName = EnsureValidExtension(fileName);
             }
+            // Otherwise, download from URL
+            else if (!string.IsNullOrWhiteSpace(request.DownloadUrl))
+            {
+                var client = _httpClientFactory.CreateClient("report-ingestion-downloader");
+                client.Timeout = TimeSpan.FromSeconds(60);
 
-            var fileName = EnsureValidExtension(ResolveFileName(request, response));
+                using var response = await client.GetAsync(request.DownloadUrl, HttpCompletionOption.ResponseHeadersRead);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return Result<StoredFile>.Failure($"Failed to download report from {request.DownloadUrl}. Status: {(int)response.StatusCode} {response.ReasonPhrase}");
+                }
 
-            await using var responseStream = await response.Content.ReadAsStreamAsync();
-            await using var bufferedStream = new MemoryStream();
-            await responseStream.CopyToAsync(bufferedStream);
-            bufferedStream.Position = 0;
+                fileName = EnsureValidExtension(ResolveFileName(request, response));
+
+                await using var responseStream = await response.Content.ReadAsStreamAsync();
+                pdfStream = new MemoryStream();
+                await responseStream.CopyToAsync(pdfStream);
+                pdfStream.Position = 0;
+            }
+            else
+            {
+                return Result<StoredFile>.Failure("Either DownloadUrl or PdfContentBase64 is required to ingest reports");
+            }
 
             var subfolder = BuildSubfolder(request);
 
-            var saveResult = await _fileStorage.SaveFileAsync(bufferedStream, fileName, subfolder);
+            var saveResult = await _fileStorage.SaveFileAsync(pdfStream, fileName, subfolder);
             if (!saveResult.IsSuccess || saveResult.Data == null)
             {
+                pdfStream?.Dispose();
                 return Result<StoredFile>.Failure(saveResult.Error ?? "Failed to save file to storage");
             }
 
-            var sizeBytes = bufferedStream.Length > 0
-                ? bufferedStream.Length
-                : response.Content.Headers.ContentLength ?? 0;
+            var sizeBytes = pdfStream.Length;
+            pdfStream?.Dispose();
 
             return Result<StoredFile>.Success(new StoredFile(saveResult.Data, sizeBytes));
+        }
+        catch (FormatException ex)
+        {
+            _logger.LogError(ex, "Invalid base64 format for PDF content");
+            return Result<StoredFile>.Failure("Invalid PDF content format");
         }
         catch (Exception ex)
         {
@@ -946,4 +1197,265 @@ public class ReportService : IReportService
 
         return dto;
     }
+
+    /// <summary>
+    /// Helper method to safely extract string values from analysis metadata
+    /// </summary>
+    private string? GetStringValue(Dictionary<string, object> data, string key)
+    {
+        if (data == null || !data.TryGetValue(key, out var value))
+        {
+            _logger.LogDebug(" GetStringValue: key '{Key}' not found in data", key);
+            return null;
+        }
+
+        var result = value switch
+        {
+            string s => s,
+            JsonElement je => je.GetString(),
+            null => null,
+            _ => value.ToString()
+        };
+        
+        _logger.LogDebug(" GetStringValue('{Key}'): {ValueType} => '{Result}'", 
+            key, value?.GetType().Name ?? "null", result ?? "(null)");
+        
+        return result;
+    }
+
+    /// <summary>
+    /// Helper method to safely extract double values from analysis metadata
+    /// </summary>
+    private double GetDoubleValue(Dictionary<string, object> data, string key)
+    {
+        if (data == null || !data.TryGetValue(key, out var value))
+        {
+            _logger.LogDebug(" GetDoubleValue: key '{Key}' not found in data", key);
+            return 0.0;
+        }
+
+        var result = value switch
+        {
+            double d => d,
+            int i => (double)i,
+            JsonElement je => je.TryGetDouble(out var d) ? d : 0.0,
+            string s => double.TryParse(s, out var parsed) ? parsed : 0.0,
+            null => 0.0,
+            _ => double.TryParse(value.ToString(), out var parsed) ? parsed : 0.0
+        };
+        
+        _logger.LogDebug(" GetDoubleValue('{Key}'): {ValueType} => {Result}", 
+            key, value?.GetType().Name ?? "null", result);
+        
+        return result;
+    }
+
+    private async Task ExtractAnalysisFromSavedMetadataAsync(Guid reportId)
+    {
+        _logger.LogInformation(" FALLBACK METHOD CALLED for report {ReportId}", reportId);
+        try
+        {
+            _logger.LogInformation(" FALLBACK: Attempting to extract analysis from saved metadata for report {ReportId}", reportId);
+            
+            var report = await _context.FinancialReports.FirstOrDefaultAsync(r => r.Id == reportId);
+            if (report == null)
+            {
+                _logger.LogWarning(" FALLBACK: Report {ReportId} not found in database", reportId);
+                return;
+            }
+
+            var existingAnalysis = await _context.ReportAnalyses.FirstOrDefaultAsync(ra => ra.FinancialReportId == reportId);
+            if (existingAnalysis != null)
+            {
+                _logger.LogInformation(" FALLBACK: Analysis already exists for report {ReportId}, skipping", reportId);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(report.Metadata))
+            {
+                _logger.LogWarning(" FALLBACK: Report {ReportId} has no metadata", reportId);
+                return;
+            }
+
+            using (JsonDocument doc = JsonDocument.Parse(report.Metadata))
+            {
+                if (!doc.RootElement.TryGetProperty("analysis", out var analysisElement))
+                {
+                    _logger.LogWarning(" FALLBACK: No 'analysis' property found in metadata for report {ReportId}", reportId);
+                    return;
+                }
+
+                var analysisJson = analysisElement.GetRawText();
+                var analysisData = JsonSerializer.Deserialize<Dictionary<string, object>>(analysisJson);
+
+                if (analysisData == null)
+                {
+                    _logger.LogWarning(" FALLBACK: Failed to deserialize analysis for report {ReportId}", reportId);
+                    return;
+                }
+
+                var analysis = new ReportAnalysis
+                {
+                    Id = Guid.NewGuid(),
+                    FinancialReportId = reportId,
+                    ExecutiveSummary = GetStringValue(analysisData, "executive_summary") ?? "",
+                    SentimentLabel = GetStringValue(analysisData, "sentiment_label") ?? "Neutral",
+                    SentimentScore = GetDoubleValue(analysisData, "sentiment_score"),
+                    KeyHighlights = GetStringValue(analysisData, "key_highlights") ?? "",
+                    RiskFactors = GetStringValue(analysisData, "main_risks") ?? "",
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _logger.LogInformation(" FALLBACK: Extracted analysis from metadata. Summary length: {SummaryLength}", 
+                    analysis.ExecutiveSummary?.Length ?? 0);
+
+                _logger.LogInformation("   Adding to context: Id={AnalysisId}, ReportId={ReportId}", 
+                    analysis.Id, analysis.FinancialReportId);
+                
+                // Check DbContext state before adding
+                _logger.LogInformation("   DbContext state BEFORE add: ChangeTracker.HasChanges={HasChanges}, ChangeTracker.Entries.Count={EntryCount}",
+                    _context.ChangeTracker.HasChanges(), _context.ChangeTracker.Entries().Count());
+                
+                await _context.ReportAnalyses.AddAsync(analysis);
+                
+                _logger.LogInformation("    Added, entity state: {State}", 
+                    _context.Entry(analysis).State);
+                _logger.LogInformation("   DbContext state AFTER add: ChangeTracker.HasChanges={HasChanges}, ChangeTracker.Entries.Count={EntryCount}",
+                    _context.ChangeTracker.HasChanges(), _context.ChangeTracker.Entries().Count());
+                
+                _logger.LogInformation("   Calling SaveChangesAsync...");
+                try
+                {
+                    int saveResult = await _context.SaveChangesAsync();
+                    _logger.LogInformation("    SaveChangesAsync returned: {Result} (number of entities saved)", saveResult);
+                }
+                catch (Exception saveEx)
+                {
+                    _logger.LogError(saveEx, "    SaveChangesAsync threw exception: {ExceptionType}: {Message}", 
+                        saveEx.GetType().Name, saveEx.Message);
+                    throw; // Re-throw to let the outer catch handle it
+                }
+
+                _logger.LogInformation(" FALLBACK: Successfully saved analysis to ReportAnalyses table for report {ReportId}", reportId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, " FALLBACK EXCEPTION: Error extracting analysis from saved metadata for report {ReportId}. Message: {Message}", reportId, ex.Message);
+        }
+        _logger.LogInformation(" FALLBACK METHOD COMPLETED for report {ReportId}", reportId);
+    }
+
+    /// <summary>
+    /// DIAGNOSTIC: Test SaveChangesAsync with demo data
+    /// </summary>
+    public async Task<Result<object>> TestSaveAnalysisAsync()
+    {
+        _logger.LogInformation(" TEST: Starting SaveChangesAsync diagnostic test");
+        
+        try
+        {
+            // Create a demo report
+            _logger.LogInformation(" TEST: Creating demo report");
+            var demoReport = new FinancialReport
+            {
+                Id = Guid.NewGuid(),
+                Title = "TEST REPORT - " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                CompanyName = "TEST COMPANY",
+                ReportType = "Test",
+                FilePath = "test/path/demo.pdf",
+                SourceUrl = "https://test.example.com/report",
+                FileSizeBytes = 1024,
+                PageCount = 1,
+                PublishedDate = DateTime.UtcNow,
+                FiscalYear = DateTime.Now.Year,
+                FiscalQuarter = "Q1",
+                Region = "Global",
+                Sector = "Test",
+                Language = "en",
+                ExtractedText = "This is a test report for diagnostic purposes.",
+                ProcessingStatus = "Completed",
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _logger.LogInformation(" TEST: Adding report to context");
+            await _context.FinancialReports.AddAsync(demoReport);
+            
+            _logger.LogInformation(" TEST: Saving report");
+            await _context.SaveChangesAsync();
+            _logger.LogInformation(" TEST: Report saved. ID: {ReportId}", demoReport.Id);
+
+            // Create demo analysis
+            _logger.LogInformation(" TEST: Creating demo analysis");
+            var demoAnalysis = new ReportAnalysis
+            {
+                Id = Guid.NewGuid(),
+                FinancialReportId = demoReport.Id,
+                ExecutiveSummary = "This is a test summary for diagnostic purposes.",
+                SentimentLabel = "Positive",
+                SentimentScore = 0.85,
+                KeyHighlights = "Test highlights",
+                RiskFactors = "Test risks",
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _logger.LogInformation(" TEST: DbContext state BEFORE adding analysis");
+            _logger.LogInformation("  - HasChanges: {HasChanges}", _context.ChangeTracker.HasChanges());
+            _logger.LogInformation("  - Entries count: {Count}", _context.ChangeTracker.Entries().Count());
+
+            _logger.LogInformation(" TEST: Adding analysis to context");
+            await _context.ReportAnalyses.AddAsync(demoAnalysis);
+
+            _logger.LogInformation(" TEST: DbContext state AFTER adding analysis");
+            _logger.LogInformation("  - HasChanges: {HasChanges}", _context.ChangeTracker.HasChanges());
+            _logger.LogInformation("  - Entries count: {Count}", _context.ChangeTracker.Entries().Count());
+            _logger.LogInformation("  - Analysis entry state: {State}", _context.Entry(demoAnalysis).State);
+
+            _logger.LogInformation(" TEST: Calling SaveChangesAsync for analysis");
+            int saveResult = await _context.SaveChangesAsync();
+            _logger.LogInformation(" TEST: SaveChangesAsync returned: {Result}", saveResult);
+
+            _logger.LogInformation(" TEST: SUCCESS! Analysis saved with ID: {AnalysisId}", demoAnalysis.Id);
+
+            // Verify it was saved
+            _logger.LogInformation(" TEST: Verifying analysis was saved");
+            var savedAnalysis = await _context.ReportAnalyses.FirstOrDefaultAsync(a => a.Id == demoAnalysis.Id);
+            
+            if (savedAnalysis == null)
+            {
+                _logger.LogError(" TEST: FAILED! Analysis not found in database after save!");
+                return Result<object>.Failure("Analysis was not persisted to database");
+            }
+
+            _logger.LogInformation(" TEST: VERIFIED! Analysis exists in database");
+            return Result<object>.Success(new
+            {
+                message = "Test successful! Analysis was saved and verified.",
+                reportId = demoReport.Id,
+                analysisId = demoAnalysis.Id,
+                savedInDb = true
+            });
+        }
+        catch (DbUpdateException dbEx)
+        {
+            _logger.LogError(dbEx, " TEST: DbUpdateException during save");
+            _logger.LogError("  - Inner exception: {InnerMessage}", dbEx.InnerException?.Message);
+            if (dbEx.InnerException?.InnerException != null)
+            {
+                _logger.LogError("  - Inner-inner exception: {InnerInnerMessage}", dbEx.InnerException.InnerException.Message);
+            }
+            return Result<object>.Failure($"Database update error: {dbEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, " TEST: Exception during diagnostic test");
+            _logger.LogError("  - Exception type: {ExceptionType}", ex.GetType().Name);
+            _logger.LogError("  - Message: {Message}", ex.Message);
+            if (ex.InnerException != null)
+            {
+                _logger.LogError("  - Inner exception: {InnerMessage}", ex.InnerException.Message);
+            }
+            return Result<object>.Failure($"Test failed: {ex.Message}");
+        }
+    }
 }
+
