@@ -1,7 +1,7 @@
 {
   "api_endpoint_reports": "https://market-intel-api-grg6ceczgzd2cwdh.southeastasia-01.azurewebsites.net/api/reports/ingest",
   "api_provider": "google",
-  "google_api_key": "AIzaSyBODalgK1FQbbRGaompJsXUBnWL43V3a1A",
+  "google_api_key": "YOUR_GOOGLE_API_KEY",
   "google_model": "gemini-2.5-flash",
   "openai_api_key": "sk-proj-YOUR_OPENAI_KEY_HERE",
   "openai_model": "gpt-4o-mini",
