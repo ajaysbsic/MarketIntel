@@ -17,6 +17,12 @@
       "url": "https://ir.tesla.com/",
       "region": "Global",
       "sector": "EV & Energy Storage"
+    },
+    {
+      "company": "Legrand",
+      "url": "https://www.legrand.sa/en",
+      "region": "Middle East",
+      "sector": "Electrical & Cabling"
     }
   ]
 }

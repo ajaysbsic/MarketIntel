@@ -119,6 +119,8 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
                 return Result<ReportAnalysis>.Failure("Empty response from AI");
 
             _logger.LogInformation(" Received response from Google AI ({Chars} chars)", content.Length);
+            _logger.LogDebug("  Raw AI Response (first 500 chars): {Response}", 
+                content.Substring(0, Math.Min(500, content.Length)));
 
             // Parse JSON response - handle markdown wrapped JSON
             var jsonContent = ExtractJsonFromResponse(content);
@@ -140,10 +142,21 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
                 return Result<ReportAnalysis>.Failure($"Invalid JSON in response: {ex.Message}");
             }
 
+            // Try to extract executive summary with multiple key name attempts
+            var executiveSummary = GetExecutiveSummaryFromResponse(analysisData);
+            if (string.IsNullOrWhiteSpace(executiveSummary))
+            {
+                _logger.LogError("  CRITICAL: Could not extract executive_summary from AI response!");
+                _logger.LogError("  Available keys: {Keys}", 
+                    string.Join(", ", analysisData.EnumerateObject().Select(p => $"{p.Name}({p.Value.ValueKind})")));
+                _logger.LogError("  Full response: {Response}", JsonSerializer.Serialize(analysisData));
+                return Result<ReportAnalysis>.Failure("AI response missing executive summary. Check logs for details.");
+            }
+
             var analysis = new ReportAnalysis
             {
                 Id = Guid.NewGuid(),
-                ExecutiveSummary = GetRequiredString(analysisData, "executive_summary") ?? "Analysis completed but summary unavailable",
+                ExecutiveSummary = executiveSummary,
                 KeyHighlights = JsonSerializer.Serialize(GetOptionalArray(analysisData, "key_highlights")),
                 StrategicInitiatives = GetOptionalString(analysisData, "strategic_initiatives") ?? "Not specified",
                 MarketOutlook = GetOptionalString(analysisData, "market_outlook") ?? "Not specified",
@@ -506,6 +519,47 @@ Document:
         }
 
         return content;
+    }
+
+    /// <summary>
+    /// Extract executive summary with multiple fallback key name attempts
+    /// </summary>
+    private string? GetExecutiveSummaryFromResponse(JsonElement element)
+    {
+        // Try different key name variations
+        var possibleKeys = new[] 
+        { 
+            "executive_summary",
+            "executiveSummary",
+            "summary",
+            "executive_summary_analysis",
+            "analysis_summary",
+            "key_summary"
+        };
+
+        foreach (var key in possibleKeys)
+        {
+            if (element.TryGetProperty(key, out var prop))
+            {
+                var value = prop.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    _logger.LogInformation("  Successfully extracted executive_summary using key: '{Key}'", key);
+                    return value;
+                }
+            }
+        }
+
+        // If all keys fail, log detailed error
+        _logger.LogWarning("  All executive_summary key attempts failed. Checking if response is array...");
+        if (element.ValueKind == JsonValueKind.Array && element.GetArrayLength() > 0)
+        {
+            _logger.LogWarning("  Response is an array, attempting first element...");
+            var firstElement = element[0];
+            return GetExecutiveSummaryFromResponse(firstElement);
+        }
+
+        return null;
     }
 
     private string? GetRequiredString(JsonElement element, string propertyName)

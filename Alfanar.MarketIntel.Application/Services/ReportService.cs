@@ -480,6 +480,13 @@ public class ReportService : IReportService
                 return Result<ReportAnalysisDto>.Failure("Report not found");
 
             if (report.Analysis == null)
+            {
+                _logger.LogWarning("Analysis missing for report {Id}. Attempting metadata extraction...", reportId);
+                await ExtractAnalysisFromSavedMetadataAsync(reportId);
+                report = await _reportRepository.GetByIdAsync(reportId, includeRelated: true);
+            }
+
+            if (report?.Analysis == null)
                 return Result<ReportAnalysisDto>.Failure("Analysis not available for this report");
 
             return Result<ReportAnalysisDto>.Success(MapAnalysisToDto(report.Analysis));
@@ -1294,6 +1301,13 @@ public class ReportService : IReportService
                     return;
                 }
 
+                var keyHighlightsJson = GetJsonArrayString(analysisData, "key_highlights") ?? "[]";
+                var riskFactorsJson = GetJsonArrayString(analysisData, "main_risks")
+                    ?? GetJsonArrayString(analysisData, "risk_factors")
+                    ?? GetStringValue(analysisData, "main_risks")
+                    ?? GetStringValue(analysisData, "risk_factors")
+                    ?? "";
+
                 var analysis = new ReportAnalysis
                 {
                     Id = Guid.NewGuid(),
@@ -1301,8 +1315,8 @@ public class ReportService : IReportService
                     ExecutiveSummary = GetStringValue(analysisData, "executive_summary") ?? "",
                     SentimentLabel = GetStringValue(analysisData, "sentiment_label") ?? "Neutral",
                     SentimentScore = GetDoubleValue(analysisData, "sentiment_score"),
-                    KeyHighlights = GetStringValue(analysisData, "key_highlights") ?? "",
-                    RiskFactors = GetStringValue(analysisData, "main_risks") ?? "",
+                    KeyHighlights = keyHighlightsJson,
+                    RiskFactors = riskFactorsJson,
                     CreatedUtc = DateTime.UtcNow
                 };
                 _logger.LogInformation(" FALLBACK: Extracted analysis from metadata. Summary length: {SummaryLength}", 
@@ -1343,6 +1357,27 @@ public class ReportService : IReportService
             _logger.LogError(ex, " FALLBACK EXCEPTION: Error extracting analysis from saved metadata for report {ReportId}. Message: {Message}", reportId, ex.Message);
         }
         _logger.LogInformation(" FALLBACK METHOD COMPLETED for report {ReportId}", reportId);
+    }
+
+    private string? GetJsonArrayString(Dictionary<string, object> data, string key)
+    {
+        if (data == null || !data.TryGetValue(key, out var value) || value == null)
+            return null;
+
+        if (value is JsonElement je)
+        {
+            return je.ValueKind == JsonValueKind.Array ? je.GetRawText() : null;
+        }
+
+        // Handle already serialized arrays or lists
+        try
+        {
+            return JsonSerializer.Serialize(value);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
