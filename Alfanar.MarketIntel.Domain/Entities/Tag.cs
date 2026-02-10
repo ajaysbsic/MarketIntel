@@ -9,4 +9,5 @@ public class Tag
     
     // Navigation property
     public ICollection<NewsArticleTag> NewsArticleTags { get; set; } = new List<NewsArticleTag>();
+    public ICollection<FinancialReportTag> FinancialReportTags { get; set; } = new List<FinancialReportTag>();
 }

@@ -15,6 +15,7 @@ public class ReportFilterDto
     public bool? IsProcessed { get; set; }
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
+    public List<string>? Tags { get; set; }
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }

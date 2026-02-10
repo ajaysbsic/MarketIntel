@@ -23,8 +23,16 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/metrics-trends/metrics-trends.component').then(m => m.MetricsTrendsComponent),
   },
   {
+    path: 'technology-intelligence',
+    loadComponent: () => import('./modules/technology-intelligence/technology-intelligence.component').then(m => m.TechnologyIntelligenceComponent),
+  },
+  {
     path: 'monitoring',
     loadComponent: () => import('./modules/monitoring/monitoring.component').then(m => m.MonitoringComponent),
+  },
+  {
+    path: 'keyword-monitors',
+    loadComponent: () => import('./modules/keyword-monitors/keyword-monitors.component').then(m => m.KeywordMonitorsComponent),
   },
   {
     path: 'ai-chat',

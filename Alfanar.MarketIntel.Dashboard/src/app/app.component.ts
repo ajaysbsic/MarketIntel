@@ -32,8 +32,10 @@ import { environment } from '../environments/environment';
           <li><a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">📊 Dashboard</a></li>
           <li><a routerLink="/news" routerLinkActive="active">📰 News & Articles</a></li>
           <li><a routerLink="/reports" routerLinkActive="active">📑 Financial Reports</a></li>
+          <li><a routerLink="/technology-intelligence" routerLinkActive="active">🧭 Technology Intelligence</a></li>
           <li><a routerLink="/metrics-trends" routerLinkActive="active">📈 Metrics & Trends</a></li>
           <li><a routerLink="/monitoring" routerLinkActive="active">⚙️ Feed Config</a></li>
+          <li><a routerLink="/keyword-monitors" routerLinkActive="active">🔍 Keyword Monitors</a></li>
           <li><a routerLink="/ai-chat" routerLinkActive="active">💬 AI Chat</a></li>
           <li><a routerLink="/about" routerLinkActive="active">ℹ️ About Us</a></li>
           <li><a routerLink="/contact" routerLinkActive="active">📧 Contact Us</a></li>

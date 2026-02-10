@@ -57,6 +57,124 @@ export interface DashboardSummary {
   topKeywords: string[];
 }
 
+export interface TechnologyIntelligenceFilter {
+  keywords?: string[];
+  region?: string;
+  fromDate?: string;
+  toDate?: string;
+  sourceTypes?: string[];
+}
+
+export interface TechnologyOverview {
+  totalItems: number;
+  newsCount: number;
+  reportCount: number;
+  distinctRegions: number;
+  topKeywords: string[];
+}
+
+export interface TechnologyTrendPoint {
+  periodStart: string;
+  newsCount: number;
+  reportCount: number;
+  totalCount: number;
+}
+
+export interface TechnologyRegionSignal {
+  region: string;
+  newsCount: number;
+  reportCount: number;
+  totalCount: number;
+}
+
+export interface TechnologyKeyPlayer {
+  name: string;
+  sourceType: string;
+  mentions: number;
+}
+
+export interface TechnologyInsight {
+  title: string;
+  detail: string;
+  insightType: string;
+}
+
+export interface TechnologySummary {
+  overview: TechnologyOverview;
+  timeline: TechnologyTrendPoint[];
+  regions: TechnologyRegionSignal[];
+  keyPlayers: TechnologyKeyPlayer[];
+  insights: TechnologyInsight[];
+}
+
+// Web Search and Monitoring Interfaces
+export interface WebSearchResult {
+  id: string;
+  keyword: string;
+  title: string;
+  snippet: string;
+  url: string;
+  publishedDate?: string;
+  source: string;
+  retrievedUtc: string;
+  isFromMonitoring: boolean;
+}
+
+export interface WebSearchRequest {
+  keyword: string;
+  fromDate?: string;
+  toDate?: string;
+  maxResults?: number;
+  searchProvider?: string;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface KeywordMonitor {
+  id: string;
+  keyword: string;
+  isActive: boolean;
+  checkIntervalMinutes: number;
+  lastCheckedUtc?: string;
+  tags: string[];
+  maxResultsPerCheck: number;
+}
+
+export interface CreateKeywordMonitor {
+  keyword: string;
+  checkIntervalMinutes: number;
+  tags: string[];
+  maxResultsPerCheck: number;
+}
+
+export interface TechnologyReport {
+  id: string;
+  title?: string;
+  keywords: string[];
+  startDate: string;
+  endDate: string;
+  generatedUtc: string;
+  pdfUrl?: string;
+  totalResults: number;
+  results: WebSearchResult[];
+  summary?: string;
+}
+
+export interface CreateTechnologyReport {
+  title?: string;
+  keywords: string[];
+  startDate: string;
+  endDate: string;
+  includeSummary: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -134,6 +252,119 @@ export class ApiService {
 
   getMetricTrends(company: string, metric: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/api/metrics/${company}/${metric}/trends`).pipe(catchError(this.handleError));
+  }
+
+  // Technology Intelligence
+  getTechnologySummary(filter?: TechnologyIntelligenceFilter): Observable<TechnologySummary> {
+    const query = this.buildTechQuery(filter);
+    return this.http.get<TechnologySummary>(`${this.apiUrl}/api/technology-intelligence/summary${query}`).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyOverview(filter?: TechnologyIntelligenceFilter): Observable<TechnologyOverview> {
+    const query = this.buildTechQuery(filter);
+    return this.http.get<TechnologyOverview>(`${this.apiUrl}/api/technology-intelligence/overview${query}`).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyTimeline(filter?: TechnologyIntelligenceFilter): Observable<TechnologyTrendPoint[]> {
+    const query = this.buildTechQuery(filter);
+    return this.http.get<TechnologyTrendPoint[]>(`${this.apiUrl}/api/technology-intelligence/timeline${query}`).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyRegions(filter?: TechnologyIntelligenceFilter): Observable<TechnologyRegionSignal[]> {
+    const query = this.buildTechQuery(filter);
+    return this.http.get<TechnologyRegionSignal[]>(`${this.apiUrl}/api/technology-intelligence/regions${query}`).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyKeyPlayers(filter?: TechnologyIntelligenceFilter, maxItems: number = 10): Observable<TechnologyKeyPlayer[]> {
+    const query = this.buildTechQuery(filter, { maxItems: maxItems.toString() });
+    return this.http.get<TechnologyKeyPlayer[]>(`${this.apiUrl}/api/technology-intelligence/key-players${query}`).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyInsights(filter?: TechnologyIntelligenceFilter): Observable<TechnologyInsight[]> {
+    const query = this.buildTechQuery(filter);
+    return this.http.get<TechnologyInsight[]>(`${this.apiUrl}/api/technology-intelligence/insights${query}`).pipe(catchError(this.handleError));
+  }
+
+  // Web Search and Keyword Monitoring
+  performWebSearch(request: WebSearchRequest): Observable<WebSearchResult[]> {
+    return this.http.post<WebSearchResult[]>(`${this.apiUrl}/api/web-search/search`, request).pipe(catchError(this.handleError));
+  }
+
+  getCachedWebSearchResults(keyword: string, fromDate?: string, toDate?: string, pageNumber: number = 1, pageSize: number = 20): Observable<PagedResult<WebSearchResult>> {
+    let url = `${this.apiUrl}/api/web-search/results?keyword=${encodeURIComponent(keyword)}&pageNumber=${pageNumber}&pageSize=${pageSize}`;
+    if (fromDate) url += `&fromDate=${fromDate}`;
+    if (toDate) url += `&toDate=${toDate}`;
+    return this.http.get<PagedResult<WebSearchResult>>(url).pipe(catchError(this.handleError));
+  }
+
+  getWebSearchResultCount(keyword: string): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/api/web-search/results/count?keyword=${encodeURIComponent(keyword)}`).pipe(catchError(this.handleError));
+  }
+
+  deduplicateWebSearchResults(keyword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/api/web-search/results/deduplicate?keyword=${encodeURIComponent(keyword)}`, {}).pipe(catchError(this.handleError));
+  }
+
+  // Keyword Monitor Operations
+  createKeywordMonitor(monitor: CreateKeywordMonitor): Observable<KeywordMonitor> {
+    return this.http.post<KeywordMonitor>(`${this.apiUrl}/api/keyword-monitors`, monitor).pipe(catchError(this.handleError));
+  }
+
+  getAllKeywordMonitors(activeOnly?: boolean): Observable<KeywordMonitor[]> {
+    let url = `${this.apiUrl}/api/keyword-monitors`;
+    if (activeOnly !== undefined) {
+      url += `?activeOnly=${activeOnly}`;
+    }
+    return this.http.get<KeywordMonitor[]>(url).pipe(catchError(this.handleError));
+  }
+
+  getKeywordMonitorById(id: string): Observable<KeywordMonitor> {
+    return this.http.get<KeywordMonitor>(`${this.apiUrl}/api/keyword-monitors/${id}`).pipe(catchError(this.handleError));
+  }
+
+  updateKeywordMonitor(id: string, monitor: CreateKeywordMonitor): Observable<KeywordMonitor> {
+    return this.http.put<KeywordMonitor>(`${this.apiUrl}/api/keyword-monitors/${id}`, monitor).pipe(catchError(this.handleError));
+  }
+
+  deleteKeywordMonitor(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/api/keyword-monitors/${id}`).pipe(catchError(this.handleError));
+  }
+
+  toggleKeywordMonitor(id: string, isActive: boolean): Observable<KeywordMonitor> {
+    return this.http.post<KeywordMonitor>(`${this.apiUrl}/api/keyword-monitors/${id}/toggle?isActive=${isActive}`, {}).pipe(catchError(this.handleError));
+  }
+
+  getActiveKeywordMonitors(): Observable<KeywordMonitor[]> {
+    return this.http.get<KeywordMonitor[]>(`${this.apiUrl}/api/keyword-monitors/active/list`).pipe(catchError(this.handleError));
+  }
+
+  // Technology Reports
+  generateTechnologyReport(report: CreateTechnologyReport): Observable<TechnologyReport> {
+    return this.http.post<TechnologyReport>(`${this.apiUrl}/api/technology-reports/generate`, report).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyReports(pageNumber: number = 1, pageSize: number = 10): Observable<PagedResult<TechnologyReport>> {
+    return this.http.get<PagedResult<TechnologyReport>>(`${this.apiUrl}/api/technology-reports?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyReportById(id: string): Observable<TechnologyReport> {
+    return this.http.get<TechnologyReport>(`${this.apiUrl}/api/technology-reports/${id}`).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyReportsByKeyword(keyword: string, pageNumber: number = 1, pageSize: number = 10): Observable<PagedResult<TechnologyReport>> {
+    return this.http.get<PagedResult<TechnologyReport>>(`${this.apiUrl}/api/technology-reports/by-keyword/${encodeURIComponent(keyword)}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(catchError(this.handleError));
+  }
+
+  getTechnologyReportPdfPath(id: string): Observable<{ pdfPath: string }> {
+    return this.http.get<{ pdfPath: string }>(`${this.apiUrl}/api/technology-reports/${id}/pdf-path`).pipe(catchError(this.handleError));
+  }
+
+  downloadTechnologyReportPdf(id: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/api/technology-reports/${id}/download-pdf`, { responseType: 'blob' }).pipe(catchError(this.handleError));
+  }
+
+  deleteTechnologyReport(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/api/technology-reports/${id}`).pipe(catchError(this.handleError));
   }
 
   // Dashboard - Aggregate data from existing endpoints
@@ -227,6 +458,33 @@ export class ApiService {
 
   getOfficesByRegion(region: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/api/companycontact/offices/region/${region}`).pipe(catchError(this.handleError));
+  }
+
+  private buildTechQuery(filter?: TechnologyIntelligenceFilter, extraParams?: Record<string, string>): string {
+    const params = new URLSearchParams();
+
+    if (filter?.keywords) {
+      filter.keywords.forEach(keyword => {
+        if (keyword) params.append('keywords', keyword);
+      });
+    }
+
+    if (filter?.sourceTypes) {
+      filter.sourceTypes.forEach(source => {
+        if (source) params.append('sourceTypes', source);
+      });
+    }
+
+    if (filter?.region) params.set('region', filter.region);
+    if (filter?.fromDate) params.set('fromDate', filter.fromDate);
+    if (filter?.toDate) params.set('toDate', filter.toDate);
+
+    if (extraParams) {
+      Object.entries(extraParams).forEach(([key, value]) => params.set(key, value));
+    }
+
+    const query = params.toString();
+    return query ? `?${query}` : '';
   }
 
   private handleError(error: any): Observable<never> {

@@ -19,6 +19,7 @@ from dateutil import parser as date_parser
 from api_client import MarketIntelApiClient
 from state_manager import StateManager
 from ai_summarizer import SummaryAndSentimentProcessor
+from tech_keywords import load_keywords, extract_keywords
 
 # Setup logging
 logging.basicConfig(
@@ -43,6 +44,9 @@ class RssWatcher:
             feeds_file: (Deprecated) Path to feeds.json - not used if feeds are fetched from API
         """
         self.config = self._load_config(config_file)
+        keywords_file = self.config.get('tech_keywords_file')
+        keywords_path = Path(keywords_file) if keywords_file else (Path(config_file).parent / 'tech_keywords.json')
+        self.tech_keywords = load_keywords(keywords_path)
         # Try to fetch feeds from API, fallback to JSON file if API unavailable
         self.feeds = self._fetch_feeds_from_api() or self._load_feeds(feeds_file)
         self.state_manager = StateManager(Path('state.json'))
@@ -175,6 +179,13 @@ class RssWatcher:
             source=feed.get('name', 'RSS Feed')
         )
 
+        raw_tags = self._extract_tags(entry)
+        tech_tags = extract_keywords(
+            f"{title}\n{content}\n{entry.get('summary', '')}",
+            self.tech_keywords
+        )
+        tags = list(set(raw_tags + tech_tags))
+
         article = {
             'source': feed.get('name', 'RSS Feed'),
             'url': entry.get('link', ''),
@@ -183,7 +194,7 @@ class RssWatcher:
             'region': feed.get('region', 'Global'),
             'summary': ai_analysis.get('summary') or entry.get('summary', '')[:500],
             'bodyText': content[:5000],
-            'tags': self._extract_tags(entry),
+            'tags': tags,
             # Add AI analysis results
             'sentimentScore': ai_analysis.get('sentiment_score'),
             'sentimentLabel': ai_analysis.get('sentiment_label'),

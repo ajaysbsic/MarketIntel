@@ -19,6 +19,7 @@ public class ReportService : IReportService
     private readonly IFinancialReportRepository _reportRepository;
     private readonly IFinancialMetricRepository _metricRepository;
     private readonly ISmartAlertRepository _alertRepository;
+    private readonly ITagRepository _tagRepository;
     private readonly IDocumentAnalyzer _documentAnalyzer;
     private readonly MetricExtractionService _metricExtraction;
     private readonly AlertRulesEngine _alertEngine;
@@ -31,6 +32,7 @@ public class ReportService : IReportService
         IFinancialReportRepository reportRepository,
         IFinancialMetricRepository metricRepository,
         ISmartAlertRepository alertRepository,
+        ITagRepository tagRepository,
         IDocumentAnalyzer documentAnalyzer,
         MetricExtractionService metricExtraction,
         AlertRulesEngine alertEngine,
@@ -42,6 +44,7 @@ public class ReportService : IReportService
         _reportRepository = reportRepository;
         _metricRepository = metricRepository;
         _alertRepository = alertRepository;
+        _tagRepository = tagRepository;
         _documentAnalyzer = documentAnalyzer;
         _metricExtraction = metricExtraction;
         _alertEngine = alertEngine;
@@ -95,6 +98,19 @@ public class ReportService : IReportService
                 IsProcessed = false,
                 CreatedUtc = DateTime.UtcNow
             };
+
+            if (request.Tags != null && request.Tags.Any())
+            {
+                foreach (var tagName in request.Tags.Where(t => !string.IsNullOrWhiteSpace(t)))
+                {
+                    var tag = await _tagRepository.GetOrCreateAsync(tagName.Trim());
+                    report.FinancialReportTags.Add(new FinancialReportTag
+                    {
+                        FinancialReportId = report.Id,
+                        TagId = tag.Id
+                    });
+                }
+            }
 
             // Serialize metadata if provided
             if (request.Metadata != null)
@@ -290,7 +306,7 @@ public class ReportService : IReportService
     {
         try
         {
-            var report = await _reportRepository.GetByIdAsync(id, includeRelated: false);
+            var report = await _reportRepository.GetByIdAsync(id, includeRelated: true);
             if (report == null)
                 return Result<FinancialReportDto>.Failure("Report not found");
 
@@ -317,6 +333,20 @@ public class ReportService : IReportService
             if (request.Metadata != null)
             {
                 report.Metadata = JsonSerializer.Serialize(request.Metadata);
+            }
+
+            if (request.Tags != null)
+            {
+                report.FinancialReportTags.Clear();
+                foreach (var tagName in request.Tags.Where(t => !string.IsNullOrWhiteSpace(t)))
+                {
+                    var tag = await _tagRepository.GetOrCreateAsync(tagName.Trim());
+                    report.FinancialReportTags.Add(new FinancialReportTag
+                    {
+                        FinancialReportId = report.Id,
+                        TagId = tag.Id
+                    });
+                }
             }
 
             await _reportRepository.UpdateAsync(report);
@@ -395,6 +425,7 @@ public class ReportService : IReportService
                 filter.IsProcessed,
                 filter.FromDate,
                 filter.ToDate,
+                filter.Tags,
                 filter.PageNumber,
                 filter.PageSize);
 
@@ -408,7 +439,8 @@ public class ReportService : IReportService
                 filter.ProcessingStatus,
                 filter.IsProcessed,
                 filter.FromDate,
-                filter.ToDate);
+                filter.ToDate,
+                filter.Tags);
 
             var dtos = reports.Select(r => MapToDto(r, includeRelated: true)).ToList();
             var paginatedList = new PaginatedList<FinancialReportDto>(
@@ -1094,6 +1126,7 @@ public class ReportService : IReportService
             CreatedUtc = report.CreatedUtc,
             UpdatedUtc = report.UpdatedUtc,
             ProcessedUtc = report.ProcessedUtc,
+            Tags = report.FinancialReportTags?.Select(rt => rt.Tag.Name).ToList() ?? new List<string>(),
             RelatedArticlesCount = report.RelatedArticles?.Count ?? 0
         };
 

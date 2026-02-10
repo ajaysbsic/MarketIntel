@@ -27,7 +27,9 @@ public class FinancialReportRepository : IFinancialReportRepository
             query = query
                 .Include(r => r.Sections.OrderBy(s => s.OrderIndex))
                 .Include(r => r.Analysis)
-                .Include(r => r.RelatedArticles);
+                .Include(r => r.RelatedArticles)
+                .Include(r => r.FinancialReportTags)
+                .ThenInclude(rt => rt.Tag);
         }
 
         return await query.FirstOrDefaultAsync(r => r.Id == id);
@@ -43,6 +45,8 @@ public class FinancialReportRepository : IFinancialReportRepository
     {
         return await _context.FinancialReports
             .OrderByDescending(r => r.PublishedDate ?? r.CreatedUtc)
+            .Include(r => r.FinancialReportTags)
+            .ThenInclude(rt => rt.Tag)
             .ToListAsync();
     }
 
@@ -128,10 +132,14 @@ public class FinancialReportRepository : IFinancialReportRepository
         bool? isProcessed = null,
         DateTime? fromDate = null,
         DateTime? toDate = null,
+        List<string>? tags = null,
         int pageNumber = 1,
         int pageSize = 20)
     {
-        var query = _context.FinancialReports.AsQueryable();
+        var query = _context.FinancialReports
+            .Include(r => r.FinancialReportTags)
+            .ThenInclude(rt => rt.Tag)
+            .AsQueryable();
 
         // Apply filters
         if (!string.IsNullOrWhiteSpace(companyName))
@@ -164,6 +172,13 @@ public class FinancialReportRepository : IFinancialReportRepository
         if (toDate.HasValue)
             query = query.Where(r => r.PublishedDate <= toDate || r.CreatedUtc <= toDate);
 
+        if (tags != null && tags.Any())
+        {
+            var normalizedTags = tags.Select(t => t.ToUpperInvariant()).ToList();
+            query = query.Where(r => r.FinancialReportTags
+                .Any(rt => normalizedTags.Contains(rt.Tag.NormalizedName)));
+        }
+
         // Pagination
         return await query
             .OrderByDescending(r => r.PublishedDate ?? r.CreatedUtc)
@@ -183,7 +198,8 @@ public class FinancialReportRepository : IFinancialReportRepository
         string? processingStatus = null,
         bool? isProcessed = null,
         DateTime? fromDate = null,
-        DateTime? toDate = null)
+        DateTime? toDate = null,
+        List<string>? tags = null)
     {
         var query = _context.FinancialReports.AsQueryable();
 
@@ -218,6 +234,13 @@ public class FinancialReportRepository : IFinancialReportRepository
         if (toDate.HasValue)
             query = query.Where(r => r.PublishedDate <= toDate || r.CreatedUtc <= toDate);
 
+        if (tags != null && tags.Any())
+        {
+            var normalizedTags = tags.Select(t => t.ToUpperInvariant()).ToList();
+            query = query.Where(r => r.FinancialReportTags
+                .Any(rt => normalizedTags.Contains(rt.Tag.NormalizedName)));
+        }
+
         return await query.CountAsync();
     }
 
@@ -227,6 +250,8 @@ public class FinancialReportRepository : IFinancialReportRepository
             .OrderByDescending(r => r.PublishedDate ?? r.CreatedUtc)
             .Take(count)
             .Include(r => r.Analysis)
+            .Include(r => r.FinancialReportTags)
+            .ThenInclude(rt => rt.Tag)
             .ToListAsync();
     }
 
@@ -236,6 +261,8 @@ public class FinancialReportRepository : IFinancialReportRepository
             .Where(r => r.CompanyName.Contains(companyName))
             .OrderByDescending(r => r.PublishedDate ?? r.CreatedUtc)
             .Include(r => r.Analysis)
+            .Include(r => r.FinancialReportTags)
+            .ThenInclude(rt => rt.Tag)
             .ToListAsync();
     }
 

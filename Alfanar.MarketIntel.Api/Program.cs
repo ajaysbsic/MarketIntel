@@ -43,13 +43,24 @@ builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<IFinancialReportRepository, FinancialReportRepository>();
 builder.Services.AddScoped<IFinancialMetricRepository, FinancialMetricRepository>(); // NEW
 builder.Services.AddScoped<ISmartAlertRepository, SmartAlertRepository>(); // NEW
+builder.Services.AddScoped<IKeywordMonitorRepository, KeywordMonitorRepository>();
+builder.Services.AddScoped<IWebSearchResultRepository, WebSearchResultRepository>();
+builder.Services.AddScoped<ITechnologyReportRepository, TechnologyReportRepository>();
 
 // Service Registration
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IRssFeedService, RssFeedService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<ITechnologyIntelligenceService, TechnologyIntelligenceService>();
 builder.Services.AddScoped<ICategoryClassifier, RuleBasedCategoryClassifier>();
 builder.Services.AddHttpClient();
+
+// Web Search & Monitoring Services
+builder.Services.AddScoped<IWebSearchProvider, GoogleSearchService>();
+builder.Services.AddScoped<IWebSearchProvider, NewsApiService>();
+builder.Services.AddScoped<IWebSearchService, WebSearchService>();
+builder.Services.AddScoped<IKeywordMonitorService, KeywordMonitorService>();
+builder.Services.AddScoped<ITechnologyReportService, TechnologyReportService>();
 
 var useAzureBlobStorage = builder.Configuration.GetValue<bool>("AzureStorage:UseAzureBlobStorage");
 if (useAzureBlobStorage)

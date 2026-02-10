@@ -138,4 +138,9 @@ public class FinancialReport
     /// Related news articles
     /// </summary>
     public ICollection<NewsArticle> RelatedArticles { get; set; } = new List<NewsArticle>();
+
+    /// <summary>
+    /// Tags associated with the report
+    /// </summary>
+    public ICollection<FinancialReportTag> FinancialReportTags { get; set; } = new List<FinancialReportTag>();
 }

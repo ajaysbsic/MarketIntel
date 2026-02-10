@@ -27,6 +27,7 @@ public class FinancialReportDto
     public DateTime CreatedUtc { get; set; }
     public DateTime? UpdatedUtc { get; set; }
     public DateTime? ProcessedUtc { get; set; }
+    public List<string> Tags { get; set; } = new();
     
     // Related data
     public ReportAnalysisDto? Analysis { get; set; }

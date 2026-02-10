@@ -29,6 +29,7 @@ public interface IFinancialReportRepository
         bool? isProcessed = null,
         DateTime? fromDate = null,
         DateTime? toDate = null,
+        List<string>? tags = null,
         int pageNumber = 1,
         int pageSize = 20);
     
@@ -42,7 +43,8 @@ public interface IFinancialReportRepository
         string? processingStatus = null,
         bool? isProcessed = null,
         DateTime? fromDate = null,
-        DateTime? toDate = null);
+        DateTime? toDate = null,
+        List<string>? tags = null);
     
     // Specific queries
     Task<List<FinancialReport>> GetRecentAsync(int count = 10);

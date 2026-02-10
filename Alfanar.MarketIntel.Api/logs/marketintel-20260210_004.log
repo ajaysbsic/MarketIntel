@@ -1,0 +1,202 @@
+2026-02-10 10:57:37.056 +03:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-02-10 10:57:37.088 +03:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-02-10 10:57:37.089 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-02-10 10:57:37.090 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-02-10 10:57:37.102 +03:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-02-10 10:57:37.117 +03:00 [INF] No migrations were applied. The database is already up to date.
+2026-02-10 10:57:37.118 +03:00 [INF] Database migration completed successfully
+2026-02-10 10:57:37.120 +03:00 [INF] Market Intelligence API starting...
+2026-02-10 10:57:37.142 +03:00 [INF] Now listening on: http://localhost:5021
+2026-02-10 10:57:37.143 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-02-10 10:57:37.143 +03:00 [INF] Hosting environment: Development
+2026-02-10 10:57:37.144 +03:00 [INF] Content root path: D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Api
+2026-02-10 10:58:20.721 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/swagger/index.html - null null
+2026-02-10 10:58:20.786 +03:00 [INF] HTTP GET /swagger/index.html responded 200 in 49.2980 ms
+2026-02-10 10:58:20.787 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/swagger/index.html - 200 null text/html;charset=utf-8 66.7753ms
+2026-02-10 10:58:36.048 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/swagger/index.html - null null
+2026-02-10 10:58:36.050 +03:00 [INF] HTTP GET /swagger/index.html responded 200 in 0.7830 ms
+2026-02-10 10:58:36.051 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/swagger/index.html - 200 null text/html;charset=utf-8 2.1967ms
+2026-02-10 10:58:44.811 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - application/json 135
+2026-02-10 10:58:44.813 +03:00 [WRN] Failed to determine the https port for redirect.
+2026-02-10 10:58:44.815 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:58:44.822 +03:00 [INF] Route matched with {action = "CreateMonitor", controller = "KeywordMonitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateMonitorAsync(Alfanar.MarketIntel.Application.DTOs.CreateKeywordMonitorDto) on controller Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController (Alfanar.MarketIntel.Api).
+2026-02-10 10:58:44.834 +03:00 [INF] Creating new keyword monitor for: STATCOM power grid
+2026-02-10 10:58:44.969 +03:00 [INF] Executed DbCommand (13ms) [Parameters=[@__ToLower_0='?' (Size = 500)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [k].[Id], [k].[CheckIntervalMinutes], [k].[CreatedBy], [k].[CreatedUtc], [k].[IsActive], [k].[Keyword], [k].[LastCheckedUtc], [k].[MaxResultsPerCheck], [k].[Tags]
+FROM [KeywordMonitors] AS [k]
+WHERE LOWER([k].[Keyword]) = @__ToLower_0
+2026-02-10 10:58:45.041 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Int32), @p2='?' (Size = 4000), @p3='?' (DbType = DateTime2), @p4='?' (DbType = Boolean), @p5='?' (Size = 500), @p6='?' (DbType = DateTime2), @p7='?' (DbType = Int32), @p8='?' (Size = 2000)], CommandType='"Text"', CommandTimeout='30']
+SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+INSERT INTO [KeywordMonitors] ([Id], [CheckIntervalMinutes], [CreatedBy], [CreatedUtc], [IsActive], [Keyword], [LastCheckedUtc], [MaxResultsPerCheck], [Tags])
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
+2026-02-10 10:58:45.045 +03:00 [INF] Keyword monitor created for: STATCOM power grid
+2026-02-10 10:58:45.048 +03:00 [INF] Executing CreatedResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.KeywordMonitorDto'.
+2026-02-10 10:58:45.055 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api) in 230.8148ms
+2026-02-10 10:58:45.055 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:58:45.056 +03:00 [INF] HTTP POST /api/keyword-monitors responded 201 in 242.9083 ms
+2026-02-10 10:58:45.057 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - 201 null application/json; charset=utf-8 245.871ms
+2026-02-10 10:58:50.222 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - application/json 113
+2026-02-10 10:58:50.224 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:58:50.224 +03:00 [INF] Route matched with {action = "CreateMonitor", controller = "KeywordMonitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateMonitorAsync(Alfanar.MarketIntel.Application.DTOs.CreateKeywordMonitorDto) on controller Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController (Alfanar.MarketIntel.Api).
+2026-02-10 10:58:50.226 +03:00 [INF] Creating new keyword monitor for: STATCOM
+2026-02-10 10:58:50.260 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@__ToLower_0='?' (Size = 500)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [k].[Id], [k].[CheckIntervalMinutes], [k].[CreatedBy], [k].[CreatedUtc], [k].[IsActive], [k].[Keyword], [k].[LastCheckedUtc], [k].[MaxResultsPerCheck], [k].[Tags]
+FROM [KeywordMonitors] AS [k]
+WHERE LOWER([k].[Keyword]) = @__ToLower_0
+2026-02-10 10:58:50.264 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-10 10:58:50.265 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api) in 40.4255ms
+2026-02-10 10:58:50.265 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:58:50.266 +03:00 [INF] HTTP POST /api/keyword-monitors responded 400 in 41.8932 ms
+2026-02-10 10:58:50.266 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - 400 null application/json; charset=utf-8 43.6857ms
+2026-02-10 10:58:54.181 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - application/json 81
+2026-02-10 10:58:54.182 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:58:54.182 +03:00 [INF] Route matched with {action = "CreateMonitor", controller = "KeywordMonitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateMonitorAsync(Alfanar.MarketIntel.Application.DTOs.CreateKeywordMonitorDto) on controller Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController (Alfanar.MarketIntel.Api).
+2026-02-10 10:58:54.184 +03:00 [INF] Creating new keyword monitor for: STATCOM
+2026-02-10 10:58:54.185 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@__ToLower_0='?' (Size = 500)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [k].[Id], [k].[CheckIntervalMinutes], [k].[CreatedBy], [k].[CreatedUtc], [k].[IsActive], [k].[Keyword], [k].[LastCheckedUtc], [k].[MaxResultsPerCheck], [k].[Tags]
+FROM [KeywordMonitors] AS [k]
+WHERE LOWER([k].[Keyword]) = @__ToLower_0
+2026-02-10 10:58:54.186 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-10 10:58:54.187 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api) in 4.2868ms
+2026-02-10 10:58:54.187 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:58:54.187 +03:00 [INF] HTTP POST /api/keyword-monitors responded 400 in 5.3536 ms
+2026-02-10 10:58:54.187 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - 400 null application/json; charset=utf-8 6.0322ms
+2026-02-10 10:58:59.435 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - application/json 81
+2026-02-10 10:58:59.436 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:58:59.436 +03:00 [INF] Route matched with {action = "CreateMonitor", controller = "KeywordMonitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateMonitorAsync(Alfanar.MarketIntel.Application.DTOs.CreateKeywordMonitorDto) on controller Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController (Alfanar.MarketIntel.Api).
+2026-02-10 10:58:59.437 +03:00 [INF] Creating new keyword monitor for: STATCOM
+2026-02-10 10:58:59.438 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@__ToLower_0='?' (Size = 500)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [k].[Id], [k].[CheckIntervalMinutes], [k].[CreatedBy], [k].[CreatedUtc], [k].[IsActive], [k].[Keyword], [k].[LastCheckedUtc], [k].[MaxResultsPerCheck], [k].[Tags]
+FROM [KeywordMonitors] AS [k]
+WHERE LOWER([k].[Keyword]) = @__ToLower_0
+2026-02-10 10:58:59.439 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-10 10:58:59.439 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api) in 2.536ms
+2026-02-10 10:58:59.439 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:58:59.439 +03:00 [INF] HTTP POST /api/keyword-monitors responded 400 in 3.4140 ms
+2026-02-10 10:58:59.439 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - 400 null application/json; charset=utf-8 4.0134ms
+2026-02-10 10:59:04.021 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - application/json 81
+2026-02-10 10:59:04.021 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:59:04.021 +03:00 [INF] Route matched with {action = "CreateMonitor", controller = "KeywordMonitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateMonitorAsync(Alfanar.MarketIntel.Application.DTOs.CreateKeywordMonitorDto) on controller Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController (Alfanar.MarketIntel.Api).
+2026-02-10 10:59:04.022 +03:00 [INF] Creating new keyword monitor for: STATCOM
+2026-02-10 10:59:04.023 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@__ToLower_0='?' (Size = 500)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [k].[Id], [k].[CheckIntervalMinutes], [k].[CreatedBy], [k].[CreatedUtc], [k].[IsActive], [k].[Keyword], [k].[LastCheckedUtc], [k].[MaxResultsPerCheck], [k].[Tags]
+FROM [KeywordMonitors] AS [k]
+WHERE LOWER([k].[Keyword]) = @__ToLower_0
+2026-02-10 10:59:04.024 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-10 10:59:04.024 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api) in 2.561ms
+2026-02-10 10:59:04.024 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 10:59:04.024 +03:00 [INF] HTTP POST /api/keyword-monitors responded 400 in 3.4051 ms
+2026-02-10 10:59:04.024 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - 400 null application/json; charset=utf-8 3.9425ms
+2026-02-10 11:00:09.838 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - application/json 81
+2026-02-10 11:00:09.839 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 11:00:09.839 +03:00 [INF] Route matched with {action = "CreateMonitor", controller = "KeywordMonitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateMonitorAsync(Alfanar.MarketIntel.Application.DTOs.CreateKeywordMonitorDto) on controller Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController (Alfanar.MarketIntel.Api).
+2026-02-10 11:00:09.840 +03:00 [INF] Creating new keyword monitor for: STATCOM
+2026-02-10 11:00:09.852 +03:00 [INF] Executed DbCommand (11ms) [Parameters=[@__ToLower_0='?' (Size = 500)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [k].[Id], [k].[CheckIntervalMinutes], [k].[CreatedBy], [k].[CreatedUtc], [k].[IsActive], [k].[Keyword], [k].[LastCheckedUtc], [k].[MaxResultsPerCheck], [k].[Tags]
+FROM [KeywordMonitors] AS [k]
+WHERE LOWER([k].[Keyword]) = @__ToLower_0
+2026-02-10 11:00:09.852 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-10 11:00:09.853 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api) in 13.2291ms
+2026-02-10 11:00:09.853 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 11:00:09.853 +03:00 [INF] HTTP POST /api/keyword-monitors responded 400 in 14.1020 ms
+2026-02-10 11:00:09.853 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - 400 null application/json; charset=utf-8 14.7401ms
+2026-02-10 11:00:16.472 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - application/json 81
+2026-02-10 11:00:16.472 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 11:00:16.473 +03:00 [INF] Route matched with {action = "CreateMonitor", controller = "KeywordMonitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateMonitorAsync(Alfanar.MarketIntel.Application.DTOs.CreateKeywordMonitorDto) on controller Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController (Alfanar.MarketIntel.Api).
+2026-02-10 11:00:16.474 +03:00 [INF] Creating new keyword monitor for: STATCOM
+2026-02-10 11:00:16.475 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@__ToLower_0='?' (Size = 500)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [k].[Id], [k].[CheckIntervalMinutes], [k].[CreatedBy], [k].[CreatedUtc], [k].[IsActive], [k].[Keyword], [k].[LastCheckedUtc], [k].[MaxResultsPerCheck], [k].[Tags]
+FROM [KeywordMonitors] AS [k]
+WHERE LOWER([k].[Keyword]) = @__ToLower_0
+2026-02-10 11:00:16.476 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-02-10 11:00:16.476 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api) in 2.9041ms
+2026-02-10 11:00:16.476 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 11:00:16.477 +03:00 [INF] HTTP POST /api/keyword-monitors responded 400 in 4.2707 ms
+2026-02-10 11:00:16.477 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - 400 null application/json; charset=utf-8 5.0338ms
+2026-02-10 11:00:22.972 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - application/json 91
+2026-02-10 11:00:22.972 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 11:00:22.973 +03:00 [INF] Route matched with {action = "CreateMonitor", controller = "KeywordMonitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateMonitorAsync(Alfanar.MarketIntel.Application.DTOs.CreateKeywordMonitorDto) on controller Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController (Alfanar.MarketIntel.Api).
+2026-02-10 11:00:22.973 +03:00 [INF] Creating new keyword monitor for: HVDC transmission
+2026-02-10 11:00:22.975 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[@__ToLower_0='?' (Size = 500)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [k].[Id], [k].[CheckIntervalMinutes], [k].[CreatedBy], [k].[CreatedUtc], [k].[IsActive], [k].[Keyword], [k].[LastCheckedUtc], [k].[MaxResultsPerCheck], [k].[Tags]
+FROM [KeywordMonitors] AS [k]
+WHERE LOWER([k].[Keyword]) = @__ToLower_0
+2026-02-10 11:00:22.985 +03:00 [INF] Executed DbCommand (9ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Int32), @p2='?' (Size = 4000), @p3='?' (DbType = DateTime2), @p4='?' (DbType = Boolean), @p5='?' (Size = 500), @p6='?' (DbType = DateTime2), @p7='?' (DbType = Int32), @p8='?' (Size = 2000)], CommandType='"Text"', CommandTimeout='30']
+SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+INSERT INTO [KeywordMonitors] ([Id], [CheckIntervalMinutes], [CreatedBy], [CreatedUtc], [IsActive], [Keyword], [LastCheckedUtc], [MaxResultsPerCheck], [Tags])
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
+2026-02-10 11:00:22.986 +03:00 [INF] Keyword monitor created for: HVDC transmission
+2026-02-10 11:00:22.986 +03:00 [INF] Executing CreatedResult, writing value of type 'Alfanar.MarketIntel.Application.DTOs.KeywordMonitorDto'.
+2026-02-10 11:00:22.987 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api) in 13.8701ms
+2026-02-10 11:00:22.987 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.KeywordMonitorController.CreateMonitorAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 11:00:22.987 +03:00 [INF] HTTP POST /api/keyword-monitors responded 201 in 14.8696 ms
+2026-02-10 11:00:22.987 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/keyword-monitors - 201 null application/json; charset=utf-8 15.4099ms
+2026-02-10 11:00:33.749 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/web-search/search - application/json 46
+2026-02-10 11:00:33.749 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 11:00:33.752 +03:00 [INF] Route matched with {action = "Search", controller = "WebSearch"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchAsync(Alfanar.MarketIntel.Application.DTOs.WebSearchRequestDto) on controller Alfanar.MarketIntel.Api.Controllers.WebSearchController (Alfanar.MarketIntel.Api).
+2026-02-10 11:00:33.756 +03:00 [INF] Processing web search for keyword: HVDC transmission
+2026-02-10 11:00:33.758 +03:00 [INF] Searching with google for: HVDC transmission
+2026-02-10 11:00:33.758 +03:00 [WRN] Google Search API call not yet implemented for keyword: HVDC transmission
+2026-02-10 11:00:33.759 +03:00 [INF] Cached 0 search results for: HVDC transmission
+2026-02-10 11:00:33.760 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Alfanar.MarketIntel.Application.DTOs.WebSearchResultDto, Alfanar.MarketIntel.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-02-10 11:00:33.761 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api) in 9.5169ms
+2026-02-10 11:00:33.761 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)'
+2026-02-10 11:00:33.762 +03:00 [INF] HTTP POST /api/web-search/search responded 200 in 12.5678 ms
+2026-02-10 11:00:33.762 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/web-search/search - 200 null application/json; charset=utf-8 13.2393ms
+2026-02-10 11:01:55.018 +03:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-02-10 11:01:55.051 +03:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-02-10 11:01:55.052 +03:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-02-10 11:01:55.053 +03:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-02-10 11:01:55.064 +03:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-02-10 11:01:55.081 +03:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-02-10 11:01:55.082 +03:00 [INF] Database migration completed successfully {}
+2026-02-10 11:01:55.084 +03:00 [INF] Market Intelligence API starting... {}
+2026-02-10 11:01:55.106 +03:00 [INF] Now listening on: http://localhost:5021 {"EventId":{"Id":14,"Name":"ListeningOnAddress"},"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-02-10 11:01:55.107 +03:00 [INF] Application started. Press Ctrl+C to shut down. {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-02-10 11:01:55.108 +03:00 [INF] Hosting environment: Development {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-02-10 11:01:55.108 +03:00 [INF] Content root path: D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Api {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-02-10 11:02:26.663 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5021/swagger/index.html - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNJ8FATGLA6E:00000001","RequestPath":"/swagger/index.html","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:02:26.708 +03:00 [INF] HTTP GET /swagger/index.html responded 200 in 30.5192 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNJ8FATGLA6E:00000001","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:02:26.709 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5021/swagger/index.html - 200 null text/html;charset=utf-8 46.7614ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNJ8FATGLA6E:00000001","RequestPath":"/swagger/index.html","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.064 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5021/api/web-search/search - application/json 33 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.066 +03:00 [WRN] Failed to determine the https port for redirect. {"EventId":{"Id":3,"Name":"FailedToDeterminePort"},"SourceContext":"Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.068 +03:00 [INF] Executing endpoint 'Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)' {"EventId":{"Name":"ExecutingEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.075 +03:00 [INF] Route matched with {action = "Search", controller = "WebSearch"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchAsync(Alfanar.MarketIntel.Application.DTOs.WebSearchRequestDto) on controller Alfanar.MarketIntel.Api.Controllers.WebSearchController (Alfanar.MarketIntel.Api). {"EventId":{"Id":102,"Name":"ControllerActionExecuting"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.090 +03:00 [INF] Processing web search for keyword: HVDC {"SourceContext":"Alfanar.MarketIntel.Api.Controllers.WebSearchController","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.092 +03:00 [INF] Searching with google for: HVDC {"SourceContext":"Alfanar.MarketIntel.Application.Services.WebSearchService","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.093 +03:00 [INF] Executing Google Custom Search for: HVDC {"SourceContext":"Alfanar.MarketIntel.Application.Services.GoogleSearchService","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.093 +03:00 [DBG] Calling Google Custom Search API: https://www.googleapis.com/customsearch/v1 {"SourceContext":"Alfanar.MarketIntel.Application.Services.GoogleSearchService","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:00.096 +03:00 [INF] Start processing HTTP request GET https://www.googleapis.com/customsearch/v1?q=HVDC&key=AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ&cx=50edacb13c3074780&num=5 {"EventId":{"Id":100,"Name":"RequestPipelineStart"},"SourceContext":"System.Net.Http.HttpClient.Default.LogicalHandler","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E","Scope":["HTTP GET https://www.googleapis.com/customsearch/v1?q=HVDC&key=AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ&cx=50edacb13c3074780&num=5"]}
+2026-02-10 11:04:00.097 +03:00 [INF] Sending HTTP request GET https://www.googleapis.com/customsearch/v1?q=HVDC&key=AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ&cx=50edacb13c3074780&num=5 {"EventId":{"Id":100,"Name":"RequestStart"},"SourceContext":"System.Net.Http.HttpClient.Default.ClientHandler","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E","Scope":["HTTP GET https://www.googleapis.com/customsearch/v1?q=HVDC&key=AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ&cx=50edacb13c3074780&num=5"]}
+2026-02-10 11:04:04.061 +03:00 [INF] Received HTTP response headers after 3962.4692ms - 403 {"EventId":{"Id":101,"Name":"RequestEnd"},"SourceContext":"System.Net.Http.HttpClient.Default.ClientHandler","HttpMethod":"GET","Uri":"https://www.googleapis.com/customsearch/v1?q=HVDC&key=AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ&cx=50edacb13c3074780&num=5","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E","Scope":["HTTP GET https://www.googleapis.com/customsearch/v1?q=HVDC&key=AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ&cx=50edacb13c3074780&num=5"]}
+2026-02-10 11:04:04.061 +03:00 [INF] End processing HTTP request after 3966.9399ms - 403 {"EventId":{"Id":101,"Name":"RequestPipelineEnd"},"SourceContext":"System.Net.Http.HttpClient.Default.LogicalHandler","HttpMethod":"GET","Uri":"https://www.googleapis.com/customsearch/v1?q=HVDC&key=AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ&cx=50edacb13c3074780&num=5","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E","Scope":["HTTP GET https://www.googleapis.com/customsearch/v1?q=HVDC&key=AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ&cx=50edacb13c3074780&num=5"]}
+2026-02-10 11:04:04.063 +03:00 [ERR] Error searching with Google for keyword: HVDC {"SourceContext":"Alfanar.MarketIntel.Application.Services.GoogleSearchService","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+System.Net.Http.HttpRequestException: Response status code does not indicate success: 403 (Forbidden).
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Alfanar.MarketIntel.Application.Services.GoogleSearchService.SearchAsync(WebSearchRequestDto request) in D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Application\Services\GoogleSearchService.cs:line 67
+2026-02-10 11:04:04.067 +03:00 [ERR] Error performing web search for: HVDC {"SourceContext":"Alfanar.MarketIntel.Application.Services.WebSearchService","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+System.Net.Http.HttpRequestException: Response status code does not indicate success: 403 (Forbidden).
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Alfanar.MarketIntel.Application.Services.GoogleSearchService.SearchAsync(WebSearchRequestDto request) in D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Application\Services\GoogleSearchService.cs:line 67
+   at Alfanar.MarketIntel.Application.Services.WebSearchService.SearchAsync(WebSearchRequestDto request) in D:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Application\Services\WebSearchService.cs:line 55
+2026-02-10 11:04:04.070 +03:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType2`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'. {"EventId":{"Id":1,"Name":"ObjectResultExecuting"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor","ActionId":"7296e3ed-095e-48fe-8bdc-1462a882c09b","ActionName":"Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:04.073 +03:00 [INF] Executed action Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api) in 3995.6549ms {"EventId":{"Id":105,"Name":"ActionExecuted"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:04.073 +03:00 [INF] Executed endpoint 'Alfanar.MarketIntel.Api.Controllers.WebSearchController.SearchAsync (Alfanar.MarketIntel.Api)' {"EventId":{"Id":1,"Name":"ExecutedEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:04.074 +03:00 [INF] HTTP POST /api/web-search/search responded 400 in 4008.4854 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNJ8FATGLA6E:00000002","ConnectionId":"0HNJ8FATGLA6E"}
+2026-02-10 11:04:04.075 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5021/api/web-search/search - 400 null application/json; charset=utf-8 4011.0139ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNJ8FATGLA6E:00000002","RequestPath":"/api/web-search/search","ConnectionId":"0HNJ8FATGLA6E"}

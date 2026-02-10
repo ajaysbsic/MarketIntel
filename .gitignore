@@ -7,6 +7,8 @@ node_modules/
 # IDE
 .vs/
 *.user
+*.suo
+*.sln.docstates
 
 # Docs (exclude entire folder)
 docs/
@@ -19,4 +21,18 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Environment and configuration with secrets
+.env
+.env.local
+.env.*.local
+appsettings.*.json
+config_*.json
+*.local.json
+.secrets/
+
+# User secrets
+**/Properties/launchSettings.json
 

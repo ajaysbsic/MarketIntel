@@ -12,6 +12,7 @@ public class MarketIntelDbContext : DbContext
     public DbSet<NewsArticleTag> NewsArticleTags => Set<NewsArticleTag>();
     public DbSet<RssFeed> RssFeeds => Set<RssFeed>();
     public DbSet<FinancialReport> FinancialReports => Set<FinancialReport>();
+    public DbSet<FinancialReportTag> FinancialReportTags => Set<FinancialReportTag>();
     public DbSet<ReportSection> ReportSections => Set<ReportSection>();
     public DbSet<ReportAnalysis> ReportAnalyses => Set<ReportAnalysis>();
     public DbSet<FinancialMetric> FinancialMetrics => Set<FinancialMetric>();
@@ -19,6 +20,12 @@ public class MarketIntelDbContext : DbContext
     public DbSet<ContactFormSubmission> ContactFormSubmissions => Set<ContactFormSubmission>();
     public DbSet<CompanyContactInfo> CompanyContactInfo => Set<CompanyContactInfo>();
     public DbSet<CompanyOffice> CompanyOffices => Set<CompanyOffice>();
+    
+    // Web Search & Monitoring DbSets
+    public DbSet<KeywordMonitor> KeywordMonitors => Set<KeywordMonitor>();
+    public DbSet<WebSearchResult> WebSearchResults => Set<WebSearchResult>();
+    public DbSet<TechnologyReport> TechnologyReports => Set<TechnologyReport>();
+    public DbSet<ReportResult> ReportResults => Set<ReportResult>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -126,6 +133,24 @@ public class MarketIntelDbContext : DbContext
                 .WithOne(a => a.FinancialReport)
                 .HasForeignKey<ReportAnalysis>(a => a.FinancialReportId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // FinancialReportTag (many-to-many join table) configuration
+        modelBuilder.Entity<FinancialReportTag>(e =>
+        {
+            e.HasKey(x => new { x.FinancialReportId, x.TagId });
+
+            e.HasOne(x => x.FinancialReport)
+                .WithMany(r => r.FinancialReportTags)
+                .HasForeignKey(x => x.FinancialReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(x => x.Tag)
+                .WithMany(t => t.FinancialReportTags)
+                .HasForeignKey(x => x.TagId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(x => x.TagId);
         });
 
         // ReportSection configuration
@@ -260,6 +285,80 @@ public class MarketIntelDbContext : DbContext
             
             e.HasIndex(x => new { x.CompanyContactInfoId, x.Region });
             e.HasIndex(x => x.Country);
+        });
+
+        // KeywordMonitor configuration
+        modelBuilder.Entity<KeywordMonitor>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Keyword).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Tags).HasMaxLength(2000); // JSON array
+            
+            e.HasIndex(x => x.Keyword);
+            e.HasIndex(x => x.IsActive);
+            e.HasIndex(x => x.LastCheckedUtc);
+            
+            // One-to-Many with WebSearchResult
+            e.HasMany(x => x.WebSearchResults)
+                .WithOne(w => w.KeywordMonitor)
+                .HasForeignKey(w => w.KeywordMonitorId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // WebSearchResult configuration
+        modelBuilder.Entity<WebSearchResult>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Keyword).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Title).HasMaxLength(1000).IsRequired();
+            e.Property(x => x.Snippet).HasMaxLength(2000);
+            e.Property(x => x.Url).HasMaxLength(2000).IsRequired();
+            e.Property(x => x.Source).HasMaxLength(200);
+            e.Property(x => x.SearchProvider).HasMaxLength(50);
+            e.Property(x => x.Metadata).HasMaxLength(4000); // JSON
+            
+            e.HasIndex(x => x.Keyword);
+            e.HasIndex(x => x.RetrievedUtc);
+            e.HasIndex(x => x.PublishedDate);
+            e.HasIndex(x => new { x.Keyword, x.Url }).IsUnique(); // Dedupe by keyword+URL
+            e.HasIndex(x => x.IsFromMonitoring);
+            e.HasIndex(x => x.KeywordMonitorId);
+        });
+
+        // TechnologyReport configuration
+        modelBuilder.Entity<TechnologyReport>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Title).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Keywords).HasMaxLength(2000); // JSON array
+            e.Property(x => x.PdfFilePath).HasMaxLength(1000);
+            e.Property(x => x.GeneratedBy).HasMaxLength(200);
+            
+            e.HasIndex(x => x.GeneratedUtc);
+            e.HasIndex(x => x.StartDate);
+            e.HasIndex(x => x.EndDate);
+            
+            // One-to-Many with ReportResult
+            e.HasMany(x => x.ReportResults)
+                .WithOne(r => r.Report)
+                .HasForeignKey(r => r.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ReportResult configuration (join table)
+        modelBuilder.Entity<ReportResult>(e =>
+        {
+            e.HasKey(x => new { x.ReportId, x.WebSearchResultId });
+            
+            e.HasOne(x => x.Report)
+                .WithMany(r => r.ReportResults)
+                .HasForeignKey(x => x.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            e.HasOne(x => x.WebSearchResult)
+                .WithMany(w => w.ReportResults)
+                .HasForeignKey(x => x.WebSearchResultId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Seed Alfanar company contact data

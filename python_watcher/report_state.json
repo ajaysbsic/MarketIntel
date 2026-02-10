@@ -1,1 +1,61 @@
-{}
+{
+  "https://www.se.com/ww/en/about-us/investor-relations/financial-results.jsp": {
+    "last_fetch": null,
+    "processed_urls": [
+      "https://www.se.com/ww/en/assets/564/document/527554/release-Q3-revenues-2025.pdf",
+      "https://www.se.com/ww/en/Images/release-hy-results-2025_tcm564-522132.pdf",
+      "https://www.se.com/ww/en/Images/release-Q1-revenues-2025_tcm564-513476.pdf",
+      "https://www.se.com/ww/en/Images/release-2025-emtn-base-prospectus_tcm564-522910.pdf",
+      "https://www.se.com/ww/en/Images/2024-universal-registration-document_tcm564-510443.pdf",
+      "https://www.se.com/ww/en/Images/release-pre-consensus-Q1-2025_tcm564-511651.pdf",
+      "https://www.se.com/ww/en/Images/release-consensus-post-Q1-2025_tcm564-515081.pdf",
+      "https://www.se.com/ww/en/Images/Schneider%20Electric%20Consensus%20Estimates%20-%20Pre-Q2%202025_tcm564-520422.pdf",
+      "https://www.se.com/ww/en/Images/financial-release-consensus-post-hy-2025_tcm564-523156.pdf",
+      "https://www.se.com/ww/en/assets/564/document/527425/schneider-sustainability-impact-q3-2025-results.pdf",
+      "https://www.se.com/ww/en/Images/2024-sustainability-report_tcm564-513141.pdf",
+      "https://www.se.com/ww/en/Images/2023-sustainability-report_tcm564-466155.pdf",
+      "https://www.se.com/ww/en/Images/2022-sustainability-report_tcm564-396659.pdf",
+      "https://www.se.com/ww/en/Images/schneider-sustainability-impact-q1-2025-results_tcm564-513112.pdf",
+      "https://www.se.com/ww/en/Images/schneider-sustainability-impact-q2-2025-results_tcm564-521733.pdf",
+      "https://www.se.com/ww/en/Images/SESE%20Articles%20of%20Association_tcm564-520590.pdf"
+    ],
+    "total_processed": 16
+  },
+  "https://new.abb.com/investorrelations/reports-and-presentations": {
+    "last_fetch": null,
+    "processed_urls": [
+      "https://www.se.com/ww/en/assets/564/document/527554/release-Q3-revenues-2025.pdf",
+      "https://www.se.com/ww/en/Images/release-hy-results-2025_tcm564-522132.pdf",
+      "https://www.se.com/ww/en/Images/release-Q1-revenues-2025_tcm564-513476.pdf",
+      "https://www.se.com/ww/en/Images/release-2025-emtn-base-prospectus_tcm564-522910.pdf",
+      "https://www.se.com/ww/en/Images/2024-universal-registration-document_tcm564-510443.pdf",
+      "https://www.se.com/ww/en/Images/release-pre-consensus-Q1-2025_tcm564-511651.pdf",
+      "https://www.se.com/ww/en/Images/release-consensus-post-Q1-2025_tcm564-515081.pdf",
+      "https://www.se.com/ww/en/Images/Schneider%20Electric%20Consensus%20Estimates%20-%20Pre-Q2%202025_tcm564-520422.pdf",
+      "https://www.se.com/ww/en/Images/financial-release-consensus-post-hy-2025_tcm564-523156.pdf",
+      "https://www.se.com/ww/en/assets/564/document/527425/schneider-sustainability-impact-q3-2025-results.pdf",
+      "https://www.se.com/ww/en/Images/2024-sustainability-report_tcm564-513141.pdf",
+      "https://www.se.com/ww/en/Images/2023-sustainability-report_tcm564-466155.pdf",
+      "https://www.se.com/ww/en/Images/2022-sustainability-report_tcm564-396659.pdf",
+      "https://www.se.com/ww/en/Images/schneider-sustainability-impact-q1-2025-results_tcm564-513112.pdf",
+      "https://www.se.com/ww/en/Images/schneider-sustainability-impact-q2-2025-results_tcm564-521733.pdf",
+      "https://www.se.com/ww/en/Images/SESE%20Articles%20of%20Association_tcm564-520590.pdf"
+    ],
+    "total_processed": 16
+  },
+  "shutdown": {
+    "last_fetch": "2026-02-09T11:37:30.689927",
+    "processed_urls": [],
+    "total_processed": 0
+  },
+  "https://monta.com/en/": {
+    "last_fetch": null,
+    "processed_urls": [
+      "https://monta.com/app/uploads/sites/12/2024/04/Monta_SOC_2_Type_2_Attestation_Confirmation.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/05/ISO-27001-2022-Certificate.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/10/Monta-Charge-Mobile-App-VPAT-2.5-Intl.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/10/Monta-Hub-VPAT-2.5-Intl.pdf"
+    ],
+    "total_processed": 4
+  }
+}

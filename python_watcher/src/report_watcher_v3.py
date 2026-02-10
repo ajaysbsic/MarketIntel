@@ -22,6 +22,7 @@ from nlp_analyzer import NlpAnalyzer
 from api_client import MarketIntelApiClient
 from state_manager import StateManager
 from web_crawler import FinancialReportCrawler, CrawlConfig
+from tech_keywords import load_keywords, extract_keywords
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,6 +40,9 @@ class ReportWatcherV3:
     
     def __init__(self, config_file: Path, targets_file: Path = None):
         self.config = self._load_config(config_file)
+        keywords_file = self.config.get('tech_keywords_file')
+        keywords_path = Path(keywords_file) if keywords_file else (Path(config_file).parent / 'tech_keywords.json')
+        self.tech_keywords = load_keywords(keywords_path)
         
         # Initialize API client FIRST (needed for fetching targets)
         self.api_client = MarketIntelApiClient(
@@ -478,6 +482,11 @@ class ReportWatcherV3:
         
         import base64
         
+        tags = extract_keywords(
+            f"{pdf_info.get('title', '')}\n{extraction.get('text', '')}\n{pdf_info.get('link_context', '')}",
+            self.tech_keywords
+        )
+
         payload = {
             'companyName': pdf_info.get('company', 'Unknown'),
             'reportType': pdf_info.get('report_type', 'Financial Report'),
@@ -492,7 +501,8 @@ class ReportWatcherV3:
             'sector': pdf_info.get('sector', 'Unknown'),
             'extractedText': extraction['text'][:50000],  # Limit size
             'requiredOcr': extraction['required_ocr'],
-            'language': 'en'
+            'language': 'en',
+            'tags': tags
         }
         
         # Add PDF content as base64 (so API doesn't need to re-download from source URL)

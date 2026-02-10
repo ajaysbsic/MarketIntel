@@ -1,10 +1,10 @@
 {
-  "api_endpoint": "https://market-intel-api-grg6ceczgzd2cwdh.southeastasia-01.azurewebsites.net/api/news/ingest",
+  "api_endpoint": "http://localhost:5021/api/news/ingest",
   "poll_interval_seconds": 300,
   "max_retries": 3,
   "retry_delay_seconds": 5,
   "request_timeout_seconds": 60,
   "verify_ssl": true,
   "log_level": "INFO",
-  "google_ai_api_key": "YOUR_GOOGLE_API_KEY_HERE"
+  "google_ai_api_key": ""
 }
