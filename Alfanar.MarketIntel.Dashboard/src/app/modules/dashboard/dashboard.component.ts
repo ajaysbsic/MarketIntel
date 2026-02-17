@@ -1,11 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService } from '../../shared/services/api.service';
+import { RouterModule } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { ApiService, SmartAlert } from '../../shared/services/api.service';
+import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <div class="dashboard-container">
       <!-- Hero Section with Image -->
@@ -84,6 +87,106 @@ import { ApiService } from '../../shared/services/api.service';
           <p class="summary-value" [ngClass]="getSentimentClass()">{{ (summary?.averageSentiment || 0).toFixed(2) }}</p>
         </div>
       </div>
+
+      <!-- Alerts Widget -->
+      <section class="alerts-widget">
+        <div class="widget-header">
+          <h2>Alerts at a Glance</h2>
+          <a routerLink="/alerts" class="widget-link">View all</a>
+        </div>
+        <div class="widget-body" *ngIf="alerts.length; else noWidgetAlerts">
+          <div class="widget-alert" *ngFor="let alert of alerts.slice(0, 3)">
+            <span class="widget-severity" [ngClass]="getAlertClass(alert.severity)">
+              {{ alert.severity }}
+            </span>
+            <div class="widget-content">
+              <strong>{{ alert.title }}</strong>
+              <span class="widget-meta">
+                {{ alert.alertType }} • {{ alert.companyName || 'General' }} • {{ alert.createdAt | date: 'short' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <ng-template #noWidgetAlerts>
+          <div class="widget-empty">No active alerts right now.</div>
+        </ng-template>
+      </section>
+
+      <!-- Competitive Positioning -->
+      <section class="positioning-widget">
+        <div class="positioning-content">
+          <div>
+            <h2>Competitive Positioning</h2>
+            <p>Download the system comparison brief for leadership and sales positioning.</p>
+          </div>
+          <a
+            class="positioning-link"
+            href="/assets/COMPETITOR_SYSTEM_COMPARISON.md"
+            target="_blank"
+            rel="noopener"
+          >
+            Open Comparison Doc
+          </a>
+        </div>
+      </section>
+
+      <!-- Smart Alerts Feed -->
+      <section class="alerts-section">
+        <div class="alerts-header">
+          <h2>Smart Alerts</h2>
+          <button class="btn-refresh" (click)="loadAlerts()">Refresh</button>
+        </div>
+        
+        <!-- Alerts Carousel -->
+        <div class="alerts-carousel" *ngIf="alerts.length > 0; else noAlerts">
+          <button class="carousel-nav-prev" 
+                  (click)="previousAlert()" 
+                  [disabled]="isFirstAlert()"
+                  title="Previous alert">
+            ◀
+          </button>
+          
+          <div class="carousel-container">
+            <div class="alert-card carousel-slide" 
+                 *ngIf="alerts[currentAlertIndex] as alert">
+              <div class="alert-top">
+                <span class="alert-badge" [ngClass]="getAlertClass(alert.severity)">
+                  {{ alert.severity }}
+                </span>
+                <span class="alert-type">{{ alert.alertType }}</span>
+              </div>
+              <h4>{{ alert.title }}</h4>
+              <div class="alert-message" [innerHTML]="sanitizeAlertContent(alert.message)"></div>
+              <div class="alert-meta">
+                <span class="company">🏢 {{ alert.companyName }}</span>
+                <span class="timestamp">🕐 {{ alert.createdAt | date: 'short' }}</span>
+              </div>
+              <div class="alert-actions">
+                <a *ngIf="alert.sourceUrl" 
+                   [href]="alert.sourceUrl" 
+                   target="_blank"
+                   class="read-more-link">
+                   📖 Read Full Article
+                </a>
+              </div>
+              <div class="alert-footer">
+                <span class="alert-counter">{{ currentAlertIndex + 1 }} / {{ alerts.length }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <button class="carousel-nav-next" 
+                  (click)="nextAlert()" 
+                  [disabled]="isLastAlert()"
+                  title="Next alert">
+            ▶
+          </button>
+        </div>
+        
+        <ng-template #noAlerts>
+          <div class="empty">No alerts yet. Signals will appear here.</div>
+        </ng-template>
+      </section>
 
       <!-- Platform Summary Section -->
       <section class="platform-summary">
@@ -178,6 +281,17 @@ import { ApiService } from '../../shared/services/api.service';
       <div class="error" *ngIf="error">
         <p>{{ error }}</p>
         <button (click)="loadDashboard()">Retry</button>
+      </div>
+
+      <!-- Real-time alert toasts -->
+      <div class="toast-stack" *ngIf="realtimeAlerts.length">
+        <div class="toast" *ngFor="let alert of realtimeAlerts.slice(0, 3)" [ngClass]="getAlertClass(alert.severity)">
+          <div>
+            <strong>{{ alert.title }}</strong>
+            <p>{{ alert.message || 'New alert detected' }}</p>
+          </div>
+          <span class="toast-time">{{ alert.createdAt | date: 'shortTime' }}</span>
+        </div>
       </div>
     </div>
   `,
@@ -545,6 +659,291 @@ import { ApiService } from '../../shared/services/api.service';
       color: #3498db;
     }
 
+    .alerts-section {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .alerts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .alerts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .alert-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid #e2e8f0;
+    }
+
+    .alert-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .alert-badge {
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #1f2937;
+    }
+
+    .alert-badge.critical {
+      background: #fecaca;
+      color: #7f1d1d;
+    }
+
+    .alert-badge.high {
+      background: #fed7aa;
+      color: #9a3412;
+    }
+
+    .alert-badge.medium {
+      background: #fde68a;
+      color: #92400e;
+    }
+
+    .alert-badge.low {
+      background: #bbf7d0;
+      color: #166534;
+    }
+
+    .alert-type {
+      font-size: 0.75rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .alert-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.75rem;
+    }
+
+    /* ===== CAROUSEL STYLES ===== */
+    .alerts-carousel {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      min-height: 280px;
+    }
+
+    .carousel-nav-prev,
+    .carousel-nav-next {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .carousel-nav-prev:hover:not(:disabled),
+    .carousel-nav-next:hover:not(:disabled) {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .carousel-nav-prev:disabled,
+    .carousel-nav-next:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: #cbd5e0;
+    }
+
+    .carousel-container {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .carousel-slide {
+      animation: slideIn 0.3s ease-out;
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .alert-message {
+      flex: 1;
+      line-height: 1.6;
+      color: #2d3748;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+      overflow-y: auto;
+      max-height: 200px;
+      padding-right: 0.5rem;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+
+    .alert-message a {
+      color: #1f47ba;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .alert-message a:hover {
+      opacity: 0.8;
+    }
+
+    .alert-message img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 6px;
+      margin: 0.5rem 0;
+      display: block;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .alert-message p {
+      margin: 0.5rem 0;
+    }
+
+    .alert-message div {
+      margin: 0.25rem 0;
+    }
+
+    .alert-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .alert-counter {
+      font-size: 0.75rem;
+      color: #a0aec0;
+      font-weight: 600;
+      background: #f7fafc;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+    }
+
+    .alert-actions {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .read-more-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .read-more-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .toast-stack {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      display: grid;
+      gap: 0.75rem;
+      z-index: 2000;
+    }
+
+    .toast {
+      background: #13263b;
+      color: #fff;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      min-width: 240px;
+    }
+
+    .toast p {
+      margin: 0.25rem 0 0 0;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .toast.critical {
+      background: #7f1d1d;
+    }
+
+    .toast.high {
+      background: #9a3412;
+    }
+
+    .toast.medium {
+      background: #92400e;
+    }
+
+    .toast.low {
+      background: #166534;
+    }
+
+    .toast-time {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.6);
+      white-space: nowrap;
+    }
+
+    .btn-refresh {
+      background: #1f47ba;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
     .sentiment-section {
       background: var(--bg-secondary);
       border: 1px solid var(--border-color);
@@ -652,6 +1051,113 @@ import { ApiService } from '../../shared/services/api.service';
       border: 1px solid var(--border-color);
     }
 
+    .alerts-widget {
+      margin: 2rem 0;
+      background: white;
+      border-radius: 14px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .positioning-widget {
+      margin: 2rem 0;
+      background: linear-gradient(135deg, #f6f8ff 0%, #eef2ff 100%);
+      border-radius: 14px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .positioning-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .positioning-link {
+      background: var(--primary-color, #1f47ba);
+      color: white;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .widget-link {
+      color: var(--primary-color, #1f47ba);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .widget-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .widget-alert {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.75rem;
+      border-radius: 10px;
+      background: #f6f8ff;
+    }
+
+    .widget-severity {
+      text-transform: capitalize;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #e9eefb;
+      color: #1f47ba;
+      min-width: 72px;
+      text-align: center;
+    }
+
+    .widget-severity.critical {
+      background: #ffe5e5;
+      color: #b42318;
+    }
+
+    .widget-severity.high {
+      background: #fff1d6;
+      color: #b25000;
+    }
+
+    .widget-severity.medium {
+      background: #e8f0ff;
+      color: #1f47ba;
+    }
+
+    .widget-severity.low {
+      background: #e9f7ef;
+      color: #1d7a3f;
+    }
+
+    .widget-content strong {
+      display: block;
+      font-size: 0.95rem;
+    }
+
+    .widget-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary, #666);
+    }
+
+    .widget-empty {
+      color: var(--text-secondary, #666);
+    }
+
     .error {
       background: rgba(231, 76, 60, 0.1);
       border: 2px solid var(--danger);
@@ -706,6 +1212,40 @@ import { ApiService } from '../../shared/services/api.service';
       h1 {
         font-size: 1.5rem;
       }
+
+      .alerts-carousel {
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .carousel-nav-prev,
+      .carousel-nav-next {
+        width: 45px;
+        height: 45px;
+        font-size: 0.7rem;
+        padding: 0.5rem;
+      }
+
+      .carousel-container {
+        order: -1;
+        width: 100%;
+        min-height: 300px;
+      }
+
+      .carousel-slide {
+        min-height: 280px;
+      }
+
+      .alert-message {
+        font-size: 0.9rem;
+        max-height: 150px;
+      }
+
+      .alert-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
     }
   `],
 })
@@ -715,11 +1255,22 @@ export class DashboardComponent implements OnInit {
   error: string | null = null;
   newTodayCount = 0;
   lastUpdated = 'Never';
+  alerts: SmartAlert[] = [];
+  realtimeAlerts: RealTimeAlert[] = [];
+  currentAlertIndex: number = 0;
 
-  constructor(private apiService: ApiService) {}
+  constructor(
+    private apiService: ApiService, 
+    private signalRService: SignalRService,
+    private sanitizer: DomSanitizer
+  ) {}
 
   ngOnInit(): void {
     this.loadDashboard();
+    this.loadAlerts();
+    this.signalRService.getAlerts$().subscribe(alerts => {
+      this.realtimeAlerts = alerts;
+    });
   }
 
   loadDashboard(): void {
@@ -753,5 +1304,86 @@ export class DashboardComponent implements OnInit {
     if (sentiment > 0.3) return 'positive';
     if (sentiment < -0.3) return 'negative';
     return 'neutral';
+  }
+
+  getAlertClass(severity: string | undefined): string {
+    if (!severity) return '';
+    return severity.toLowerCase();
+  }
+
+  nextAlert(): void {
+    if (this.currentAlertIndex < this.alerts.length - 1) {
+      this.currentAlertIndex++;
+    }
+  }
+
+  previousAlert(): void {
+    if (this.currentAlertIndex > 0) {
+      this.currentAlertIndex--;
+    }
+  }
+
+  isFirstAlert(): boolean {
+    return this.currentAlertIndex === 0;
+  }
+
+  isLastAlert(): boolean {
+    return this.currentAlertIndex === this.alerts.length - 1;
+  }
+
+  loadAlerts(): void {
+    this.apiService.getSmartAlerts().subscribe({
+      next: (alerts) => {
+        if (!alerts || alerts.length === 0) {
+          this.alerts = [];
+          this.currentAlertIndex = 0;
+          return;
+        }
+
+        // Deduplicate by ID first (fastest)
+        const dedupById = new Map<string, any>();
+        for (const alert of alerts) {
+          if (alert.id && !dedupById.has(alert.id)) {
+            dedupById.set(alert.id, alert);
+          }
+        }
+        
+        // Then deduplicate by content (AlertType + Title + CompanyName)
+        const dedupByContent = new Map<string, any>();
+        for (const alert of dedupById.values()) {
+          const contentKey = `${alert.alertType}|${alert.title}|${alert.companyName}`;
+          if (!dedupByContent.has(contentKey)) {
+            dedupByContent.set(contentKey, alert);
+          }
+        }
+        
+        // Convert to array
+        this.alerts = Array.from(dedupByContent.values());
+        
+        console.log('Alerts loaded:', {
+          returned: alerts.length,
+          afterIdDedup: dedupById.size,
+          afterContentDedup: dedupByContent.size,
+          final: this.alerts.length
+        });
+        
+        this.currentAlertIndex = 0;
+      },
+      error: (err) => {
+        console.error('Error loading alerts:', err);
+        this.alerts = [];
+        this.currentAlertIndex = 0;
+      }
+    });
+  }
+
+  sanitizeAlertMessage(message: string): string {
+    if (!message) return '';
+    return this.sanitizer.bypassSecurityTrustHtml(message) as any;
+  }
+
+  sanitizeAlertContent(html: string): any {
+    if (!html) return '';
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 }

@@ -54,7 +54,9 @@ public class AiChatController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<AiResponseDto>> GetAiResponse([FromBody] ChatRequestDto request)
+    public async Task<ActionResult<AiResponseDto>> GetAiResponse(
+        [FromBody] ChatRequestDto request,
+        [FromQuery] bool includeLiveSearch = true)
     {
         try
         {
@@ -63,7 +65,7 @@ public class AiChatController : ControllerBase
 
             _logger.LogInformation($"AI Query: {request.Message}");
 
-            var response = await _aiChatService.GetAiResponseAsync(request);
+            var response = await _aiChatService.GetAiResponseAsync(request, includeLiveSearch);
             return Ok(response);
         }
         catch (Exception ex)

@@ -1,0 +1,29 @@
+{
+  "api_endpoint": "http://localhost:5021/api/web-search/search",
+  "keyword_monitor_base_url": "http://localhost:5021/api/keyword-monitors",
+  "google_search": {
+    "api_key": "",
+    "search_engine_id": "",
+    "max_results_per_request": 10
+  },
+  "keyword_monitoring": {
+    "poll_interval_seconds": 300,
+    "default_check_interval_minutes": 60,
+    "max_retries": 3,
+    "retry_delay_seconds": 5,
+    "request_timeout_seconds": 60,
+    "enable_notifications": true,
+    "enable_intelligence_reports": true,
+    "enable_competitor_scan": true,
+    "enable_article_alerts": true
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "keyword_monitor_watcher.log",
+    "max_file_size_mb": 10,
+    "backup_count": 5
+  },
+  "ssl": {
+    "verify": true
+  }
+}

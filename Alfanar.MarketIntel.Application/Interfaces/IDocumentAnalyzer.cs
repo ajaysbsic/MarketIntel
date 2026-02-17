@@ -1,4 +1,5 @@
 using Alfanar.MarketIntel.Application.Common;
+using Alfanar.MarketIntel.Application.DTOs;
 using Alfanar.MarketIntel.Domain.Entities;
 
 namespace Alfanar.MarketIntel.Application.Interfaces;
@@ -40,4 +41,24 @@ public interface IDocumentAnalyzer
     /// Check if the service is available
     /// </summary>
     bool IsAvailable();
+
+    /// <summary>
+    /// Generate a structured intelligence report from consolidated article text
+    /// </summary>
+    Task<Result<IntelligenceReportJsonDto>> GenerateIntelligenceReportAsync(string consolidatedArticleText, string keyword);
+
+    /// <summary>
+    /// Generate a curated insight for a cluster of related articles
+    /// </summary>
+    Task<Result<CuratedItemInsightDto>> GenerateCurationInsightAsync(string clusterText, string keyword);
+
+    /// <summary>
+    /// Extract competitor mentions and suggestions from article text
+    /// </summary>
+    Task<Result<CompetitorDetectionResultDto>> ExtractCompetitorMentionsAsync(string text, List<string> knownCompetitors);
+
+    /// <summary>
+    /// Confirm alert type based on article text
+    /// </summary>
+    Task<Result<AlertConfirmationDto>> ConfirmAlertAsync(string text, string alertType, string prompt);
 }

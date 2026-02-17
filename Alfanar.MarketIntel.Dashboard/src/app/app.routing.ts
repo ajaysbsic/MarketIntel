@@ -11,6 +11,10 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/dashboard/dashboard.component').then(m => m.DashboardComponent),
   },
   {
+    path: 'alerts',
+    loadComponent: () => import('./modules/alerts/alerts.component').then(m => m.AlertsComponent),
+  },
+  {
     path: 'news',
     loadComponent: () => import('./modules/news/news.component').then(m => m.NewsComponent),
   },
@@ -33,6 +37,22 @@ export const routes: Routes = [
   {
     path: 'keyword-monitors',
     loadComponent: () => import('./modules/keyword-monitors/keyword-monitors.component').then(m => m.KeywordMonitorsComponent),
+  },
+  {
+    path: 'notification-preferences',
+    loadComponent: () => import('./modules/notification-preferences/notification-preferences.component').then(m => m.NotificationPreferencesComponent),
+  },
+  {
+    path: 'intelligence-reports',
+    loadComponent: () => import('./modules/intelligence-reports/intelligence-reports.component').then(m => m.IntelligenceReportsComponent),
+  },
+  {
+    path: 'competitor-tracking',
+    loadComponent: () => import('./modules/competitor-tracking/competitor-tracking.component').then(m => m.CompetitorTrackingComponent),
+  },
+  {
+    path: 'trends',
+    loadComponent: () => import('./modules/trends/trends.component').then(m => m.TrendsComponent),
   },
   {
     path: 'ai-chat',

@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../../shared/services/api.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-news',
@@ -83,7 +85,8 @@ import { ApiService } from '../../shared/services/api.service';
   styles: [`
     .news-container {
       padding: 2rem 1rem;
-      max-width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
       overflow-x: hidden;
       box-sizing: border-box;
     }
@@ -345,12 +348,14 @@ import { ApiService } from '../../shared/services/api.service';
     }
   `],
 })
-export class NewsComponent implements OnInit {
+export class NewsComponent implements OnInit, OnDestroy {
   articles: any[] = [];
   searchTerm = '';
   page = 1;
   pageSize = 10;
   isLoading = false;
+
+  private destroy$ = new Subject<void>();
 
   constructor(
     private apiService: ApiService,
@@ -363,22 +368,24 @@ export class NewsComponent implements OnInit {
 
   loadNews(): void {
     this.isLoading = true;
-    this.apiService.getNewsArticles(this.page, this.pageSize, this.searchTerm).subscribe({
-      next: (response) => {
-        // Debug: log the full response to see all fields
-        console.log('API Response:', response);
-        if (response.items && response.items.length > 0) {
-          console.log('First article:', response.items[0]);
-        }
-        
-        this.articles = response.items || [];
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('Failed to load news:', err);
-        this.isLoading = false;
-      },
-    });
+    this.apiService.getNewsArticles(this.page, this.pageSize, this.searchTerm)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          // Debug: log the full response to see all fields
+          console.log('API Response:', response);
+          if (response.items && response.items.length > 0) {
+            console.log('First article:', response.items[0]);
+          }
+          
+          this.articles = response.items || [];
+          this.isLoading = false;
+        },
+        error: (err) => {
+          console.error('Failed to load news:', err);
+          this.isLoading = false;
+        },
+      });
   }
 
   nextPage(): void {
@@ -391,6 +398,11 @@ export class NewsComponent implements OnInit {
       this.page--;
       this.loadNews();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   getSentimentClass(label: string): string {

@@ -47,16 +47,18 @@ class RssWatcher:
         keywords_file = self.config.get('tech_keywords_file')
         keywords_path = Path(keywords_file) if keywords_file else (Path(config_file).parent / 'tech_keywords.json')
         self.tech_keywords = load_keywords(keywords_path)
-        # Try to fetch feeds from API, fallback to JSON file if API unavailable
-        self.feeds = self._fetch_feeds_from_api() or self._load_feeds(feeds_file)
-        self.state_manager = StateManager(Path('state.json'))
         
+        # Initialize api_client FIRST before using it
         self.api_client = MarketIntelApiClient(
             api_endpoint=self.config['api_endpoint'],
             verify_ssl=self.config.get('verify_ssl', True),
             max_retries=self.config.get('max_retries', 3),
             request_timeout_seconds=self.config.get('request_timeout_seconds', 60)
         )
+        
+        # Now fetch feeds from API using initialized api_client
+        self.feeds = self._fetch_feeds_from_api() or self._load_feeds(feeds_file)
+        self.state_manager = StateManager(Path('state.json'))
         
         # Initialize AI summarizer for ingestion-time processing
         # Prioritize environment variable for security in production
@@ -76,10 +78,10 @@ class RssWatcher:
         try:
             with open(config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
-                logger.info(f"✓ Loaded configuration from {config_file}")
+                logger.info(f"OK Loaded configuration from {config_file}")
                 return config
         except Exception as e:
-            logger.error(f"✗ Failed to load config: {e}")
+            logger.error(f"ERROR Failed to load config: {e}")
             raise
 
     def _load_feeds(self, feeds_file: Path) -> List[Dict[str, Any]]:
@@ -92,10 +94,10 @@ class RssWatcher:
             with open(feeds_file, 'r', encoding='utf-8') as f:
                 feeds_data = json.load(f)
                 feeds = feeds_data.get('feeds', [])
-                logger.info(f"✓ Loaded {len(feeds)} feeds from fallback file {feeds_file}")
+                logger.info(f"OK Loaded {len(feeds)} feeds from fallback file {feeds_file}")
                 return feeds
         except Exception as e:
-            logger.error(f"✗ Failed to load feeds from file: {e}")
+            logger.error(f"ERROR Failed to load feeds from file: {e}")
             return []
 
     def _fetch_feeds_from_api(self) -> Optional[List[Dict[str, Any]]]:
@@ -105,7 +107,7 @@ class RssWatcher:
             api_base = self.config.get('api_endpoint', 'http://localhost:5021').replace('/api/news/ingest', '')
             feeds_endpoint = f"{api_base}/api/feeds/active"
             
-            logger.info(f"📡 Fetching active feeds from API: {feeds_endpoint}")
+            logger.info(f"INFO Fetching active feeds from API: {feeds_endpoint}")
             response = self.api_client.get_feeds(feeds_endpoint)
             
             if response and isinstance(response, list):
@@ -120,13 +122,13 @@ class RssWatcher:
                     })
                 
                 active_feeds = [f for f in feeds if f.get('isActive', True)]
-                logger.info(f"✓ Fetched {len(active_feeds)} active feeds from API database")
+                logger.info(f"OK Fetched {len(active_feeds)} active feeds from API database")
                 return active_feeds
             else:
                 logger.warning("No feeds returned from API")
                 return None
         except Exception as e:
-            logger.warning(f"⚠️ Failed to fetch feeds from API: {e}. Will try fallback feeds.json")
+            logger.warning(f"WARN Failed to fetch feeds from API: {e}. Will try fallback feeds.json")
             return None
 
     def _parse_date(self, date_string: str) -> Optional[str]:
@@ -212,29 +214,29 @@ class RssWatcher:
         
         stats = {'processed': 0, 'new': 0, 'duplicates': 0, 'errors': 0}
         
-        logger.info(f"📡 Fetching feed: {feed_name}")
+        logger.info(f"INFO Fetching feed: {feed_name}")
         
         try:
             etag = self.state_manager.get_etag(feed_url)
             feed_data = feedparser.parse(feed_url, etag=etag if etag else None)
             
             if hasattr(feed_data, 'status') and feed_data.status == 304:
-                logger.info(f"⏭️  Feed not modified: {feed_name}")
+                logger.info(f"SKIP Feed not modified: {feed_name}")
                 self.state_manager.update_last_fetch(feed_url)
                 return stats
             
             if hasattr(feed_data, 'bozo') and feed_data.bozo:
-                logger.warning(f"⚠️  Feed parse warning: {feed_name}")
+                logger.warning(f"WARN Feed parse warning: {feed_name}")
             
             entries = feed_data.get('entries', [])
-            logger.info(f"📄 Found {len(entries)} entries in {feed_name}")
+            logger.info(f"INFO Found {len(entries)} entries in {feed_name}")
             
             for entry in entries:
                 try:
                     article_url = entry.get('link', '')
                     
                     if not article_url:
-                        logger.warning("⚠️  Entry missing URL, skipping")
+                        logger.warning("WARN Entry missing URL, skipping")
                         stats['errors'] += 1
                         continue
                     
@@ -248,6 +250,16 @@ class RssWatcher:
                     if result:
                         stats['new'] += 1
                         self.state_manager.mark_as_processed(feed_url, article_url)
+
+                        if isinstance(result, dict) and result.get("id"):
+                            if self.config.get("enable_competitor_scan", True):
+                                scan_ok = self.api_client.scan_competitors_for_article(result)
+                                if scan_ok:
+                                    logger.info("OK Competitor scan triggered for article")
+                            if self.config.get("enable_article_alerts", True):
+                                alert_ok = self.api_client.evaluate_article_alerts(result)
+                                if alert_ok:
+                                    logger.info("OK Alert evaluation triggered for article")
                     else:
                         stats['duplicates'] += 1
                         self.state_manager.mark_as_processed(feed_url, article_url)
@@ -255,16 +267,16 @@ class RssWatcher:
                     stats['processed'] += 1
                     
                 except Exception as e:
-                    logger.error(f"✗ Error processing entry: {e}")
+                    logger.error(f"ERROR Error processing entry: {e}")
                     stats['errors'] += 1
             
             new_etag = feed_data.get('etag')
             self.state_manager.update_last_fetch(feed_url, new_etag)
             
-            logger.info(f"✓ Processed {feed_name}: {stats['new']} new, {stats['duplicates']} duplicates, {stats['errors']} errors")
+            logger.info(f"OK Processed {feed_name}: {stats['new']} new, {stats['duplicates']} duplicates, {stats['errors']} errors")
             
         except Exception as e:
-            logger.error(f"✗ Error processing feed {feed_name}: {e}")
+            logger.error(f"ERROR Error processing feed {feed_name}: {e}")
             stats['errors'] += 1
         
         return stats
@@ -272,7 +284,7 @@ class RssWatcher:
     def _process_all_feeds(self):
         """Process all configured feeds"""
         logger.info(f"\n{'='*60}")
-        logger.info(f"🚀 Starting feed processing cycle at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"START Starting feed processing cycle at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info(f"{'='*60}")
         
         cycle_stats = {'processed': 0, 'new': 0, 'duplicates': 0, 'errors': 0}
@@ -290,8 +302,8 @@ class RssWatcher:
             time.sleep(1)
         
         logger.info(f"\n{'='*60}")
-        logger.info(f"✅ Cycle complete: {cycle_stats['new']} new articles ingested")
-        logger.info(f"📊 Overall stats: {self.stats['total_new']} total new, {self.stats['total_duplicates']} duplicates")
+        logger.info(f"OK Cycle complete: {cycle_stats['new']} new articles ingested")
+        logger.info(f"STATS Overall stats: {self.stats['total_new']} total new, {self.stats['total_duplicates']} duplicates")
         logger.info(f"{'='*60}\n")
 
     def run(self):
@@ -299,10 +311,10 @@ class RssWatcher:
         poll_interval = self.config.get('poll_interval_seconds', 300)
         
         logger.info(f"\n{'*'*60}")
-        logger.info(f"🎯 Market Intelligence RSS Watcher Started")
-        logger.info(f"📡 Monitoring {len(self.feeds)} feeds")
-        logger.info(f"⏱️  Poll interval: {poll_interval} seconds")
-        logger.info(f"🔗 API endpoint: {self.config['api_endpoint']}")
+        logger.info("START Market Intelligence RSS Watcher Started")
+        logger.info(f"INFO Monitoring {len(self.feeds)} feeds")
+        logger.info(f"INFO Poll interval: {poll_interval} seconds")
+        logger.info(f"INFO API endpoint: {self.config['api_endpoint']}")
         logger.info(f"{'*'*60}\n")
         
         try:
@@ -310,25 +322,25 @@ class RssWatcher:
                 self._process_all_feeds()
                 
                 if self.running:
-                    logger.info(f"😴 Sleeping for {poll_interval} seconds...\n")
+                    logger.info(f"INFO Sleeping for {poll_interval} seconds...\n")
                     time.sleep(poll_interval)
                     
         except KeyboardInterrupt:
-            logger.info("\n⚠️  Received interrupt signal, shutting down...")
+            logger.info("\nWARN Received interrupt signal, shutting down...")
         finally:
             self.shutdown()
 
     def shutdown(self):
         """Graceful shutdown"""
-        logger.info("🛑 Shutting down RSS watcher...")
+        logger.info("INFO Shutting down RSS watcher...")
         self.running = False
         self.api_client.close()
-        logger.info("✅ Shutdown complete")
+        logger.info("OK Shutdown complete")
 
 
 def signal_handler(signum, frame):
     """Handle shutdown signals"""
-    logger.info(f"\n⚠️  Received signal {signum}, initiating shutdown...")
+    logger.info(f"\nWARN Received signal {signum}, initiating shutdown...")
     sys.exit(0)
 
 
@@ -342,7 +354,7 @@ def main():
     feeds_file = script_dir / 'feeds.json'  # Fallback only
     
     if not config_file.exists():
-        logger.error(f"❌ Config file not found: {config_file}")
+        logger.error(f"ERROR Config file not found: {config_file}")
         sys.exit(1)
     
     try:
@@ -350,11 +362,11 @@ def main():
         
         # Warn if no feeds loaded and feeds.json doesn't exist
         if not watcher.feeds and not feeds_file.exists():
-            logger.warning("⚠️ No feeds available. Ensure your API is running and has RSS feeds configured in the database.")
+            logger.warning("WARN No feeds available. Ensure your API is running and has RSS feeds configured in the database.")
         
         watcher.run()
     except Exception as e:
-        logger.error(f"❌ Fatal error: {e}", exc_info=True)
+        logger.error(f"ERROR Fatal error: {e}", exc_info=True)
         sys.exit(1)
 
 

@@ -1,6 +1,9 @@
 using Alfanar.MarketIntel.Application.DTOs;
 using Alfanar.MarketIntel.Application.Interfaces;
+using Alfanar.MarketIntel.Api.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
 
 namespace Alfanar.MarketIntel.Api.Controllers;
 
@@ -12,13 +15,22 @@ namespace Alfanar.MarketIntel.Api.Controllers;
 public class WebSearchController : ControllerBase
 {
     private readonly IWebSearchService _service;
+    private readonly IArticleCurationService _curationService;
+    private readonly IHubContext<NotificationsHub> _hub;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<WebSearchController> _logger;
 
     public WebSearchController(
         IWebSearchService service,
+        IArticleCurationService curationService,
+        IHubContext<NotificationsHub> hub,
+        IConfiguration configuration,
         ILogger<WebSearchController> logger)
     {
         _service = service;
+        _curationService = curationService;
+        _hub = hub;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -38,6 +50,17 @@ public class WebSearchController : ControllerBase
         
         if (!result.IsSuccess)
             return BadRequest(new { message = result.Error });
+
+        var notify = _configuration.GetValue("KeywordMonitoring:EnableNotifications", false);
+        if (notify && result.Data != null && result.Data.Any(r => r.IsFromMonitoring))
+        {
+            await _hub.Clients.All.SendAsync("keywordMonitorUpdate", new
+            {
+                keyword = request.Keyword,
+                count = result.Data.Count,
+                results = result.Data
+            });
+        }
 
         return Ok(result.Data);
     }
@@ -104,5 +127,34 @@ public class WebSearchController : ControllerBase
             return BadRequest(new { message = result.Error });
 
         return Ok(new { message = "Deduplication completed successfully" });
+    }
+
+    /// <summary>
+    /// Curates cached results into AI-generated intelligence clusters
+    /// </summary>
+    [HttpPost("curate")]
+    [ProducesResponseType(typeof(CuratedIntelligenceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CurateAsync([FromBody] CurateIntelligenceRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Keyword))
+            return BadRequest(new { message = "Keyword cannot be empty" });
+
+        var pageSize = Math.Clamp(request.MaxArticles, 1, 200);
+        var cached = await _service.GetCachedResultsAsync(
+            request.Keyword,
+            request.FromDate,
+            request.ToDate,
+            pageNumber: 1,
+            pageSize: pageSize);
+
+        if (!cached.IsSuccess || cached.Data == null)
+            return BadRequest(new { message = cached.Error ?? "Failed to retrieve cached results" });
+
+        var curated = await _curationService.CurateArticlesAsync(cached.Data.Items, request.Keyword);
+        if (!curated.IsSuccess || curated.Data == null)
+            return BadRequest(new { message = curated.Error ?? "Failed to curate results" });
+
+        return Ok(curated.Data);
     }
 }

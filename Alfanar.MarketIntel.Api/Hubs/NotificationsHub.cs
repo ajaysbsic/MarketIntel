@@ -44,6 +44,15 @@ public class NotificationsHub : Hub
     }
 
     /// <summary>
+    /// Notify clients about a new smart alert
+    /// </summary>
+    public async Task NotifySmartAlert(object alert)
+    {
+        await Clients.All.SendAsync("smartAlert", alert);
+        _logger.LogInformation("Smart alert notification sent to all clients");
+    }
+
+    /// <summary>
     /// Notify clients when report analysis is complete
     /// Called after AI analysis finishes
     /// </summary>

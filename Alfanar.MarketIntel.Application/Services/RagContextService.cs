@@ -1,4 +1,5 @@
 using Alfanar.MarketIntel.Application.DTOs;
+using Alfanar.MarketIntel.Application.Interfaces;
 using Alfanar.MarketIntel.Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Alfanar.MarketIntel.Application.Services;
@@ -18,6 +20,7 @@ namespace Alfanar.MarketIntel.Application.Services;
 public interface IRagContextService
 {
     Task<RagContextDto> GetEnrichedContextAsync(string query, string? entity = null);
+    Task<RagContextDto> GetEnrichedContextWithWebSearchAsync(string query, string? entity = null, bool includeWebSearch = true);
     double ScoreRelevance(string data, string query);
     List<string> ExtractEntities(string query);
     string ExpandQuery(string query);
@@ -28,22 +31,29 @@ public class RagContextService : IRagContextService
     private readonly INewsRepository _newsRepo;
     private readonly IFinancialReportRepository _reportRepo;
     private readonly ISmartAlertRepository _alertRepo;
+    private readonly IWebSearchService _webSearchService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<RagContextService> _logger;
     private readonly Dictionary<string, string> _entitySynonyms;
 
     // Performance optimization: Cache common queries for 5 minutes
     private static readonly Dictionary<string, CachedContext> QueryCache = new();
+    private static readonly Dictionary<string, CachedWebSearch> WebSearchCache = new();
     private const int CacheDurationSeconds = 300;
 
     public RagContextService(
         INewsRepository newsRepo,
         IFinancialReportRepository reportRepo,
         ISmartAlertRepository alertRepo,
+        IWebSearchService webSearchService,
+        IConfiguration configuration,
         ILogger<RagContextService> logger)
     {
         _newsRepo = newsRepo;
         _reportRepo = reportRepo;
         _alertRepo = alertRepo;
+        _webSearchService = webSearchService;
+        _configuration = configuration;
         _logger = logger;
         
         // Initialize entity synonyms for better matching
@@ -126,6 +136,35 @@ public class RagContextService : IRagContextService
             timer.Stop();
             return context;
         }
+    }
+
+    public async Task<RagContextDto> GetEnrichedContextWithWebSearchAsync(
+        string query,
+        string? entity = null,
+        bool includeWebSearch = true)
+    {
+        var context = await GetEnrichedContextAsync(query, entity);
+        if (!includeWebSearch)
+        {
+            return context;
+        }
+
+        var keyword = entity ?? context.Entity;
+        if (string.IsNullOrWhiteSpace(keyword))
+        {
+            return context;
+        }
+
+        try
+        {
+            context.WebSearchResults = await GetLiveWebSearchAsync(query, keyword);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Live web search failed for query: {Query}", query);
+        }
+
+        return context;
     }
 
     /// <summary>
@@ -351,9 +390,75 @@ public class RagContextService : IRagContextService
         return context;
     }
 
+    private async Task<List<WebSearchContextDto>> GetLiveWebSearchAsync(string query, string keyword)
+    {
+        var cacheMinutes = _configuration.GetValue("AiChat:WebSearchResultsCacheMinutes", 5);
+        var normalizedQuery = Regex.Replace(query.ToLowerInvariant(), "\\s+", "_");
+        var cacheKey = $"websearch_{keyword}_{normalizedQuery}_{DateTime.UtcNow:yyyyMMddHHmm}";
+        if (WebSearchCache.TryGetValue(cacheKey, out var cached))
+        {
+            if ((DateTime.UtcNow - cached.CreatedAt).TotalMinutes < cacheMinutes)
+            {
+                return cached.Results;
+            }
+
+            WebSearchCache.Remove(cacheKey);
+        }
+
+        var maxResults = _configuration.GetValue("AiChat:MaxWebResultsPerQuery", 5);
+        var timeoutMs = _configuration.GetValue("AiChat:WebSearchTimeoutMs", 3000);
+
+        var searchRequest = new WebSearchRequestDto
+        {
+            Keyword = keyword,
+            MaxResults = maxResults
+        };
+
+        var searchTask = _webSearchService.SearchAsync(searchRequest);
+        var completedTask = await Task.WhenAny(searchTask, Task.Delay(timeoutMs));
+        if (completedTask != searchTask)
+        {
+            _logger.LogWarning("Live web search timed out for keyword: {Keyword}", keyword);
+            return new List<WebSearchContextDto>();
+        }
+
+        var result = await searchTask;
+        if (!result.IsSuccess || result.Data == null)
+        {
+            _logger.LogWarning("Live web search failed for keyword: {Keyword}. {Error}", keyword, result.Error);
+            return new List<WebSearchContextDto>();
+        }
+
+        var mapped = result.Data
+            .Take(maxResults)
+            .Select(r => new WebSearchContextDto
+            {
+                Title = r.Title,
+                Url = r.Url,
+                Snippet = r.Snippet,
+                RetrievedAt = r.RetrievedUtc == default ? DateTime.UtcNow : r.RetrievedUtc,
+                Source = r.Source
+            })
+            .ToList();
+
+        WebSearchCache[cacheKey] = new CachedWebSearch
+        {
+            CreatedAt = DateTime.UtcNow,
+            Results = mapped
+        };
+
+        return mapped;
+    }
+
     private class CachedContext
     {
         public RagContextDto Context { get; set; } = new();
+        public DateTime CreatedAt { get; set; }
+    }
+
+    private class CachedWebSearch
+    {
+        public List<WebSearchContextDto> Results { get; set; } = new();
         public DateTime CreatedAt { get; set; }
     }
 }

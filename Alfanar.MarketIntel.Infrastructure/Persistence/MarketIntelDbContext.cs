@@ -1,5 +1,6 @@
 ﻿using Alfanar.MarketIntel.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Alfanar.MarketIntel.Infrastructure.Persistence;
 
@@ -26,6 +27,13 @@ public class MarketIntelDbContext : DbContext
     public DbSet<WebSearchResult> WebSearchResults => Set<WebSearchResult>();
     public DbSet<TechnologyReport> TechnologyReports => Set<TechnologyReport>();
     public DbSet<ReportResult> ReportResults => Set<ReportResult>();
+    public DbSet<IntelligenceReport> IntelligenceReports => Set<IntelligenceReport>(); // NEW
+    public DbSet<IntelligenceReportResult> IntelligenceReportResults => Set<IntelligenceReportResult>(); // NEW
+    public DbSet<Competitor> Competitors => Set<Competitor>(); // NEW
+    public DbSet<CompetitorMention> CompetitorMentions => Set<CompetitorMention>(); // NEW
+    public DbSet<TrendSnapshot> TrendSnapshots => Set<TrendSnapshot>(); // NEW
+    public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>(); // NEW
+    public DbSet<NotificationQueue> NotificationQueues => Set<NotificationQueue>(); // NEW
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -201,10 +209,15 @@ public class MarketIntelDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.AlertType).HasMaxLength(100).IsRequired();
+            e.Property(x => x.AlertSubType)
+                .HasConversion<string>()
+                .HasMaxLength(100);
             e.Property(x => x.Severity).HasMaxLength(50).IsRequired();
             e.Property(x => x.Title).HasMaxLength(500).IsRequired();
             e.Property(x => x.CompanyName).HasMaxLength(200).IsRequired();
             e.Property(x => x.TriggerMetric).HasMaxLength(100);
+            e.Property(x => x.SourceType).HasMaxLength(100);
+            e.Property(x => x.SourceUrl).HasMaxLength(2000);
             
             // Decimal precision for alert thresholds and values
             e.Property(x => x.ThresholdValue).HasPrecision(18, 4);
@@ -216,6 +229,96 @@ public class MarketIntelDbContext : DbContext
             e.HasIndex(x => x.Severity);
             e.HasIndex(x => x.IsAcknowledged);
             e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => x.SourceType);
+            e.HasIndex(x => x.SourceId);
+        });
+
+        // NotificationPreferences configuration
+        modelBuilder.Entity<NotificationPreferences>(e =>
+        {
+            e.HasKey(x => x.UserId);
+            e.Property(x => x.UserId).HasMaxLength(200).IsRequired();
+            e.Property(x => x.EmailAddress).HasMaxLength(320);
+            e.Property(x => x.AlertTypesToNotify)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                .HasMaxLength(4000);
+            e.Property(x => x.KeywordsToNotify)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                .HasMaxLength(4000);
+
+            e.HasIndex(x => x.EmailEnabled);
+        });
+
+        // NotificationQueue configuration
+        modelBuilder.Entity<NotificationQueue>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.UserId).HasMaxLength(200).IsRequired();
+            e.Property(x => x.NotificationType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Recipient).HasMaxLength(320).IsRequired();
+            e.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+            e.Property(x => x.ErrorMessage).HasMaxLength(2000);
+
+            e.HasIndex(x => x.Status);
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => x.AlertId);
+            e.HasIndex(x => x.UserId);
+        });
+
+        // Competitor configuration
+        modelBuilder.Entity<Competitor>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Industry).HasMaxLength(200);
+            e.Property(x => x.Region).HasMaxLength(100);
+            e.Property(x => x.Website).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(200);
+            e.Property(x => x.Notes).HasMaxLength(2000);
+
+            e.HasIndex(x => x.Name).IsUnique();
+            e.HasIndex(x => x.IsActive);
+            e.HasIndex(x => x.IsAutoDetected);
+        });
+
+        // CompetitorMention configuration
+        modelBuilder.Entity<CompetitorMention>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.SourceType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Title).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Url).HasMaxLength(2000).IsRequired();
+            e.Property(x => x.MentionContext).HasMaxLength(100).IsRequired();
+            e.Property(x => x.SentimentLabel).HasMaxLength(50);
+
+            e.HasIndex(x => x.CompetitorId);
+            e.HasIndex(x => x.SourceType);
+            e.HasIndex(x => x.SourceId);
+            e.HasIndex(x => x.DetectedUtc);
+
+            e.HasOne(x => x.Competitor)
+                .WithMany(c => c.Mentions)
+                .HasForeignKey(x => x.CompetitorId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TrendSnapshot configuration
+        modelBuilder.Entity<TrendSnapshot>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Keyword).HasMaxLength(200).IsRequired();
+            e.Property(x => x.TopSources).HasMaxLength(4000);
+            e.Property(x => x.CompetitorMentionCounts).HasMaxLength(4000);
+
+            e.HasIndex(x => x.Keyword);
+            e.HasIndex(x => x.SnapshotDate);
+            e.HasIndex(x => new { x.Keyword, x.SnapshotDate }).IsUnique();
         });
 
         // ContactFormSubmission configuration
@@ -357,6 +460,52 @@ public class MarketIntelDbContext : DbContext
             
             e.HasOne(x => x.WebSearchResult)
                 .WithMany(w => w.ReportResults)
+                .HasForeignKey(x => x.WebSearchResultId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // IntelligenceReport configuration
+        modelBuilder.Entity<IntelligenceReport>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Keyword).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Status).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ExecutiveSummary).HasMaxLength(4000);
+            e.Property(x => x.MarketMovements).HasMaxLength(4000);
+            e.Property(x => x.CompetitorUpdates).HasMaxLength(4000);
+            e.Property(x => x.MaSignals).HasMaxLength(4000);
+            e.Property(x => x.PolicyAndRegulation).HasMaxLength(4000);
+            e.Property(x => x.TechnologyDevelopments).HasMaxLength(4000);
+            e.Property(x => x.InvestmentsAndFunding).HasMaxLength(4000);
+            e.Property(x => x.RisksAndOpportunities).HasMaxLength(4000);
+            e.Property(x => x.AiModel).HasMaxLength(100);
+            e.Property(x => x.PdfFilePath).HasMaxLength(1000);
+            e.Property(x => x.ErrorMessage).HasMaxLength(2000);
+
+            e.HasIndex(x => x.Keyword);
+            e.HasIndex(x => x.GeneratedUtc);
+            e.HasIndex(x => x.Status);
+            e.HasIndex(x => new { x.Keyword, x.GeneratedUtc });
+
+            // One-to-Many with IntelligenceReportResult
+            e.HasMany(x => x.ReportResults)
+                .WithOne(r => r.IntelligenceReport)
+                .HasForeignKey(r => r.IntelligenceReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // IntelligenceReportResult configuration (join table)
+        modelBuilder.Entity<IntelligenceReportResult>(e =>
+        {
+            e.HasKey(x => new { x.IntelligenceReportId, x.WebSearchResultId });
+
+            e.HasOne(x => x.IntelligenceReport)
+                .WithMany(r => r.ReportResults)
+                .HasForeignKey(x => x.IntelligenceReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(x => x.WebSearchResult)
+                .WithMany()
                 .HasForeignKey(x => x.WebSearchResultId)
                 .OnDelete(DeleteBehavior.Cascade);
         });

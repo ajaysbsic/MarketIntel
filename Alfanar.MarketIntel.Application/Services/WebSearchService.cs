@@ -2,7 +2,9 @@ using Alfanar.MarketIntel.Application.Common;
 using Alfanar.MarketIntel.Application.DTOs;
 using Alfanar.MarketIntel.Application.Interfaces;
 using Alfanar.MarketIntel.Infrastructure.Persistence;
+using Alfanar.MarketIntel.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Alfanar.MarketIntel.Application.Services;
@@ -16,17 +18,41 @@ public class WebSearchService : IWebSearchService
     private readonly IEnumerable<IWebSearchProvider> _providers;
     private readonly ILogger<WebSearchService> _logger;
     private readonly MarketIntelDbContext _context;
+    private readonly IConfiguration _configuration;
+    private readonly IIntelligenceReportService _intelligenceReportService;
+    private readonly ICompetitorTrackingService _competitorTrackingService;
+    private readonly ArticleAlertEngine _articleAlertEngine;
+    private readonly ISmartAlertRepository _alertRepository;
+    private readonly ISmartAlertNotifier _alertNotifier;
+    private readonly INotificationPreferenceService _notificationPreferenceService;
+    private readonly INotificationQueueService _notificationQueueService;
 
     public WebSearchService(
         IWebSearchResultRepository repository,
         IEnumerable<IWebSearchProvider> providers,
         ILogger<WebSearchService> logger,
-        MarketIntelDbContext context)
+        MarketIntelDbContext context,
+        IConfiguration configuration,
+        IIntelligenceReportService intelligenceReportService,
+        ICompetitorTrackingService competitorTrackingService,
+        ArticleAlertEngine articleAlertEngine,
+        ISmartAlertRepository alertRepository,
+        ISmartAlertNotifier alertNotifier,
+        INotificationPreferenceService notificationPreferenceService,
+        INotificationQueueService notificationQueueService)
     {
         _repository = repository;
         _providers = providers;
         _logger = logger;
         _context = context;
+        _configuration = configuration;
+        _intelligenceReportService = intelligenceReportService;
+        _competitorTrackingService = competitorTrackingService;
+        _articleAlertEngine = articleAlertEngine;
+        _alertRepository = alertRepository;
+        _alertNotifier = alertNotifier;
+        _notificationPreferenceService = notificationPreferenceService;
+        _notificationQueueService = notificationQueueService;
     }
 
     public async Task<Result<List<WebSearchResultDto>>> SearchAsync(WebSearchRequestDto request)
@@ -39,61 +65,85 @@ public class WebSearchService : IWebSearchService
 
             request.MaxResults = Math.Min(request.MaxResults, 100); // Cap at 100
 
-            // Get the appropriate search provider
-            // Priority: Explicit request > NewsAPI (default) > Google (fallback)
-            var provider = _providers.FirstOrDefault(p => p.ProviderName.Equals(request.SearchProvider, StringComparison.OrdinalIgnoreCase));
-            
-            if (provider == null)
-            {
-                // Default to NewsAPI if available, fallback to Google
-                provider = _providers.FirstOrDefault(p => p.ProviderName.Equals("newsapi", StringComparison.OrdinalIgnoreCase))
-                    ?? _providers.FirstOrDefault(p => p.ProviderName.Equals("google", StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (provider == null)
-                return Result<List<WebSearchResultDto>>.Failure("No search provider configured");
-
-            if (!provider.IsConfigured())
-                return Result<List<WebSearchResultDto>>.Failure($"Search provider '{provider.ProviderName}' is not properly configured");
-
-            _logger.LogInformation("Searching with {Provider} for: {Keyword}", provider.ProviderName, request.Keyword);
-
-            // Execute search with fallback logic
             List<WebSearchResultDto> results = new();
-            try
+            string providerName;
+
+            if (request.Results != null && request.Results.Any())
             {
-                results = await provider.SearchAsync(request);
-                
-                // If primary provider (NewsAPI) returns no results and it was default, try Google as fallback
-                if (results.Count == 0 && provider.ProviderName.Equals("newsapi", StringComparison.OrdinalIgnoreCase))
+                results = request.Results;
+                providerName = string.IsNullOrWhiteSpace(request.SearchProvider) ? "external" : request.SearchProvider;
+
+                foreach (var item in results)
                 {
-                    var googleProvider = _providers.FirstOrDefault(p => p.ProviderName.Equals("google", StringComparison.OrdinalIgnoreCase));
-                    if (googleProvider != null && googleProvider.IsConfigured())
+                    item.Keyword = request.Keyword;
+                    item.IsFromMonitoring = true;
+                    if (item.RetrievedUtc == default)
                     {
-                        _logger.LogInformation("NewsAPI returned no results, attempting fallback to Google for: {Keyword}", request.Keyword);
-                        results = await googleProvider.SearchAsync(request);
-                        provider = googleProvider;
+                        item.RetrievedUtc = DateTime.UtcNow;
                     }
                 }
             }
-            catch (Exception ex)
+            else
             {
-                // If primary provider fails and it's NewsAPI, try Google
-                if (provider.ProviderName.Equals("newsapi", StringComparison.OrdinalIgnoreCase))
+                // Get the appropriate search provider
+                // Priority: Explicit request > NewsAPI (default) > Google (fallback)
+                var provider = _providers.FirstOrDefault(p => p.ProviderName.Equals(request.SearchProvider, StringComparison.OrdinalIgnoreCase));
+                
+                if (provider == null)
                 {
-                    var googleProvider = _providers.FirstOrDefault(p => p.ProviderName.Equals("google", StringComparison.OrdinalIgnoreCase));
-                    if (googleProvider != null && googleProvider.IsConfigured())
+                    // Default to NewsAPI if available, fallback to Google
+                    provider = _providers.FirstOrDefault(p => p.ProviderName.Equals("newsapi", StringComparison.OrdinalIgnoreCase))
+                        ?? _providers.FirstOrDefault(p => p.ProviderName.Equals("google", StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (provider == null)
+                    return Result<List<WebSearchResultDto>>.Failure("No search provider configured");
+
+                if (!provider.IsConfigured())
+                    return Result<List<WebSearchResultDto>>.Failure($"Search provider '{provider.ProviderName}' is not properly configured");
+
+                _logger.LogInformation("Searching with {Provider} for: {Keyword}", provider.ProviderName, request.Keyword);
+
+                // Execute search with fallback logic
+                try
+                {
+                    results = await provider.SearchAsync(request);
+                    
+                    // If primary provider (NewsAPI) returns no results and it was default, try Google as fallback
+                    if (results.Count == 0 && provider.ProviderName.Equals("newsapi", StringComparison.OrdinalIgnoreCase))
                     {
-                        _logger.LogWarning(ex, "NewsAPI failed, attempting fallback to Google for: {Keyword}", request.Keyword);
-                        try
+                        var googleProvider = _providers.FirstOrDefault(p => p.ProviderName.Equals("google", StringComparison.OrdinalIgnoreCase));
+                        if (googleProvider != null && googleProvider.IsConfigured())
                         {
+                            _logger.LogInformation("NewsAPI returned no results, attempting fallback to Google for: {Keyword}", request.Keyword);
                             results = await googleProvider.SearchAsync(request);
                             provider = googleProvider;
                         }
-                        catch (Exception googleEx)
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // If primary provider fails and it's NewsAPI, try Google
+                    if (provider.ProviderName.Equals("newsapi", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var googleProvider = _providers.FirstOrDefault(p => p.ProviderName.Equals("google", StringComparison.OrdinalIgnoreCase));
+                        if (googleProvider != null && googleProvider.IsConfigured())
                         {
-                            _logger.LogError(googleEx, "Both NewsAPI and Google search failed for: {Keyword}", request.Keyword);
-                            return Result<List<WebSearchResultDto>>.Failure($"Search error: {googleEx.Message}");
+                            _logger.LogWarning(ex, "NewsAPI failed, attempting fallback to Google for: {Keyword}", request.Keyword);
+                            try
+                            {
+                                results = await googleProvider.SearchAsync(request);
+                                provider = googleProvider;
+                            }
+                            catch (Exception googleEx)
+                            {
+                                _logger.LogError(googleEx, "Both NewsAPI and Google search failed for: {Keyword}", request.Keyword);
+                                return Result<List<WebSearchResultDto>>.Failure($"Search error: {googleEx.Message}");
+                            }
+                        }
+                        else
+                        {
+                            throw;
                         }
                     }
                     else
@@ -101,13 +151,13 @@ public class WebSearchService : IWebSearchService
                         throw;
                     }
                 }
-                else
-                {
-                    throw;
-                }
+
+                providerName = provider.ProviderName;
             }
 
             // Cache results in database (deduplicate by URL+keyword)
+            var newEntities = new List<Domain.Entities.WebSearchResult>();
+
             foreach (var result in results)
             {
                 var existing = await _repository.GetByUrlAndKeywordAsync(result.Url, result.Keyword);
@@ -121,18 +171,112 @@ public class WebSearchService : IWebSearchService
                         Url = result.Url,
                         PublishedDate = result.PublishedDate,
                         Source = result.Source,
-                        SearchProvider = provider.ProviderName,
+                        SearchProvider = providerName,
                         RetrievedUtc = result.RetrievedUtc,
                         IsFromMonitoring = result.IsFromMonitoring
                     };
 
                     await _repository.AddAsync(entity);
+                    newEntities.Add(entity);
                 }
             }
 
             await _repository.SaveChangesAsync();
 
+            if (request.Results != null && request.Results.Any() && newEntities.Count > 0)
+            {
+                foreach (var result in results)
+                {
+                    var match = newEntities.FirstOrDefault(e =>
+                        string.Equals(e.Url, result.Url, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(e.Keyword, result.Keyword, StringComparison.OrdinalIgnoreCase));
+
+                    if (match != null)
+                    {
+                        result.Id = match.Id;
+                    }
+                }
+            }
+
             _logger.LogInformation("Cached {Count} search results for: {Keyword}", results.Count, request.Keyword);
+
+            var scanOnIngestion = _configuration.GetValue("CompetitorTracking:ScanOnIngestion", false);
+            if (scanOnIngestion && newEntities.Count > 0)
+            {
+                foreach (var entity in newEntities)
+                {
+                    var scanRequest = new CompetitorScanRequestDto
+                    {
+                        SourceType = "WebSearch",
+                        SourceId = entity.Id,
+                        Title = entity.Title,
+                        Snippet = entity.Snippet,
+                        Url = entity.Url
+                    };
+
+                    var scanResult = await _competitorTrackingService.ScanArticleAsync(scanRequest);
+                    if (!scanResult.IsSuccess)
+                    {
+                        _logger.LogWarning("Competitor scan failed for web result {Id}: {Error}", entity.Id, scanResult.Error);
+                    }
+                }
+            }
+
+            var alertsEnabled = _configuration.GetValue("Alerts:EnableArticleAlerts", true);
+            if (alertsEnabled && newEntities.Count > 0)
+            {
+                var alertBatch = new List<Domain.Entities.SmartAlert>();
+
+                foreach (var entity in newEntities)
+                {
+                    var alerts = await _articleAlertEngine.EvaluateArticleAsync(
+                        entity.Title,
+                        entity.Snippet,
+                        null,
+                        "WebSearch",
+                        entity.Id,
+                        entity.Url);
+
+                    if (alerts.Count > 0)
+                        alertBatch.AddRange(alerts);
+                }
+
+                if (alertBatch.Count > 0)
+                {
+                    await _alertRepository.AddRangeAsync(alertBatch);
+                    await _alertRepository.SaveChangesAsync();
+
+                    foreach (var alert in alertBatch.Where(a => a.Severity == "High" || a.Severity == "Critical"))
+                    {
+                        var preferences = await _notificationPreferenceService.GetUsersInterestedInAlertAsync(alert.AlertType);
+                        foreach (var preference in preferences)
+                        {
+                            await _notificationQueueService.EnqueueNotificationAsync(alert, preference);
+                        }
+                        await _alertNotifier.NotifyAsync(alert);
+                    }
+                }
+            }
+
+            // Optional: auto-generate intelligence report
+            var autoGenerate = _configuration.GetValue("IntelligenceReports:AutoGenerate", false);
+            if (autoGenerate)
+            {
+                var maxArticles = _configuration.GetValue("IntelligenceReports:MaxArticlesPerReport", 20);
+                var reportRequest = new GenerateIntelligenceReportRequestDto
+                {
+                    Keyword = request.Keyword,
+                    FromDate = request.FromDate,
+                    ToDate = request.ToDate,
+                    MaxArticles = maxArticles
+                };
+
+                var reportResult = await _intelligenceReportService.GenerateReportAsync(reportRequest);
+                if (!reportResult.IsSuccess)
+                {
+                    _logger.LogWarning("Auto-report generation failed for {Keyword}: {Error}", request.Keyword, reportResult.Error);
+                }
+            }
 
             return Result<List<WebSearchResultDto>>.Success(results);
         }

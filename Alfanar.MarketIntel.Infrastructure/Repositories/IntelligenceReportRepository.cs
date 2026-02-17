@@ -1,0 +1,109 @@
+using Alfanar.MarketIntel.Domain.Entities;
+using Alfanar.MarketIntel.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace Alfanar.MarketIntel.Infrastructure.Repositories;
+
+public class IntelligenceReportRepository : IIntelligenceReportRepository
+{
+    private readonly MarketIntelDbContext _context;
+
+    public IntelligenceReportRepository(MarketIntelDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IntelligenceReport?> GetByIdAsync(Guid id)
+    {
+        return await _context.IntelligenceReports.FindAsync(id);
+    }
+
+    public async Task<List<IntelligenceReport>> GetAllAsync()
+    {
+        return await _context.IntelligenceReports
+            .OrderByDescending(r => r.GeneratedUtc)
+            .ToListAsync();
+    }
+
+    public async Task AddAsync(IntelligenceReport entity)
+    {
+        await _context.IntelligenceReports.AddAsync(entity);
+    }
+
+    public async Task UpdateAsync(IntelligenceReport entity)
+    {
+        _context.IntelligenceReports.Update(entity);
+        await Task.CompletedTask;
+    }
+
+    public async Task DeleteAsync(IntelligenceReport entity)
+    {
+        _context.IntelligenceReports.Remove(entity);
+        await Task.CompletedTask;
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<IntelligenceReport?> GetByIdWithResultsAsync(Guid id)
+    {
+        return await _context.IntelligenceReports
+            .Include(r => r.ReportResults)
+            .ThenInclude(rr => rr.WebSearchResult)
+            .FirstOrDefaultAsync(r => r.Id == id);
+    }
+
+    public async Task<List<IntelligenceReport>> GetReportsAsync(int pageNumber = 1, int pageSize = 10)
+    {
+        return await _context.IntelligenceReports
+            .OrderByDescending(r => r.GeneratedUtc)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<List<IntelligenceReport>> GetReportsByKeywordAsync(string keyword, int pageNumber = 1, int pageSize = 10)
+    {
+        return await _context.IntelligenceReports
+            .Where(r => r.Keyword == keyword)
+            .OrderByDescending(r => r.GeneratedUtc)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<List<IntelligenceReport>> GetReportsByStatusAsync(string status, int pageNumber = 1, int pageSize = 10)
+    {
+        return await _context.IntelligenceReports
+            .Where(r => r.Status == status)
+            .OrderByDescending(r => r.GeneratedUtc)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<IntelligenceReport?> GetMostRecentForKeywordAsync(string keyword)
+    {
+        return await _context.IntelligenceReports
+            .Where(r => r.Keyword == keyword)
+            .OrderByDescending(r => r.GeneratedUtc)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<int> GetReportsCountAsync()
+    {
+        return await _context.IntelligenceReports.CountAsync();
+    }
+
+    public async Task<int> GetReportsCountByKeywordAsync(string keyword)
+    {
+        return await _context.IntelligenceReports
+            .Where(r => r.Keyword == keyword)
+            .CountAsync();
+    }
+}

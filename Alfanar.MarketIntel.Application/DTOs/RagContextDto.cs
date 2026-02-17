@@ -14,6 +14,7 @@ public class RagContextDto
     public List<ReportContextDto> Reports { get; set; } = new();
     public List<NewsContextDto> NewsArticles { get; set; } = new();
     public List<AlertContextDto> Alerts { get; set; } = new();
+    public List<WebSearchContextDto> WebSearchResults { get; set; } = new();
     public List<string> RelatedEntities { get; set; } = new();
     
     public string GetFormattedContext()
@@ -35,6 +36,19 @@ public class RagContextDto
                 sb.AppendLine($"- [{report.Relevance:P}] {report.Title} ({report.PublishedDate:yyyy-MM-dd})");
                 sb.AppendLine($"  Company: {report.CompanyName}");
                 sb.AppendLine($"  Summary: {report.Summary}");
+                sb.AppendLine();
+            }
+        }
+
+        if (WebSearchResults.Count > 0)
+        {
+            sb.AppendLine("LATEST WEB SEARCH RESULTS:");
+            foreach (var result in WebSearchResults.OrderByDescending(r => r.RetrievedAt))
+            {
+                sb.AppendLine($"- {result.Title}");
+                sb.AppendLine($"  Source: {result.Source} ({result.RetrievedAt:yyyy-MM-dd})");
+                sb.AppendLine($"  Summary: {result.Snippet}");
+                sb.AppendLine($"  Url: {result.Url}");
                 sb.AppendLine();
             }
         }
@@ -96,6 +110,15 @@ public class AlertContextDto
     public string AlertType { get; set; } = string.Empty; // Alert type (MarginDrop, RevenueGrowth, etc)
     public DateTime UpdatedAt { get; set; }
     public double Relevance { get; set; } // 0.0 - 1.0
+}
+
+public class WebSearchContextDto
+{
+    public string Title { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string Snippet { get; set; } = string.Empty;
+    public DateTime RetrievedAt { get; set; }
+    public string Source { get; set; } = string.Empty;
 }
 
 /// <summary>

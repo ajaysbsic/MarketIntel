@@ -4,10 +4,11 @@ import * as signalR from '@microsoft/signalr';
 
 export interface RealTimeAlert {
   id: string;
+  alertType?: string;
   title: string;
-  description: string;
+  message?: string;
   severity: string;
-  createdUtc: string;
+  createdAt?: string;
 }
 
 export interface Metric {
@@ -72,6 +73,11 @@ export class SignalRService {
     if (!this.connection) return;
 
     this.connection.on('ReceiveAlert', (alert: RealTimeAlert) => {
+      const currentAlerts = this.alertsSubject.value;
+      this.alertsSubject.next([alert, ...currentAlerts]);
+    });
+
+    this.connection.on('smartAlert', (alert: RealTimeAlert) => {
       const currentAlerts = this.alertsSubject.value;
       this.alertsSubject.next([alert, ...currentAlerts]);
     });

@@ -49,11 +49,10 @@ public class NewsApiService : IWebSearchProvider
 
             _logger.LogInformation("Executing NewsAPI search for: {Keyword}", request.Keyword);
 
-            // Build NewsAPI query parameters
+            // Build NewsAPI query parameters (API key in header for security)
             var query = new Dictionary<string, string>
             {
                 { "q", request.Keyword },
-                { "apiKey", _apiKey! },
                 { "pageSize", Math.Min(request.MaxResults, 100).ToString() },
                 { "sortBy", "publishedAt" },
                 { "language", "en" }
@@ -70,9 +69,10 @@ public class NewsApiService : IWebSearchProvider
 
             _logger.LogDebug("Calling NewsAPI: {Url}", requestUrl);
 
-            // NewsAPI requires a User-Agent header
+            // NewsAPI supports API key via X-Api-Key header or apiKey query param
             var httpRequest = new HttpRequestMessage(HttpMethod.Get, requestUrl);
             httpRequest.Headers.Add("User-Agent", "Alfanar.MarketIntel/1.0");
+            httpRequest.Headers.Add("X-Api-Key", _apiKey!);
             
             var response = await _httpClient.SendAsync(httpRequest);
             

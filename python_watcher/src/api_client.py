@@ -18,6 +18,9 @@ class MarketIntelApiClient:
         self.max_retries = max_retries
         self.request_timeout = request_timeout_seconds
 
+    def _get_base_url(self) -> str:
+        return self.api_endpoint.split('/api/')[0].rstrip('/')
+
     def ingest_article(self, article_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Send an article to the API for ingestion
@@ -49,10 +52,13 @@ class MarketIntelApiClient:
 
             logger.info(f"API article ingest response: {resp.status_code}")
             if resp.status_code in (200, 201):
-                return True
+                try:
+                    return resp.json()
+                except Exception:
+                    return {"status": "ok"}
             if resp.status_code == 409:
                 logger.info("Duplicate detected (409) - treating as success")
-                return True
+                return {"status": "duplicate"}
             logger.error(f"Failed to ingest article: {resp.status_code} - {resp.text}")
             return False
 
@@ -94,7 +100,7 @@ class MarketIntelApiClient:
             
             if resp.status_code == 200:
                 feeds = resp.json()
-                logger.info(f"✓ Successfully fetched feeds from API: {len(feeds) if isinstance(feeds, list) else 0} items")
+                logger.info(f"OK Successfully fetched feeds from API: {len(feeds) if isinstance(feeds, list) else 0} items")
                 return feeds if isinstance(feeds, list) else []
             else:
                 logger.warning(f"Failed to fetch feeds: {resp.status_code} - {resp.text}")
@@ -111,14 +117,14 @@ class MarketIntelApiClient:
             List of active monitors if successful, None otherwise
         """
         try:
-            url = self.api_endpoint.replace('/api/reports/ingest', '/api/keyword-monitors/active/list')
+            url = f"{self._get_base_url()}/api/keyword-monitors/active/list"
             logger.debug(f"Fetching active keyword monitors from: {url}")
             
             resp = self.session.get(url, timeout=30)
             
             if resp.status_code == 200:
                 monitors = resp.json()
-                logger.info(f"✓ Successfully fetched {len(monitors) if isinstance(monitors, list) else 0} active monitors")
+                logger.info(f"OK Successfully fetched {len(monitors) if isinstance(monitors, list) else 0} active monitors")
                 return monitors if isinstance(monitors, list) else []
             else:
                 logger.warning(f"Failed to fetch monitors: {resp.status_code} - {resp.text}")
@@ -138,15 +144,14 @@ class MarketIntelApiClient:
             List of monitors due for check if successful, None otherwise
         """
         try:
-            base_url = self.api_endpoint.replace('/api/reports/ingest', '/api/keyword-monitors/due-for-check/list')
-            url = f"{base_url}?intervalMinutes={interval_minutes}"
+            url = f"{self._get_base_url()}/api/keyword-monitors/due-for-check/list?intervalMinutes={interval_minutes}"
             logger.debug(f"Fetching monitors due for check from: {url}")
             
             resp = self.session.get(url, timeout=30)
             
             if resp.status_code == 200:
                 monitors = resp.json()
-                logger.info(f"✓ Successfully fetched {len(monitors) if isinstance(monitors, list) else 0} monitors due for check")
+                logger.info(f"OK Successfully fetched {len(monitors) if isinstance(monitors, list) else 0} monitors due for check")
                 return monitors if isinstance(monitors, list) else []
             else:
                 logger.warning(f"Failed to fetch monitors due for check: {resp.status_code} - {resp.text}")
@@ -155,7 +160,7 @@ class MarketIntelApiClient:
             logger.error(f"Error fetching monitors due for check: {e}")
             return None
 
-    def post_web_search_results(self, search_results: Dict[str, Any]) -> bool:
+    def post_web_search_results(self, search_results: Dict[str, Any]) -> Optional[Any]:
         """
         Post web search results to the API
 
@@ -174,8 +179,11 @@ class MarketIntelApiClient:
             resp = self.session.post(url, json=search_results, headers=headers, timeout=30)
             
             if resp.status_code in (200, 201):
-                logger.info(f"✓ Successfully posted web search results: {resp.status_code}")
-                return True
+                logger.info(f"OK Successfully posted web search results: {resp.status_code}")
+                try:
+                    return resp.json()
+                except Exception:
+                    return True
             elif resp.status_code == 409:
                 logger.info("Duplicate results detected (409) - treating as success")
                 return True
@@ -184,6 +192,125 @@ class MarketIntelApiClient:
                 return False
         except Exception as e:
             logger.error(f"Error posting web search results to API: {e}")
+            return False
+
+    def generate_intelligence_report(self, keyword: str) -> bool:
+        """
+        Trigger intelligence report generation for a keyword
+
+        Args:
+            keyword: Keyword to generate report for
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            if not keyword:
+                return False
+
+            base_url = self.api_endpoint.split('/api/')[0].rstrip('/')
+            url = f"{base_url}/api/intelligence-reports/generate"
+            payload = {"keyword": keyword}
+            headers = {'Content-Type': 'application/json'}
+
+            resp = self.session.post(url, json=payload, headers=headers, timeout=30)
+
+            if resp.status_code in (200, 201):
+                logger.info(f"OK Intelligence report generation triggered for keyword: {keyword}")
+                return True
+
+            logger.warning(f"Failed to trigger intelligence report: {resp.status_code} - {resp.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Error triggering intelligence report: {e}")
+            return False
+
+    def scan_competitors_for_article(self, article_data: Dict[str, Any]) -> bool:
+        try:
+            base_url = self.api_endpoint.split('/api/')[0].rstrip('/')
+            url = f"{base_url}/api/competitors/scan-article"
+            payload = {
+                "sourceType": "News",
+                "sourceId": article_data.get("id") or article_data.get("Id"),
+                "title": article_data.get("title") or article_data.get("Title", ""),
+                "snippet": article_data.get("summary") or article_data.get("Summary"),
+                "bodyText": article_data.get("bodyText") or article_data.get("BodyText"),
+                "url": article_data.get("url") or article_data.get("Url")
+            }
+            headers = {'Content-Type': 'application/json'}
+            resp = self.session.post(url, json=payload, headers=headers, timeout=30)
+            if resp.status_code in (200, 201):
+                return True
+            logger.warning(f"Competitor scan failed: {resp.status_code} - {resp.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Error triggering competitor scan: {e}")
+            return False
+
+    def evaluate_article_alerts(self, article_data: Dict[str, Any]) -> bool:
+        try:
+            base_url = self.api_endpoint.split('/api/')[0].rstrip('/')
+            url = f"{base_url}/api/alerts/evaluate-article"
+            payload = {
+                "title": article_data.get("title") or article_data.get("Title", ""),
+                "snippet": article_data.get("summary") or article_data.get("Summary"),
+                "bodyText": article_data.get("bodyText") or article_data.get("BodyText"),
+                "sourceType": "News",
+                "sourceId": article_data.get("id") or article_data.get("Id"),
+                "sourceUrl": article_data.get("url") or article_data.get("Url")
+            }
+            headers = {'Content-Type': 'application/json'}
+            resp = self.session.post(url, json=payload, headers=headers, timeout=30)
+            if resp.status_code in (200, 201):
+                return True
+            logger.warning(f"Alert evaluation failed: {resp.status_code} - {resp.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Error evaluating alerts: {e}")
+            return False
+
+    def scan_competitors_for_web_result(self, result_data: Dict[str, Any]) -> bool:
+        try:
+            base_url = self.api_endpoint.split('/api/')[0].rstrip('/')
+            url = f"{base_url}/api/competitors/scan-article"
+            payload = {
+                "sourceType": "WebSearch",
+                "sourceId": result_data.get("id") or result_data.get("Id"),
+                "title": result_data.get("title") or result_data.get("Title", ""),
+                "snippet": result_data.get("snippet") or result_data.get("Snippet"),
+                "bodyText": None,
+                "url": result_data.get("url") or result_data.get("Url")
+            }
+            headers = {'Content-Type': 'application/json'}
+            resp = self.session.post(url, json=payload, headers=headers, timeout=30)
+            if resp.status_code in (200, 201):
+                return True
+            logger.warning(f"Competitor scan failed: {resp.status_code} - {resp.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Error triggering competitor scan: {e}")
+            return False
+
+    def evaluate_web_result_alerts(self, result_data: Dict[str, Any]) -> bool:
+        try:
+            base_url = self.api_endpoint.split('/api/')[0].rstrip('/')
+            url = f"{base_url}/api/alerts/evaluate-article"
+            payload = {
+                "title": result_data.get("title") or result_data.get("Title", ""),
+                "snippet": result_data.get("snippet") or result_data.get("Snippet"),
+                "bodyText": None,
+                "sourceType": "WebSearch",
+                "sourceId": result_data.get("id") or result_data.get("Id"),
+                "sourceUrl": result_data.get("url") or result_data.get("Url")
+            }
+            headers = {'Content-Type': 'application/json'}
+            resp = self.session.post(url, json=payload, headers=headers, timeout=30)
+            if resp.status_code in (200, 201):
+                return True
+            logger.warning(f"Alert evaluation failed: {resp.status_code} - {resp.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Error evaluating alerts: {e}")
             return False
 
     def close(self):

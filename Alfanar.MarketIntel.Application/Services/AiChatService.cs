@@ -17,7 +17,7 @@ namespace Alfanar.MarketIntel.Application.Services;
 /// </summary>
 public interface IAiChatService
 {
-    Task<AiResponseDto> GetAiResponseAsync(ChatRequestDto request);
+    Task<AiResponseDto> GetAiResponseAsync(ChatRequestDto request, bool enableLiveWebSearch = true);
     Task<List<string>> GenerateRelatedQueriesAsync(string query, string response);
 }
 
@@ -27,6 +27,7 @@ public class AiChatService : IAiChatService
     private readonly IDocumentAnalyzer _documentAnalyzer;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AiChatService> _logger;
+    private readonly bool _enableLiveWebSearch;
 
     // System prompt that instructs the AI how to behave
     private const string SYSTEM_PROMPT = @"
@@ -62,13 +63,14 @@ Do not make up data - only use what's provided in the context.
         _documentAnalyzer = documentAnalyzer;
         _configuration = configuration;
         _logger = logger;
+        _enableLiveWebSearch = _configuration.GetValue("AiChat:EnableLiveWebSearch", true);
     }
 
     /// <summary>
     /// Main method: Get AI response with RAG context
     /// Flow: Get Context → Build Prompt → Call AI → Parse Response → Return
     /// </summary>
-    public async Task<AiResponseDto> GetAiResponseAsync(ChatRequestDto request)
+    public async Task<AiResponseDto> GetAiResponseAsync(ChatRequestDto request, bool enableLiveWebSearch = true)
     {
         var timer = System.Diagnostics.Stopwatch.StartNew();
         var response = new AiResponseDto { Timestamp = DateTime.UtcNow };
@@ -78,9 +80,10 @@ Do not make up data - only use what's provided in the context.
             _logger.LogInformation($"Processing AI query: {request.Message}");
 
             // Step 1: Get enriched context from database
-            var context = await _ragContextService.GetEnrichedContextAsync(
-                request.Message, 
-                request.ContextEntity);
+            var context = await _ragContextService.GetEnrichedContextWithWebSearchAsync(
+                request.Message,
+                request.ContextEntity,
+                includeWebSearch: _enableLiveWebSearch && enableLiveWebSearch);
 
             // Step 2: Build the prompt with context
             var prompt = BuildEnhancedPrompt(request, context);
@@ -128,6 +131,18 @@ Do not make up data - only use what's provided in the context.
         sb.AppendLine($"Current System Date: {context.CurrentDate:MMMM dd, yyyy}");
         sb.AppendLine($"Query Timestamp: {DateTime.UtcNow:MMMM dd, yyyy HH:mm:ss UTC}");
         sb.AppendLine();
+
+        if (context.WebSearchResults.Count > 0)
+        {
+            sb.AppendLine("LATEST WEB SEARCH RESULTS (Updated today):");
+            foreach (var result in context.WebSearchResults.Take(5))
+            {
+                sb.AppendLine($"• {result.Title}");
+                sb.AppendLine($"  URL: {result.Url}");
+                sb.AppendLine($"  Summary: {result.Snippet}");
+                sb.AppendLine();
+            }
+        }
 
         // Add reports context
         if (context.Reports.Count > 0)

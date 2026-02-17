@@ -9,6 +9,8 @@ import {
   TechnologyRegionSignal,
   TechnologyKeyPlayer,
   TechnologyInsight,
+  CuratedIntelligence,
+  CurateIntelligenceRequest,
 } from '../../shared/services/api.service';
 
 @Component({
@@ -80,7 +82,12 @@ import {
         </div>
       </div>
 
-      <div class="grid">
+      <div class="tabs">
+        <button type="button" [class.active]="activeTab === 'overview'" (click)="setTab('overview')">Overview</button>
+        <button type="button" [class.active]="activeTab === 'curated'" (click)="setTab('curated')">Curated Insights</button>
+      </div>
+
+      <div class="grid" *ngIf="activeTab === 'overview'">
         <section class="panel">
           <h3>Momentum timeline</h3>
           <div class="timeline" *ngIf="timeline.length; else emptyTimeline">
@@ -149,6 +156,49 @@ import {
           </ng-template>
         </section>
       </div>
+
+      <section class="curated-panel" *ngIf="activeTab === 'curated'">
+        <div *ngIf="curatedLoading" class="loading">Building curated insights...</div>
+        <div *ngIf="!curatedLoading && curatedError" class="empty">{{ curatedError }}</div>
+
+        <div *ngIf="!curatedLoading && curatedInsight" class="curated-content">
+          <div class="headline">
+            <span class="label">Headline insight</span>
+            <p>{{ curatedInsight.headlineInsight }}</p>
+          </div>
+          <div class="stats">
+            <span>Original: {{ curatedInsight.deduplicationStats.originalCount }}</span>
+            <span>Unique: {{ curatedInsight.deduplicationStats.uniqueCount }}</span>
+            <span>Duplicates removed: {{ curatedInsight.deduplicationStats.duplicatesRemoved }}</span>
+          </div>
+
+          <div class="curated-list" *ngIf="curatedInsight.curatedItems.length; else emptyCurated">
+            <div class="curated-card" *ngFor="let item of curatedInsight.curatedItems">
+              <div class="curated-header">
+                <h4>{{ item.title }}</h4>
+                <span class="sig" [ngClass]="'sig-' + item.significance">{{ item.significance }}/5</span>
+              </div>
+              <p class="key-fact">{{ item.keyFact }}</p>
+              <div class="why">
+                <span>Why it matters</span>
+                <p>{{ item.whyItMatters }}</p>
+              </div>
+              <div class="sources">
+                <span>{{ item.sourceCount }} sources</span>
+                <div class="source-links">
+                  <a *ngFor="let source of item.sources" [href]="source" target="_blank">Source</a>
+                </div>
+              </div>
+              <div class="cluster" *ngIf="item.clusterKeywords.length">
+                <span *ngFor="let keyword of item.clusterKeywords">{{ keyword }}</span>
+              </div>
+            </div>
+          </div>
+          <ng-template #emptyCurated>
+            <p class="empty">No curated signals yet. Try expanding the date range.</p>
+          </ng-template>
+        </div>
+      </section>
     </section>
   `,
   styles: [`
@@ -303,6 +353,27 @@ import {
       color: #3b4d63;
     }
 
+    .tabs {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .tabs button {
+      border: 1px solid #d7e0ec;
+      background: #f5f7fa;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #3b4d63;
+    }
+
+    .tabs button.active {
+      background: #142030;
+      color: #ffffff;
+      border-color: #142030;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -423,6 +494,156 @@ import {
       font-style: italic;
     }
 
+    .curated-panel {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 1.5rem;
+      border: 1px solid rgba(20, 32, 48, 0.08);
+      box-shadow: 0 12px 30px rgba(20, 32, 48, 0.06);
+    }
+
+    .curated-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .headline {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .headline .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #4338ca;
+      font-weight: 700;
+    }
+
+    .headline p {
+      margin: 0.5rem 0 0 0;
+      font-weight: 600;
+      color: #1e1b4b;
+    }
+
+    .stats {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+
+    .curated-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .curated-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+      background: #ffffff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .curated-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .curated-header h4 {
+      margin: 0;
+      font-size: 1rem;
+      color: #0f172a;
+    }
+
+    .sig {
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #1f2937;
+    }
+
+    .sig-5, .sig-4 {
+      background: #fecaca;
+      color: #7f1d1d;
+    }
+
+    .sig-3 {
+      background: #fde68a;
+      color: #92400e;
+    }
+
+    .sig-2, .sig-1 {
+      background: #bbf7d0;
+      color: #166534;
+    }
+
+    .key-fact {
+      margin: 0 0 0.75rem 0;
+      color: #334155;
+    }
+
+    .why span {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .why p {
+      margin: 0.4rem 0 0 0;
+      color: #475569;
+    }
+
+    .sources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .source-links {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .source-links a {
+      color: #1f47ba;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .cluster {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    .cluster span {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
     @media (max-width: 900px) {
       .hero {
         grid-template-columns: 1fr;
@@ -436,6 +657,10 @@ export class TechnologyIntelligenceComponent implements OnInit {
   regions: TechnologyRegionSignal[] = [];
   keyPlayers: TechnologyKeyPlayer[] = [];
   insights: TechnologyInsight[] = [];
+  curatedInsight: CuratedIntelligence | null = null;
+  curatedLoading = false;
+  curatedError = '';
+  activeTab: 'overview' | 'curated' = 'overview';
 
   keywordInput = 'STATCOM';
   region = '';
@@ -458,6 +683,10 @@ export class TechnologyIntelligenceComponent implements OnInit {
       this.keyPlayers = data.keyPlayers || [];
       this.insights = data.insights || [];
     });
+
+    if (this.activeTab === 'curated') {
+      this.loadCuratedInsights();
+    }
   }
 
   resetFilters(): void {
@@ -467,6 +696,13 @@ export class TechnologyIntelligenceComponent implements OnInit {
     this.toDate = '';
     this.sources = { news: true, reports: true };
     this.applyFilters();
+  }
+
+  setTab(tab: 'overview' | 'curated'): void {
+    this.activeTab = tab;
+    if (tab === 'curated') {
+      this.loadCuratedInsights();
+    }
   }
 
   toggleSource(source: 'news' | 'reports'): void {
@@ -481,6 +717,38 @@ export class TechnologyIntelligenceComponent implements OnInit {
   getRegionWidth(region: TechnologyRegionSignal): number {
     const max = Math.max(...this.regions.map(item => item.totalCount), 1);
     return (region.totalCount / max) * 100;
+  }
+
+  private loadCuratedInsights(): void {
+    const filter = this.buildFilter();
+    const keyword = filter.keywords?.[0] || this.keywordInput.split(',')[0]?.trim();
+
+    if (!keyword) {
+      this.curatedError = 'Add at least one keyword to build curated insights.';
+      this.curatedInsight = null;
+      return;
+    }
+
+    const request: CurateIntelligenceRequest = {
+      keyword: keyword,
+      fromDate: filter.fromDate,
+      toDate: filter.toDate,
+      maxArticles: 40
+    };
+
+    this.curatedLoading = true;
+    this.curatedError = '';
+
+    this.api.curateWebSearchResults(request).subscribe({
+      next: (data) => {
+        this.curatedInsight = data;
+        this.curatedLoading = false;
+      },
+      error: () => {
+        this.curatedError = 'Unable to build curated insights. Try again shortly.';
+        this.curatedLoading = false;
+      }
+    });
   }
 
   private buildFilter(): TechnologyIntelligenceFilter {

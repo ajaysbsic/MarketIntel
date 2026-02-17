@@ -1,11 +1,16 @@
 using Alfanar.MarketIntel.Api.Hubs;
 using Alfanar.MarketIntel.Api.Middleware;
+using Alfanar.MarketIntel.Api.Services;
 using Alfanar.MarketIntel.Application.DTOs.Validators;
 using Alfanar.MarketIntel.Application.Interfaces;
+using Alfanar.MarketIntel.Application.Interfaces.ScheduledJobs;
 using Alfanar.MarketIntel.Application.Services;
+using Alfanar.MarketIntel.Application.Services.ScheduledJobs;
 using Alfanar.MarketIntel.Infrastructure.Persistence;
 using Alfanar.MarketIntel.Infrastructure.Repositories;
 using FluentValidation;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Microsoft.Extensions.FileProviders;
@@ -36,6 +41,28 @@ builder.Services.AddDbContext<MarketIntelDbContext>(options =>
             maxRetryDelay: TimeSpan.FromSeconds(30),
             errorNumbersToAdd: null)));
 
+// Hangfire Configuration
+var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", true);
+if (hangfireEnabled)
+{
+    builder.Services.AddHangfire(configuration => configuration
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(connectionString, new SqlServerStorageOptions
+        {
+            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+            QueuePollInterval = TimeSpan.FromSeconds(15),
+            UseRecommendedIsolationLevel = true,
+            DisableGlobalLocks = true,
+            PrepareSchemaIfNecessary = true
+        }));
+
+    var workerCount = builder.Configuration.GetValue("Hangfire:WorkerCount", 3);
+    builder.Services.AddHangfireServer(options => options.WorkerCount = workerCount);
+}
+
 // Repository Registration
 builder.Services.AddScoped<INewsRepository, NewsRepository>();
 builder.Services.AddScoped<IRssFeedRepository, RssFeedRepository>();
@@ -46,6 +73,12 @@ builder.Services.AddScoped<ISmartAlertRepository, SmartAlertRepository>(); // NE
 builder.Services.AddScoped<IKeywordMonitorRepository, KeywordMonitorRepository>();
 builder.Services.AddScoped<IWebSearchResultRepository, WebSearchResultRepository>();
 builder.Services.AddScoped<ITechnologyReportRepository, TechnologyReportRepository>();
+builder.Services.AddScoped<IIntelligenceReportRepository, IntelligenceReportRepository>(); // NEW
+builder.Services.AddScoped<ICompetitorRepository, CompetitorRepository>(); // NEW
+builder.Services.AddScoped<ICompetitorMentionRepository, CompetitorMentionRepository>(); // NEW
+builder.Services.AddScoped<ITrendSnapshotRepository, TrendSnapshotRepository>(); // NEW
+builder.Services.AddScoped<INotificationPreferencesRepository, NotificationPreferencesRepository>(); // NEW
+builder.Services.AddScoped<INotificationQueueRepository, NotificationQueueRepository>(); // NEW
 
 // Service Registration
 builder.Services.AddScoped<INewsService, NewsService>();
@@ -53,7 +86,15 @@ builder.Services.AddScoped<IRssFeedService, RssFeedService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<ITechnologyIntelligenceService, TechnologyIntelligenceService>();
 builder.Services.AddScoped<ICategoryClassifier, RuleBasedCategoryClassifier>();
+builder.Services.AddScoped<IIntelligenceReportService, IntelligenceReportService>(); // NEW
+builder.Services.AddScoped<IArticleCurationService, ArticleCurationService>(); // NEW
+builder.Services.AddScoped<ICompetitorTrackingService, CompetitorTrackingService>(); // NEW
+builder.Services.AddScoped<ITrendAnalyticsService, TrendAnalyticsService>(); // NEW
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<IEmailService, EmailService>(); // NEW
+builder.Services.AddScoped<INotificationQueueService, NotificationQueueService>(); // NEW
+builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>(); // NEW
+builder.Services.AddScoped<TechThreatDetector>(); // NEW
 
 // Web Search & Monitoring Services
 builder.Services.AddScoped<IWebSearchProvider, GoogleSearchService>();
@@ -73,8 +114,21 @@ else
 }
 builder.Services.AddScoped<MetricExtractionService>(); // Metric extraction
 builder.Services.AddScoped<AlertRulesEngine>(); // NEW: Alert rules engine
+builder.Services.AddScoped<ArticleAlertEngine>(); // NEW: Article alert engine
+builder.Services.AddScoped<PdfReportGenerator>(); // NEW: PDF report generation
 builder.Services.AddScoped<IContactFormSubmissionRepository, ContactFormSubmissionRepository>();
 builder.Services.AddScoped<ICompanyContactInfoRepository, CompanyContactInfoRepository>();
+builder.Services.AddScoped<ISmartAlertNotifier, SignalRAlertNotifier>(); // NEW
+builder.Services.AddScoped<IJobOrchestrationService, JobOrchestrationService>();
+builder.Services.AddScoped<IRssFeedPollerJob, RssFeedPollerJob>();
+builder.Services.AddScoped<IKeywordMonitorJob, KeywordMonitorJob>();
+builder.Services.AddScoped<ITrendSnapshotJob, TrendSnapshotJob>();
+builder.Services.AddScoped<IAlertProcessingJob, AlertProcessingJob>();
+builder.Services.AddScoped<INotificationQueueJob, NotificationQueueJob>();
+if (hangfireEnabled)
+{
+    builder.Services.AddHostedService<JobSchedulingService>();
+}
 
 // RAG & AI Chat Services
 builder.Services.AddScoped<IRagContextService, RagContextService>();
@@ -101,11 +155,53 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 
-// AI Services
-//builder.Services.AddHttpClient<IDocumentAnalyzer, OpenAiDocumentAnalyzer>();
-// Replace OpenAI with Google AI
-builder.Services.AddHttpClient<GoogleAiDocumentAnalyzer>();
-builder.Services.AddSingleton<IDocumentAnalyzer, GoogleAiDocumentAnalyzer>();
+// AI Services - Configurable provider selection with proper HTTPS/SSL handling
+builder.Services.AddHttpClient<GoogleAiDocumentAnalyzer>()
+    .ConfigureHttpClient(client =>
+    {
+        client.DefaultRequestHeaders.Add("User-Agent", "Alfanar-MarketIntel/1.0");
+    })
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        var handler = new SocketsHttpHandler
+        {
+            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
+            AllowAutoRedirect = true,
+            UseCookies = false
+        };
+        return handler;
+    });
+
+builder.Services.AddHttpClient<OpenAiDocumentAnalyzer>()
+    .ConfigureHttpClient(client =>
+    {
+        client.DefaultRequestHeaders.Add("User-Agent", "Alfanar-MarketIntel/1.0");
+    })
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        var handler = new SocketsHttpHandler
+        {
+            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
+            AllowAutoRedirect = true,
+            UseCookies = false
+        };
+        return handler;
+    });
+
+// Register the appropriate AI analyzer based on configuration
+var aiProvider = builder.Configuration["AI:DefaultProvider"]?.ToLower() ?? "gemini";
+if (aiProvider == "openai")
+{
+    // Use OpenAI as primary
+    builder.Services.AddScoped<IDocumentAnalyzer, OpenAiDocumentAnalyzer>();
+    Log.Information("Using OpenAI as default AI provider");
+}
+else
+{
+    // Use Google Gemini as default
+    builder.Services.AddScoped<IDocumentAnalyzer, GoogleAiDocumentAnalyzer>();
+    Log.Information("Using Google Gemini as default AI provider");
+}
 
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<IngestNewsRequestValidator>();
@@ -197,6 +293,16 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthorization();
 
+if (hangfireEnabled)
+{
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new HangfireAuthorizationFilter() }
+    });
+}
+
+app.UseWebSockets();
+
 app.MapControllers();
 app.MapHub<NotificationsHub>("/notifications-hub");
 
@@ -215,6 +321,5 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseWebSockets();
 Log.Information("Market Intelligence API starting...");
 app.Run();

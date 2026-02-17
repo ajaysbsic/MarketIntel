@@ -17,19 +17,22 @@ public class TechnologyReportService : ITechnologyReportService
     private readonly IWebSearchService _webSearchService;
     private readonly ILogger<TechnologyReportService> _logger;
     private readonly MarketIntelDbContext _context;
+    private readonly PdfReportGenerator _pdfReportGenerator;
 
     public TechnologyReportService(
         ITechnologyReportRepository reportRepository,
         IWebSearchResultRepository searchRepository,
         IWebSearchService webSearchService,
         ILogger<TechnologyReportService> logger,
-        MarketIntelDbContext context)
+        MarketIntelDbContext context,
+        PdfReportGenerator pdfReportGenerator)
     {
         _reportRepository = reportRepository;
         _searchRepository = searchRepository;
         _webSearchService = webSearchService;
         _logger = logger;
         _context = context;
+        _pdfReportGenerator = pdfReportGenerator;
     }
 
     public async Task<Result<TechnologyReportDto>> GenerateReportAsync(TechnologyReportRequestDto request)
@@ -82,11 +85,15 @@ public class TechnologyReportService : ITechnologyReportService
 
             _logger.LogInformation("Generated report: {Title} with {Count} results", report.Title, allResults.Count);
 
-            // TODO: Generate PDF (Phase will be added later in implementation)
-            // var pdfPath = await _pdfGenerator.GeneratePdfAsync(report);
-            // report.PdfFilePath = pdfPath;
-            // await _reportRepository.UpdateAsync(report);
-            // await _reportRepository.SaveChangesAsync();
+            // Generate PDF
+            var deduplicatedResults = allResults.DistinctBy(r => r.Url).ToList();
+            var pdfResult = await _pdfReportGenerator.GenerateTechnologyReportPdfAsync(report, deduplicatedResults);
+            if (pdfResult.IsSuccess)
+            {
+                report.PdfFilePath = pdfResult.Data;
+                await _reportRepository.UpdateAsync(report);
+                await _reportRepository.SaveChangesAsync();
+            }
 
             return Result<TechnologyReportDto>.Success(await MapToDtoAsync(report));
         }

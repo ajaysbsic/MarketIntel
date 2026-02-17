@@ -109,7 +109,7 @@ class KeywordMonitorWatcher:
                 max_results_per_request=google_config.get("max_results_per_request", 10)
             )
 
-            self.logger.info("✓ Clients initialized successfully")
+            self.logger.info("OK Clients initialized successfully")
             return True
 
         except Exception as e:
@@ -195,18 +195,46 @@ class KeywordMonitorWatcher:
                 self.logger.warning(f"No results returned for keyword: {keyword}")
                 return
 
+            api_results = []
+            for item in results:
+                api_results.append({
+                    "title": item.get("title", ""),
+                    "snippet": item.get("snippet", ""),
+                    "url": item.get("url", ""),
+                    "source": item.get("source", "Google Search"),
+                    "retrievedUtc": item.get("retrieved_utc"),
+                    "publishedDate": item.get("published_date"),
+                    "isFromMonitoring": True
+                })
+
             # Post results to API
             search_data = {
                 "keyword": keyword,
                 "searchProvider": "google",
-                "maxResults": len(results),
-                "results": results
+                "maxResults": len(api_results),
+                "results": api_results
             }
 
-            success = self.api_client.post_web_search_results(search_data)
+            response = self.api_client.post_web_search_results(search_data)
             
-            if success:
-                self.logger.info(f"✓ Successfully posted {len(results)} results for keyword: {keyword}")
+            if response:
+                self.logger.info(f"OK Successfully posted {len(results)} results for keyword: {keyword}")
+                if self.config.get("keyword_monitoring", {}).get("enable_intelligence_reports", True):
+                    report_triggered = self.api_client.generate_intelligence_report(keyword)
+                    if report_triggered:
+                        self.logger.info(f"OK Intelligence report generation triggered for keyword: {keyword}")
+                    else:
+                        self.logger.warning(f"Failed to trigger intelligence report for keyword: {keyword}")
+
+                enable_competitor_scan = self.config.get("keyword_monitoring", {}).get("enable_competitor_scan", True)
+                enable_article_alerts = self.config.get("keyword_monitoring", {}).get("enable_article_alerts", True)
+
+                if isinstance(response, list):
+                    for result in response:
+                        if enable_competitor_scan:
+                            self.api_client.scan_competitors_for_web_result(result)
+                        if enable_article_alerts:
+                            self.api_client.evaluate_web_result_alerts(result)
             else:
                 self.logger.error(f"Failed to post results for keyword: {keyword}")
 

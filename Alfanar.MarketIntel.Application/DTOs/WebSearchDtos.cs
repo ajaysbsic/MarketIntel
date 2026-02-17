@@ -14,6 +14,8 @@ public class WebSearchRequestDto
     public int MaxResults { get; set; } = 10;
 
     public string SearchProvider { get; set; } = "newsapi";
+
+    public List<WebSearchResultDto>? Results { get; set; }
 }
 
 /// <summary>
@@ -34,6 +36,8 @@ public class WebSearchResultDto
     public DateTime? PublishedDate { get; set; }
 
     public string Source { get; set; } = string.Empty;
+
+    public string? SearchProvider { get; set; }
 
     public DateTime RetrievedUtc { get; set; }
 

@@ -1,4 +1,5 @@
 ﻿using Alfanar.MarketIntel.Application.Common;
+using Alfanar.MarketIntel.Application.DTOs;
 using Alfanar.MarketIntel.Application.Interfaces;
 using Alfanar.MarketIntel.Domain.Entities;
 using Microsoft.Extensions.Caching.Distributed;
@@ -264,6 +265,260 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
         return Result<(double, string)>.Success((0.5, "Neutral"));
     }
 
+    public async Task<Result<IntelligenceReportJsonDto>> GenerateIntelligenceReportAsync(string consolidatedArticleText, string keyword)
+    {
+        if (!IsAvailable())
+            return Result<IntelligenceReportJsonDto>.Failure("Google AI service not configured");
+
+        try
+        {
+            // Truncate to 32K tokens (approximate)
+            var truncatedText = consolidatedArticleText.Length > 32000 
+                ? consolidatedArticleText.Substring(0, 32000) + "..." 
+                : consolidatedArticleText;
+
+            var prompt = BuildIntelligenceReportPrompt(truncatedText, keyword);
+            var result = await CallGeminiApiAsync(prompt);
+
+            if (!result.IsSuccess)
+                return Result<IntelligenceReportJsonDto>.Failure(result.Error ?? "Failed to generate report");
+
+            var content = result.Data;
+            if (string.IsNullOrWhiteSpace(content))
+                return Result<IntelligenceReportJsonDto>.Failure("Empty response from AI");
+
+            _logger.LogInformation("DEBUG: Raw Gemini Response ({Length} chars):\n{Content}", 
+                content.Length, content.Substring(0, Math.Min(1000, content.Length)));
+
+            // Extract JSON from response
+            var jsonContent = ExtractJsonFromResponse(content);
+            if (string.IsNullOrWhiteSpace(jsonContent))
+                return Result<IntelligenceReportJsonDto>.Failure("Could not parse AI response as JSON");
+
+            _logger.LogInformation("DEBUG: Extracted JSON ({Length} chars):\n{Content}", 
+                jsonContent.Length, jsonContent.Substring(0, Math.Min(1000, jsonContent.Length)));
+
+            // Deserialize to DTO
+            try
+            {
+                var reportData = JsonSerializer.Deserialize<IntelligenceReportJsonDto>(jsonContent, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                if (reportData == null)
+                    return Result<IntelligenceReportJsonDto>.Failure("Failed to deserialize report data");
+
+                return Result<IntelligenceReportJsonDto>.Success(reportData);
+            }
+            catch (JsonException jsonEx)
+            {
+                _logger.LogError(jsonEx, "JSON Parsing failed. Line: {Line}, Position: {Position}", 
+                    jsonEx.LineNumber, jsonEx.BytePositionInLine);
+                _logger.LogError("DEBUG: Full extracted JSON:\n{Json}", jsonContent);
+                return Result<IntelligenceReportJsonDto>.Failure($"Invalid JSON structure: {jsonEx.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating intelligence report for keyword: {Keyword}", keyword);
+            return Result<IntelligenceReportJsonDto>.Failure($"Error: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<CuratedItemInsightDto>> GenerateCurationInsightAsync(string clusterText, string keyword)
+    {
+        if (!IsAvailable())
+            return Result<CuratedItemInsightDto>.Failure("Google AI service not configured");
+
+        try
+        {
+            var truncatedText = clusterText.Length > 16000
+                ? clusterText.Substring(0, 16000) + "..."
+                : clusterText;
+
+            var prompt = $@"You are a market intelligence analyst. Given the following cluster of articles about '{keyword}', extract:
+1) The single most important key fact.
+2) Why it matters for decision makers.
+3) A significance rating from 1 (low) to 5 (high).
+
+Return ONLY valid JSON:
+{{
+    ""key_fact"": ""..."",
+    ""why_it_matters"": ""..."",
+    ""significance"": 1
+}}
+
+Cluster content:
+{truncatedText}";
+
+            var result = await CallGeminiApiAsync(prompt);
+            if (!result.IsSuccess)
+                return Result<CuratedItemInsightDto>.Failure(result.Error ?? "Curation failed");
+
+            var content = result.Data;
+            if (string.IsNullOrWhiteSpace(content))
+                return Result<CuratedItemInsightDto>.Failure("Empty response from AI");
+
+            var jsonContent = ExtractJsonFromResponse(content);
+            if (string.IsNullOrWhiteSpace(jsonContent))
+                return Result<CuratedItemInsightDto>.Failure("Could not parse AI response as JSON");
+
+            var insight = JsonSerializer.Deserialize<CuratedItemInsightDto>(jsonContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (insight == null)
+                return Result<CuratedItemInsightDto>.Failure("Failed to deserialize curation insight");
+
+            return Result<CuratedItemInsightDto>.Success(insight);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating curation insight for keyword: {Keyword}", keyword);
+            return Result<CuratedItemInsightDto>.Failure($"Error: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<CompetitorDetectionResultDto>> ExtractCompetitorMentionsAsync(string text, List<string> knownCompetitors)
+    {
+        if (!IsAvailable())
+            return Result<CompetitorDetectionResultDto>.Failure("Google AI service not configured");
+
+        try
+        {
+            var truncatedText = text.Length > 16000 ? text.Substring(0, 16000) + "..." : text;
+            var competitorList = knownCompetitors.Count == 0
+                ? "(none)"
+                : string.Join(", ", knownCompetitors);
+
+            var prompt = $@"You are a market intelligence analyst. Given the known competitors:
+[{competitorList}]
+
+Analyze the following article text. Identify mentions of known competitors and suggest any NEW competitors that appear relevant.
+
+Return ONLY valid JSON:
+{{
+    ""mentions"": [
+        {{""name"": ""..."", ""context"": ""M&A/Funding/Leadership/Product/General"", ""sentiment_score"": 0.0, ""sentiment_label"": ""Neutral""}}
+  ],
+    ""new_competitors"": [
+        {{""name"": ""..."", ""industry"": ""..."", ""reason"": ""...""}}
+  ]
+}}
+
+Article text:
+{truncatedText}";
+
+            var result = await CallGeminiApiAsync(prompt);
+            if (!result.IsSuccess)
+                return Result<CompetitorDetectionResultDto>.Failure(result.Error ?? "Competitor extraction failed");
+
+            var content = result.Data;
+            if (string.IsNullOrWhiteSpace(content))
+                return Result<CompetitorDetectionResultDto>.Failure("Empty response from AI");
+
+            var jsonContent = ExtractJsonFromResponse(content);
+            if (string.IsNullOrWhiteSpace(jsonContent))
+                return Result<CompetitorDetectionResultDto>.Failure("Could not parse AI response as JSON");
+
+            var detection = JsonSerializer.Deserialize<CompetitorDetectionResultDto>(jsonContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (detection == null)
+                return Result<CompetitorDetectionResultDto>.Failure("Failed to deserialize competitor detection result");
+
+            return Result<CompetitorDetectionResultDto>.Success(detection);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting competitor mentions");
+            return Result<CompetitorDetectionResultDto>.Failure($"Error: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<AlertConfirmationDto>> ConfirmAlertAsync(string text, string alertType, string prompt)
+    {
+        if (!IsAvailable())
+            return Result<AlertConfirmationDto>.Failure("Google AI service not configured");
+
+        try
+        {
+            var truncatedText = text.Length > 16000 ? text.Substring(0, 16000) + "..." : text;
+
+            var fullPrompt = $@"{prompt}
+
+Return ONLY valid JSON:
+{{
+    ""is_match"": true,
+    ""confidence"": 0.0,
+    ""details"": ""...""
+}}
+
+Alert type: {alertType}
+Article text:
+{truncatedText}";
+
+            var result = await CallGeminiApiAsync(fullPrompt);
+            if (!result.IsSuccess)
+                return Result<AlertConfirmationDto>.Failure(result.Error ?? "Alert confirmation failed");
+
+            var content = result.Data;
+            if (string.IsNullOrWhiteSpace(content))
+                return Result<AlertConfirmationDto>.Failure("Empty response from AI");
+
+            var jsonContent = ExtractJsonFromResponse(content);
+            if (string.IsNullOrWhiteSpace(jsonContent))
+                return Result<AlertConfirmationDto>.Failure("Could not parse AI response as JSON");
+
+            var confirmation = JsonSerializer.Deserialize<AlertConfirmationDto>(jsonContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (confirmation == null)
+                return Result<AlertConfirmationDto>.Failure("Failed to deserialize alert confirmation");
+
+            return Result<AlertConfirmationDto>.Success(confirmation);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error confirming alert type {AlertType}", alertType);
+            return Result<AlertConfirmationDto>.Failure($"Error: {ex.Message}");
+        }
+    }
+
+    private string BuildIntelligenceReportPrompt(string text, string keyword)
+    {
+        return @$"You are a market intelligence analyst. Analyze these articles about '{keyword}' and produce a comprehensive structured intelligence report.
+
+Return ONLY valid JSON with no markdown formatting, no comments, and no code blocks:
+{{
+  ""executiveSummary"": ""2-3 paragraph summary of key findings, trends, and strategic implications about {keyword}"",
+  ""marketMovements"": ""Market trends, shifts, and movements identified in the articles"",
+  ""competitorUpdates"": ""News and developments about competitors mentioned in the articles"",
+  ""maSignals"": ""Merger, acquisition, and consolidation signals identified (or null if none)"",
+  ""policyAndRegulation"": ""Policy changes, regulatory updates, or compliance impacts mentioned in the articles"",
+  ""technologyDevelopments"": ""Technology advances, innovations, or technical milestones referenced in the articles"",
+  ""investmentsAndFunding"": ""Funding rounds, investments, grants, or capital inflows referenced in the articles"",
+  ""risksAndOpportunities"": ""Key risks and opportunities identified from the market intelligence"",
+  ""tokensUsed"": 0
+}}
+
+CRITICAL: 
+- Return ONLY the JSON object, nothing else
+- No markdown code blocks
+- No explanatory text before or after
+- Each section must be 2-4 paragraphs of text
+- Use specific information from articles
+- Exclude unrelated articles
+
+Articles to analyze:
+{text}";
+    }
+
     private string BuildAnalysisPrompt(string text, string companyName, string reportType)
     {
         // Select template based on report type
@@ -342,6 +597,8 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
             };
 
             var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
+            _logger.LogInformation("DEBUG: Calling Gemini API at {Url}", url.Replace(_apiKey, "***"));
+            
             var response = await _httpClient.PostAsJsonAsync(url, requestBody);
 
             if (!response.IsSuccessStatusCode)
@@ -376,9 +633,23 @@ public class GoogleAiDocumentAnalyzer : IDocumentAnalyzer
                 ? Result<string>.Failure("Empty response from API")
                 : Result<string>.Success(content);
         }
+        catch (HttpRequestException httpEx)
+        {
+            _logger.LogError(httpEx, " HTTP error calling Gemini API - {Message}", httpEx.Message);
+            if (httpEx.InnerException != null)
+            {
+                _logger.LogError(httpEx.InnerException, " Inner exception: {InnerMessage}", httpEx.InnerException.Message);
+            }
+            return Result<string>.Failure($"API HTTP error: {httpEx.Message}");
+        }
+        catch (TaskCanceledException timeoutEx)
+        {
+            _logger.LogError(timeoutEx, " Timeout calling Gemini API");
+            return Result<string>.Failure($"API call timeout: {timeoutEx.Message}");
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, " Error calling Gemini API");
+            _logger.LogError(ex, " Error calling Gemini API: {ExceptionType}", ex.GetType().Name);
             return Result<string>.Failure($"API call failed: {ex.Message}");
         }
     }
@@ -498,7 +769,10 @@ Document:
     /// </summary>
     private string ExtractJsonFromResponse(string content)
     {
-        // Try to extract JSON from markdown code blocks
+        if (string.IsNullOrWhiteSpace(content))
+            return string.Empty;
+
+        // First, try to extract JSON from markdown code blocks (```json...```)
         var jsonMatch = System.Text.RegularExpressions.Regex.Match(
             content,
             @"```(?:json)?\s*\n?([\s\S]*?)\n?```",
@@ -506,18 +780,25 @@ Document:
 
         if (jsonMatch.Success)
         {
-            return jsonMatch.Groups[1].Value.Trim();
+            var extracted = jsonMatch.Groups[1].Value.Trim();
+            _logger.LogInformation("Extracted JSON from markdown block ({Length} chars)", extracted.Length);
+            return extracted;
         }
 
-        // If no markdown, try to find JSON object directly
+        // If no markdown block, find the JSON object boundaries
         var jsonStart = content.IndexOf('{');
         var jsonEnd = content.LastIndexOf('}');
 
         if (jsonStart >= 0 && jsonEnd > jsonStart)
         {
-            return content.Substring(jsonStart, jsonEnd - jsonStart + 1).Trim();
+            var extracted = content.Substring(jsonStart, jsonEnd - jsonStart + 1).Trim();
+            _logger.LogInformation("Extracted JSON from object boundaries ({Length} chars, start={Start}, end={End})", 
+                extracted.Length, jsonStart, jsonEnd);
+            return extracted;
         }
 
+        _logger.LogWarning("Could not extract JSON from response. Content: {Content}", 
+            content.Substring(0, Math.Min(200, content.Length)));
         return content;
     }
 

@@ -1,7 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, KeywordMonitor, CreateKeywordMonitor } from '../../shared/services/api.service';
+import { Router } from '@angular/router';
+import {
+  ApiService,
+  KeywordMonitor,
+  CreateKeywordMonitor,
+  CuratedIntelligence,
+  CurateIntelligenceRequest,
+  IntelligenceReportSummary
+} from '../../shared/services/api.service';
 
 @Component({
   selector: 'app-keyword-monitors',
@@ -99,18 +107,61 @@ import { ApiService, KeywordMonitor, CreateKeywordMonitor } from '../../shared/s
             <button class="btn-close" (click)="closeResults()">✕</button>
           </div>
           <div class="modal-body">
-            <div *ngIf="loadingResults" class="loading">Loading results...</div>
-            <div *ngIf="!loadingResults && searchResults.length === 0" class="no-results">
-              No results yet. The watcher will populate results within 5 minutes.
+            <div class="report-banner" *ngIf="latestReport">
+              <div>
+                <h3>Latest Intelligence Report</h3>
+                <p>Generated {{ latestReport.generatedUtc | date: 'mediumDate' }} · {{ latestReport.deduplicatedArticleCount }} sources</p>
+              </div>
+              <div class="report-actions">
+                <button class="btn-secondary" (click)="openReports()">Open Reports</button>
+                <button class="btn-primary" (click)="downloadLatestReport()">Download PDF</button>
+              </div>
             </div>
-            <div class="results-list" *ngIf="!loadingResults && searchResults.length > 0">
-              <div class="result-card" *ngFor="let result of searchResults">
-                <h4>{{ result.title }}</h4>
-                <p class="snippet">{{ result.snippet }}</p>
-                <div class="result-meta">
-                  <span>📰 {{ result.source }}</span>
-                  <span *ngIf="result.publishedDate">📅 {{ result.publishedDate | date: 'short' }}</span>
-                  <a [href]="result.url" target="_blank" class="result-link">🔗 View Article</a>
+
+            <div *ngIf="loadingResults" class="loading">Building curated intelligence...</div>
+            <div *ngIf="!loadingResults && curationError" class="alert alert-danger">
+              ✗ {{ curationError }}
+            </div>
+
+            <div *ngIf="!loadingResults && curatedInsight && curatedInsight.curatedItems.length === 0" class="no-results">
+              No significant signals detected yet. Try expanding the date range.
+            </div>
+
+            <div class="curated" *ngIf="!loadingResults && curatedInsight && curatedInsight.curatedItems.length > 0">
+              <div class="headline" *ngIf="curatedInsight.combinedSummary">
+                <span class="label">Combined summary</span>
+                <p>{{ curatedInsight.combinedSummary }}</p>
+              </div>
+              <div class="headline">
+                <span class="label">Headline insight</span>
+                <p>{{ curatedInsight.headlineInsight }}</p>
+              </div>
+              <div class="dedupe">
+                <span>Original: {{ curatedInsight.deduplicationStats.originalCount }}</span>
+                <span>Unique: {{ curatedInsight.deduplicationStats.uniqueCount }}</span>
+                <span>Duplicates removed: {{ curatedInsight.deduplicationStats.duplicatesRemoved }}</span>
+              </div>
+
+              <div class="curated-list">
+                <div class="curated-card" *ngFor="let item of curatedInsight.curatedItems">
+                  <div class="curated-header">
+                    <h4>{{ item.title }}</h4>
+                    <span class="sig" [ngClass]="'sig-' + item.significance">{{ item.significance }}/5</span>
+                  </div>
+                  <p class="key-fact">{{ item.keyFact }}</p>
+                  <div class="why">
+                    <span>Why it matters</span>
+                    <p>{{ item.whyItMatters }}</p>
+                  </div>
+                  <div class="sources">
+                    <span>{{ item.sourceCount }} sources</span>
+                    <div class="source-links">
+                      <a *ngFor="let source of item.sources" [href]="source" target="_blank">Source</a>
+                    </div>
+                  </div>
+                  <div class="cluster" *ngIf="item.clusterKeywords.length">
+                    <span *ngFor="let keyword of item.clusterKeywords">{{ keyword }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -554,6 +605,176 @@ import { ApiService, KeywordMonitor, CreateKeywordMonitor } from '../../shared/s
       text-decoration: underline;
     }
 
+    .report-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .report-banner h3 {
+      margin: 0 0 0.25rem 0;
+      font-size: 1rem;
+    }
+
+    .report-banner p {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+
+    .report-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .curated {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .headline {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .headline .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #4338ca;
+      font-weight: 700;
+    }
+
+    .headline p {
+      margin: 0.5rem 0 0 0;
+      font-weight: 600;
+      color: #1e1b4b;
+    }
+
+    .dedupe {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+
+    .curated-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .curated-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+      background: #ffffff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .curated-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .curated-header h4 {
+      margin: 0;
+      font-size: 1rem;
+      color: #0f172a;
+    }
+
+    .sig {
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #1f2937;
+    }
+
+    .sig-5, .sig-4 {
+      background: #fecaca;
+      color: #7f1d1d;
+    }
+
+    .sig-3 {
+      background: #fde68a;
+      color: #92400e;
+    }
+
+    .sig-2, .sig-1 {
+      background: #bbf7d0;
+      color: #166534;
+    }
+
+    .key-fact {
+      margin: 0 0 0.75rem 0;
+      color: #334155;
+    }
+
+    .why span {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .why p {
+      margin: 0.4rem 0 0 0;
+      color: #475569;
+    }
+
+    .sources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .source-links {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .source-links a {
+      color: #1f47ba;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .cluster {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    .cluster span {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
     @media (max-width: 768px) {
       .monitor-form {
         flex-direction: column;
@@ -588,10 +809,12 @@ export class KeywordMonitorsComponent implements OnInit {
   // Results modal
   showingResults = false;
   currentKeyword = '';
-  searchResults: any[] = [];
   loadingResults = false;
+  curationError = '';
+  curatedInsight: CuratedIntelligence | null = null;
+  latestReport: IntelligenceReportSummary | null = null;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private router: Router) {}
 
   ngOnInit(): void {
     this.loadMonitors();
@@ -667,18 +890,33 @@ export class KeywordMonitorsComponent implements OnInit {
     this.showingResults = true;
     this.currentKeyword = keyword;
     this.loadingResults = true;
-    this.searchResults = [];
+    this.curationError = '';
+    this.curatedInsight = null;
+    this.latestReport = null;
 
-    this.api.getCachedWebSearchResults(keyword, undefined, undefined, 1, 20).subscribe({
+    const request: CurateIntelligenceRequest = {
+      keyword: keyword,
+      maxArticles: 30
+    };
+
+    this.api.curateWebSearchResults(request).subscribe({
       next: (data) => {
-        this.searchResults = data.items || [];
+        this.curatedInsight = data;
         this.loadingResults = false;
-        console.log('Loaded results for', keyword, ':', this.searchResults);
       },
       error: (err) => {
-        console.error('Error loading results:', err);
+        console.error('Error loading curated intelligence:', err);
+        this.curationError = 'Failed to build curated intelligence. Try again in a few minutes.';
         this.loadingResults = false;
-        this.searchResults = [];
+      }
+    });
+
+    this.api.getIntelligenceReportsByKeyword(keyword, 1, 1).subscribe({
+      next: (data) => {
+        this.latestReport = data.items?.[0] || null;
+      },
+      error: (err) => {
+        console.warn('Failed to load intelligence reports:', err);
       }
     });
   }
@@ -686,7 +924,32 @@ export class KeywordMonitorsComponent implements OnInit {
   closeResults(): void {
     this.showingResults = false;
     this.currentKeyword = '';
-    this.searchResults = [];
+    this.curationError = '';
+    this.curatedInsight = null;
+    this.latestReport = null;
+  }
+
+  openReports(): void {
+    this.showingResults = false;
+    this.router.navigate(['/intelligence-reports']);
+  }
+
+  downloadLatestReport(): void {
+    if (!this.latestReport) return;
+
+    this.api.downloadIntelligenceReportPdf(this.latestReport.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `intelligence-report-${this.latestReport?.keyword || 'report'}.pdf`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Error downloading report PDF:', err);
+      }
+    });
   }
 
   resetForm(): void {

@@ -3,6 +3,7 @@ using Alfanar.MarketIntel.Application.DTOs;
 using Alfanar.MarketIntel.Application.Interfaces;
 using Alfanar.MarketIntel.Domain.Entities;
 using Alfanar.MarketIntel.Infrastructure.Repositories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Alfanar.MarketIntel.Application.Services;
@@ -12,17 +13,38 @@ public class NewsService : INewsService
     private readonly INewsRepository _newsRepository;
     private readonly ITagRepository _tagRepository;
     private readonly ICategoryClassifier _classifier;
+    private readonly ICompetitorTrackingService _competitorTrackingService;
+    private readonly ArticleAlertEngine _articleAlertEngine;
+    private readonly ISmartAlertRepository _alertRepository;
+    private readonly ISmartAlertNotifier _alertNotifier;
+    private readonly INotificationPreferenceService _notificationPreferenceService;
+    private readonly INotificationQueueService _notificationQueueService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<NewsService> _logger;
 
     public NewsService(
         INewsRepository newsRepository,
         ITagRepository tagRepository,
         ICategoryClassifier classifier,
+        ICompetitorTrackingService competitorTrackingService,
+        ArticleAlertEngine articleAlertEngine,
+        ISmartAlertRepository alertRepository,
+        ISmartAlertNotifier alertNotifier,
+        INotificationPreferenceService notificationPreferenceService,
+        INotificationQueueService notificationQueueService,
+        IConfiguration configuration,
         ILogger<NewsService> logger)
     {
         _newsRepository = newsRepository;
         _tagRepository = tagRepository;
         _classifier = classifier;
+        _competitorTrackingService = competitorTrackingService;
+        _articleAlertEngine = articleAlertEngine;
+        _alertRepository = alertRepository;
+        _alertNotifier = alertNotifier;
+        _notificationPreferenceService = notificationPreferenceService;
+        _notificationQueueService = notificationQueueService;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -88,6 +110,54 @@ public class NewsService : INewsService
 
             await _newsRepository.UpdateAsync(article);
             await _newsRepository.SaveChangesAsync();
+
+            var scanOnIngestion = _configuration.GetValue("CompetitorTracking:ScanOnIngestion", false);
+            if (scanOnIngestion)
+            {
+                var scanRequest = new CompetitorScanRequestDto
+                {
+                    SourceType = "News",
+                    SourceId = article.Id,
+                    Title = article.Title,
+                    Snippet = article.Summary,
+                    BodyText = article.BodyText,
+                    Url = article.Url
+                };
+
+                var scanResult = await _competitorTrackingService.ScanArticleAsync(scanRequest);
+                if (!scanResult.IsSuccess)
+                {
+                    _logger.LogWarning("Competitor scan failed for article {Id}: {Error}", article.Id, scanResult.Error);
+                }
+            }
+
+            var alertsEnabled = _configuration.GetValue("Alerts:EnableArticleAlerts", true);
+            if (alertsEnabled)
+            {
+                var alerts = await _articleAlertEngine.EvaluateArticleAsync(
+                    article.Title,
+                    article.Summary,
+                    article.BodyText,
+                    "News",
+                    article.Id,
+                    article.Url);
+
+                if (alerts.Count > 0)
+                {
+                    await _alertRepository.AddRangeAsync(alerts);
+                    await _alertRepository.SaveChangesAsync();
+
+                    foreach (var alert in alerts.Where(a => a.Severity == "High" || a.Severity == "Critical"))
+                    {
+                        var preferences = await _notificationPreferenceService.GetUsersInterestedInAlertAsync(alert.AlertType);
+                        foreach (var preference in preferences)
+                        {
+                            await _notificationQueueService.EnqueueNotificationAsync(alert, preference);
+                        }
+                        await _alertNotifier.NotifyAsync(alert);
+                    }
+                }
+            }
 
             _logger.LogInformation("Successfully ingested article: {Title} [{Category}]", 
                 article.Title, article.Category);

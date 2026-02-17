@@ -149,7 +149,7 @@ class ReportWatcherV3:
             api_base = self.config.get('api_endpoint_reports', 'http://localhost:5021').replace('/api/reports/ingest', '')
             feeds_endpoint = f"{api_base}/api/feeds/active"
             
-            logger.info(f"📡 Fetching feeds (source of truth for companies): {feeds_endpoint}")
+            logger.info(f"INFO Fetching feeds (source of truth for companies): {feeds_endpoint}")
             response = self.api_client.get_feeds(feeds_endpoint)
             
             if response and isinstance(response, list):
@@ -162,10 +162,10 @@ class ReportWatcherV3:
                     company_name = self._extract_company_from_feed_name(feed_name)
                     
                     if not company_name:
-                        logger.warning(f"⚠️ Could not extract company from feed: {feed_name}")
+                        logger.warning(f"WARN Could not extract company from feed: {feed_name}")
                         continue
                     if not feed_url:
-                        logger.warning(f"⚠️ Feed '{feed_name}' has no URL, skipping")
+                        logger.warning(f"WARN Feed '{feed_name}' has no URL, skipping")
                         continue
                     
                     targets.append({
@@ -176,15 +176,15 @@ class ReportWatcherV3:
                         'region': feed_data.get('region') or feed_data.get('Region', 'Global'),
                         'category': feed_data.get('category') or feed_data.get('Category', 'Unknown')
                     })
-                    logger.info(f"  ✓ Extracted company: {company_name} - {feed_url}")
+                    logger.info(f"  OK Extracted company: {company_name} - {feed_url}")
                 
-                logger.info(f"✓ Fetched {len(targets)} companies from Feed Config (source of truth)")
+                logger.info(f"OK Fetched {len(targets)} companies from Feed Config (source of truth)")
                 return targets
             else:
                 logger.warning("No companies returned from API")
                 return None
         except Exception as e:
-            logger.warning(f"⚠️ Failed to fetch companies from API: {e}. Will try fallback target_urls.json")
+            logger.warning(f"WARN Failed to fetch companies from API: {e}. Will try fallback target_urls.json")
             return None
     
     def _extract_company_from_feed_name(self, feed_name: str) -> str:
@@ -424,10 +424,10 @@ class ReportWatcherV3:
             
             if self.analyzer and self.config.get('enable_analysis', True):
                 if self.stats.get('analysis_attempts', 0) >= max_analyses_per_run:
-                    logger.warning(f"⏭️  Skipping analysis (max_analyses_per_run={max_analyses_per_run} reached)")
+                    logger.warning(f"SKIP Skipping analysis (max_analyses_per_run={max_analyses_per_run} reached)")
                 # Skip analysis for short/low-value documents to save API quota
                 elif len(extraction['text']) < min_text_length:
-                    logger.warning(f"⏭️  Skipping analysis (text too short: {len(extraction['text'])} chars < {min_text_length})")
+                    logger.warning(f"SKIP Skipping analysis (text too short: {len(extraction['text'])} chars < {min_text_length})")
                 else:
                     logger.info(f"?? Analyzing document with AI...")
                     try:
@@ -512,7 +512,7 @@ class ReportWatcherV3:
                     pdf_bytes = f.read()
                 pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
                 payload['pdfContentBase64'] = pdf_base64
-                logger.info(f"   ✓ Added PDF content as base64 ({len(pdf_base64)} chars)")
+                logger.info(f"   OK Added PDF content as base64 ({len(pdf_base64)} chars)")
             except Exception as e:
                 logger.warning(f"Failed to encode PDF as base64: {e}")
         
@@ -669,7 +669,7 @@ def main():
         
         # Warn if no targets loaded and target_urls.json doesn't exist
         if not watcher.targets and not targets_file.exists():
-            logger.warning("⚠️ No targets available. Ensure your API is running and has companies configured in the database.")
+            logger.warning("WARN No targets available. Ensure your API is running and has companies configured in the database.")
         
         watcher.run()
     except Exception as e:

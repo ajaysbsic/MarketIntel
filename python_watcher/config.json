@@ -6,5 +6,8 @@
   "request_timeout_seconds": 60,
   "verify_ssl": true,
   "log_level": "INFO",
-  "google_ai_api_key": ""
+  "google_ai_api_key": "YOUR_GOOGLE_API_KEY_HERE",
+  "google_model": "gemini-2.5-flash",
+  "enable_competitor_scan": true,
+  "enable_article_alerts": true
 }

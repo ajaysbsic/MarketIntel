@@ -1,6 +1,9 @@
 # Diagnostic Script to List Available Google AI Models
 
-$apiKey = "AIzaSyCqynZZDEObvPPE6Wl_lZA3Ezyx_Hneywo"
+$apiKey = $env:GOOGLEAI_API_KEY
+if (-not $apiKey) {
+    $apiKey = Read-Host "Enter Google AI API key"
+}
 $url = "https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey"
 
 Write-Host "======================================================================" -ForegroundColor Cyan

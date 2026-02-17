@@ -10,11 +10,15 @@ node_modules/
 *.suo
 *.sln.docstates
 
-# Docs (exclude entire folder)
-docs/
-
 # Angular
 .angular/cache/
+**/.angular/
+**/.angular/cache/
+
+# Logs and runtime artifacts
+**/logs/
+**/*.log
+python_watcher/state.json
 
 # Python
 venv/
@@ -28,11 +32,15 @@ __pycache__/
 .env
 .env.local
 .env.*.local
-appsettings.*.json
-config_*.json
 *.local.json
 .secrets/
 
 # User secrets
 **/Properties/launchSettings.json
+
+# Prompt plans (do not commit)
+.github/prompts/COMPREHENSIVE_IMPLEMENTATION_PLAN.prompt.md
+.github/prompts/plan-aiIntelligencePlatformUpgrade.prompt.md
+.github/prompts/plan-techEnhancement.prompt.md
+.github/prompts/plan-webSearchEnhancement.prompt.md
 

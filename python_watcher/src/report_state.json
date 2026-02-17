@@ -1,0 +1,22 @@
+{
+  "https://www.abb.com/global/en": {
+    "last_fetch": null,
+    "processed_urls": [
+      "https://monta.com/app/uploads/sites/12/2024/04/Monta_SOC_2_Type_2_Attestation_Confirmation.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/05/ISO-27001-2022-Certificate.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/10/Monta-Charge-Mobile-App-VPAT-2.5-Intl.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/10/Monta-Hub-VPAT-2.5-Intl.pdf"
+    ],
+    "total_processed": 4
+  },
+  "https://monta.com/en/": {
+    "last_fetch": null,
+    "processed_urls": [
+      "https://monta.com/app/uploads/sites/12/2024/04/Monta_SOC_2_Type_2_Attestation_Confirmation.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/05/ISO-27001-2022-Certificate.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/10/Monta-Charge-Mobile-App-VPAT-2.5-Intl.pdf",
+      "https://monta.com/app/uploads/sites/12/2025/10/Monta-Hub-VPAT-2.5-Intl.pdf"
+    ],
+    "total_processed": 4
+  }
+}

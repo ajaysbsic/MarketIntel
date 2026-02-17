@@ -297,6 +297,125 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.Competitor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Industry")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsAutoDetected")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Keywords")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Website")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsAutoDetected");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Competitors");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.CompetitorMention", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompetitorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("DetectedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsAutoDetected")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MentionContext")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SentimentLabel")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double?>("SentimentScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Snippet")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitorId");
+
+                    b.HasIndex("DetectedUtc");
+
+                    b.HasIndex("SourceId");
+
+                    b.HasIndex("SourceType");
+
+                    b.ToTable("CompetitorMentions");
+                });
+
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.ContactFormSubmission", b =>
                 {
                     b.Property<int>("Id")
@@ -547,6 +666,116 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.ToTable("FinancialReportTags");
                 });
 
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.IntelligenceReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AiModel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CompetitorUpdates")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("DeduplicatedArticleCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ExecutiveSummary")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime?>("FromDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("GeneratedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvestmentsAndFunding")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Keyword")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MaSignals")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("MarketMovements")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("PdfFilePath")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PolicyAndRegulation")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<long>("ProcessingTimeMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("RawArticleCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RisksAndOpportunities")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TechnologyDevelopments")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime?>("ToDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TokensUsed")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GeneratedUtc");
+
+                    b.HasIndex("Keyword");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("Keyword", "GeneratedUtc");
+
+                    b.ToTable("IntelligenceReports");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.IntelligenceReportResult", b =>
+                {
+                    b.Property<Guid>("IntelligenceReportId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("WebSearchResultId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("IntelligenceReportId", "WebSearchResultId");
+
+                    b.HasIndex("WebSearchResultId");
+
+                    b.ToTable("IntelligenceReportResults");
+                });
+
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.KeywordMonitor", b =>
                 {
                     b.Property<Guid>("Id")
@@ -682,6 +911,103 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.HasIndex("TagId");
 
                     b.ToTable("NewsArticleTags");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.NotificationPreferences", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AlertTypesToNotify")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("EmailAddress")
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<bool>("EmailEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("KeywordsToNotify")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<bool>("NotifyOnCritical")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("NotifyOnHigh")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("NotifyOnMedium")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("EmailEnabled");
+
+                    b.ToTable("NotificationPreferences");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.NotificationQueue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AlertId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlertId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NotificationQueues");
                 });
 
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.ReportAnalysis", b =>
@@ -896,6 +1222,10 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<string>("AlertSubType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("AlertType")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -927,6 +1257,17 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<Guid?>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SourceUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<decimal?>("ThresholdValue")
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
@@ -956,6 +1297,10 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.HasIndex("IsAcknowledged");
 
                     b.HasIndex("Severity");
+
+                    b.HasIndex("SourceId");
+
+                    b.HasIndex("SourceType");
 
                     b.ToTable("SmartAlerts");
                 });
@@ -1039,6 +1384,58 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.ToTable("TechnologyReports");
                 });
 
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TrendSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<double>("AverageSentiment")
+                        .HasColumnType("float");
+
+                    b.Property<string>("CompetitorMentionCounts")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Keyword")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("MentionCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NewsCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SignalStrength")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SnapshotDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TopSources")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("WebSearchCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Keyword");
+
+                    b.HasIndex("SnapshotDate");
+
+                    b.HasIndex("Keyword", "SnapshotDate")
+                        .IsUnique();
+
+                    b.ToTable("TrendSnapshots");
+                });
+
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.WebSearchResult", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1120,6 +1517,17 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.Navigation("CompanyContactInfo");
                 });
 
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.CompetitorMention", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.Competitor", "Competitor")
+                        .WithMany("Mentions")
+                        .HasForeignKey("CompetitorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Competitor");
+                });
+
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.FinancialMetric", b =>
                 {
                     b.HasOne("Alfanar.MarketIntel.Domain.Entities.FinancialReport", "FinancialReport")
@@ -1148,6 +1556,25 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.Navigation("FinancialReport");
 
                     b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.IntelligenceReportResult", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.IntelligenceReport", "IntelligenceReport")
+                        .WithMany("ReportResults")
+                        .HasForeignKey("IntelligenceReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.WebSearchResult", "WebSearchResult")
+                        .WithMany()
+                        .HasForeignKey("WebSearchResultId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("IntelligenceReport");
+
+                    b.Navigation("WebSearchResult");
                 });
 
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.NewsArticle", b =>
@@ -1251,6 +1678,11 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.Navigation("CompanyOffices");
                 });
 
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.Competitor", b =>
+                {
+                    b.Navigation("Mentions");
+                });
+
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.FinancialReport", b =>
                 {
                     b.Navigation("Analysis");
@@ -1260,6 +1692,11 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.Navigation("RelatedArticles");
 
                     b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.IntelligenceReport", b =>
+                {
+                    b.Navigation("ReportResults");
                 });
 
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.KeywordMonitor", b =>

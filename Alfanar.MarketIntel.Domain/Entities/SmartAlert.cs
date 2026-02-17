@@ -1,5 +1,14 @@
 namespace Alfanar.MarketIntel.Domain.Entities;
 
+public enum AlertSubType
+{
+    TechAdoption,
+    DisruptiveThreat,
+    StandardsShift,
+    PatentInnovation,
+    TechPartnership
+}
+
 /// <summary>
 /// Smart alerts triggered by business rules
 /// </summary>
@@ -17,6 +26,26 @@ public class SmartAlert
     /// Alert type (MarginDrop, RevenueGrowth, RiskMention, OpportunityDetected, etc.)
     /// </summary>
     public string AlertType { get; set; } = default!;
+
+    /// <summary>
+    /// Optional alert sub-type for further categorization
+    /// </summary>
+    public AlertSubType? AlertSubType { get; set; }
+
+    /// <summary>
+    /// Source type (FinancialReport, NewsArticle, WebSearch)
+    /// </summary>
+    public string? SourceType { get; set; }
+
+    /// <summary>
+    /// Source entity identifier
+    /// </summary>
+    public Guid? SourceId { get; set; }
+
+    /// <summary>
+    /// Source URL if available
+    /// </summary>
+    public string? SourceUrl { get; set; }
     
     /// <summary>
     /// Severity (Critical, High, Medium, Low, Info)

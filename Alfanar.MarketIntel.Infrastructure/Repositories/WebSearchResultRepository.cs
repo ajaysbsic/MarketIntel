@@ -67,9 +67,9 @@ public class WebSearchResultRepository : IWebSearchResultRepository
     {
         return await _context.WebSearchResults
             .Where(w => w.Keyword == keyword 
-                && w.PublishedDate >= fromDate 
-                && w.PublishedDate <= toDate)
-            .OrderByDescending(w => w.PublishedDate)
+                && ((w.PublishedDate != null && w.PublishedDate >= fromDate && w.PublishedDate <= toDate)
+                    || (w.PublishedDate == null && w.RetrievedUtc >= fromDate && w.RetrievedUtc <= toDate)))
+            .OrderByDescending(w => w.PublishedDate ?? w.RetrievedUtc)
             .AsNoTracking()
             .ToListAsync();
     }
@@ -85,8 +85,8 @@ public class WebSearchResultRepository : IWebSearchResultRepository
     {
         return await _context.WebSearchResults
             .Where(w => w.Keyword == keyword 
-                && w.PublishedDate >= fromDate 
-                && w.PublishedDate <= toDate)
+                && ((w.PublishedDate != null && w.PublishedDate >= fromDate && w.PublishedDate <= toDate)
+                    || (w.PublishedDate == null && w.RetrievedUtc >= fromDate && w.RetrievedUtc <= toDate)))
             .CountAsync();
     }
 

@@ -29,11 +29,124 @@ export interface FinancialReport {
 
 export interface SmartAlert {
   id: string;
+  alertType: string;
   title: string;
-  description: string;
+  message: string;
   severity: string;
-  status: string;
+  companyName: string;
+  sourceType?: string;
+  sourceId?: string;
+  sourceUrl?: string;
+  createdAt: string;
+  isAcknowledged?: boolean;
+}
+
+export interface NotificationPreferences {
+  emailEnabled: boolean;
+  emailAddress?: string;
+  notifyOnCritical: boolean;
+  notifyOnHigh: boolean;
+  notifyOnMedium: boolean;
+  alertTypesToNotify: string[];
+  keywordsToNotify: string[];
+}
+
+export interface Competitor {
+  id: string;
+  name: string;
+  industry: string;
+  region: string;
+  keywords: string[];
+  website?: string;
+  isActive: boolean;
+  isAutoDetected: boolean;
   createdUtc: string;
+  createdBy?: string;
+  notes?: string;
+}
+
+export interface CreateCompetitor {
+  name: string;
+  industry: string;
+  region: string;
+  keywords: string[];
+  website?: string;
+  isActive: boolean;
+  notes?: string;
+}
+
+export interface CompetitorMention {
+  id: string;
+  competitorId: string;
+  competitorName: string;
+  sourceType: string;
+  sourceId: string;
+  title: string;
+  snippet: string;
+  url: string;
+  sentimentScore?: number;
+  sentimentLabel?: string;
+  mentionContext: string;
+  detectedUtc: string;
+  isAutoDetected: boolean;
+}
+
+export interface CompetitorTrendPoint {
+  weekStart: string;
+  count: number;
+}
+
+export interface CompetitorDashboard {
+  competitor: Competitor;
+  totalMentions: number;
+  last30DaysMentions: number;
+  averageSentiment: number;
+  topContextTypes: string[];
+  mentionTrend: CompetitorTrendPoint[];
+  recentMentions: CompetitorMention[];
+}
+
+export interface CompetitorComparisonItem {
+  competitorId: string;
+  name: string;
+  totalMentions: number;
+  last30DaysMentions: number;
+  averageSentiment: number;
+}
+
+export interface CompetitorComparison {
+  items: CompetitorComparisonItem[];
+}
+
+export interface TrendPoint {
+  date: string;
+  count: number;
+  sentiment?: number;
+}
+
+export interface CompetitorVisibilityPoint {
+  date: string;
+  count: number;
+}
+
+export interface NoiseSignalPoint {
+  date: string;
+  noiseCount: number;
+  signalCount: number;
+}
+
+export interface TrendSeries {
+  keyword: string;
+  points: TrendPoint[];
+}
+
+export interface TrendComparison {
+  series: TrendSeries[];
+}
+
+export interface WeeklyDigest {
+  summary: string;
+  generatedUtc: string;
 }
 
 export interface RssFeed {
@@ -128,6 +241,36 @@ export interface WebSearchRequest {
   searchProvider?: string;
 }
 
+export interface CurateIntelligenceRequest {
+  keyword: string;
+  fromDate?: string;
+  toDate?: string;
+  maxArticles?: number;
+}
+
+export interface CuratedItem {
+  title: string;
+  keyFact: string;
+  whyItMatters: string;
+  significance: number;
+  sourceCount: number;
+  sources: string[];
+  clusterKeywords: string[];
+}
+
+export interface DeduplicationStats {
+  originalCount: number;
+  uniqueCount: number;
+  duplicatesRemoved: number;
+}
+
+export interface CuratedIntelligence {
+  combinedSummary: string;
+  headlineInsight: string;
+  curatedItems: CuratedItem[];
+  deduplicationStats: DeduplicationStats;
+}
+
 export interface PagedResult<T> {
   items: T[];
   totalCount: number;
@@ -175,6 +318,49 @@ export interface CreateTechnologyReport {
   includeSummary: boolean;
 }
 
+export interface IntelligenceReportSummary {
+  id: string;
+  keyword: string;
+  generatedUtc: string;
+  status: string;
+  deduplicatedArticleCount: number;
+  executiveSummary?: string;
+  pdfUrl?: string;
+}
+
+export interface IntelligenceReport {
+  id: string;
+  keyword: string;
+  generatedUtc: string;
+  status: string;
+  executiveSummary?: string;
+  marketMovements?: string;
+  competitorUpdates?: string;
+  maSignals?: string;
+  policyAndRegulation?: string;
+  technologyDevelopments?: string;
+  investmentsAndFunding?: string;
+  risksAndOpportunities?: string;
+  rawArticleCount: number;
+  deduplicatedArticleCount: number;
+  aiModel: string;
+  tokensUsed: number;
+  processingTimeMs: number;
+  pdfFilePath?: string;
+  pdfUrl?: string;
+  errorMessage?: string;
+  fromDate?: string;
+  toDate?: string;
+  sourceArticles: WebSearchResult[];
+}
+
+export interface GenerateIntelligenceReportRequest {
+  keyword: string;
+  fromDate?: string;
+  toDate?: string;
+  maxArticles?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -185,9 +371,9 @@ export class ApiService {
 
   // News Articles
   getNewsArticles(page: number = 1, pageSize: number = 10, search?: string): Observable<any> {
-    let url = `${this.apiUrl}/api/news?page=${page}&pageSize=${pageSize}`;
+    let url = `${this.apiUrl}/api/news?PageNumber=${page}&PageSize=${pageSize}`;
     if (search) {
-      url += `&search=${encodeURIComponent(search)}`;
+      url += `&SearchTerm=${encodeURIComponent(search)}`;
     }
     return this.http.get<any>(url).pipe(catchError(this.handleError));
   }
@@ -222,6 +408,22 @@ export class ApiService {
 
   resolveAlert(alertId: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/api/alerts/${alertId}/resolve`, {}).pipe(catchError(this.handleError));
+  }
+
+  getNotificationPreferences(): Observable<NotificationPreferences> {
+    return this.http.get<NotificationPreferences>(`${this.apiUrl}/api/notificationpreferences/my-preferences`).pipe(catchError(this.handleError));
+  }
+
+  updateNotificationPreferences(preferences: NotificationPreferences): Observable<any> {
+    return this.http.post(`${this.apiUrl}/api/notificationpreferences/my-preferences`, preferences).pipe(catchError(this.handleError));
+  }
+
+  getAlertsByType(alertType: string): Observable<SmartAlert[]> {
+    return this.http.get<SmartAlert[]>(`${this.apiUrl}/api/alerts/by-type/${encodeURIComponent(alertType)}`).pipe(catchError(this.handleError));
+  }
+
+  getAlertSummary(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/api/alerts/summary`).pipe(catchError(this.handleError));
   }
 
   // RSS Feeds
@@ -297,6 +499,10 @@ export class ApiService {
     return this.http.get<PagedResult<WebSearchResult>>(url).pipe(catchError(this.handleError));
   }
 
+  curateWebSearchResults(request: CurateIntelligenceRequest): Observable<CuratedIntelligence> {
+    return this.http.post<CuratedIntelligence>(`${this.apiUrl}/api/web-search/curate`, request).pipe(catchError(this.handleError));
+  }
+
   getWebSearchResultCount(keyword: string): Observable<number> {
     return this.http.get<number>(`${this.apiUrl}/api/web-search/results/count?keyword=${encodeURIComponent(keyword)}`).pipe(catchError(this.handleError));
   }
@@ -338,6 +544,39 @@ export class ApiService {
     return this.http.get<KeywordMonitor[]>(`${this.apiUrl}/api/keyword-monitors/active/list`).pipe(catchError(this.handleError));
   }
 
+  // Competitor Tracking
+  getCompetitors(includeInactive: boolean = true): Observable<Competitor[]> {
+    return this.http.get<Competitor[]>(`${this.apiUrl}/api/competitors?includeInactive=${includeInactive}`).pipe(catchError(this.handleError));
+  }
+
+  getAutoDetectedCompetitors(): Observable<Competitor[]> {
+    return this.http.get<Competitor[]>(`${this.apiUrl}/api/competitors/auto-detected`).pipe(catchError(this.handleError));
+  }
+
+  createCompetitor(competitor: CreateCompetitor): Observable<Competitor> {
+    return this.http.post<Competitor>(`${this.apiUrl}/api/competitors`, competitor).pipe(catchError(this.handleError));
+  }
+
+  updateCompetitor(id: string, competitor: CreateCompetitor): Observable<Competitor> {
+    return this.http.put<Competitor>(`${this.apiUrl}/api/competitors/${id}`, competitor).pipe(catchError(this.handleError));
+  }
+
+  deleteCompetitor(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/api/competitors/${id}`).pipe(catchError(this.handleError));
+  }
+
+  getCompetitorDashboard(id: string): Observable<CompetitorDashboard> {
+    return this.http.get<CompetitorDashboard>(`${this.apiUrl}/api/competitors/${id}/dashboard`).pipe(catchError(this.handleError));
+  }
+
+  compareCompetitors(ids: string[]): Observable<CompetitorComparison> {
+    return this.http.post<CompetitorComparison>(`${this.apiUrl}/api/competitors/compare`, { competitorIds: ids }).pipe(catchError(this.handleError));
+  }
+
+  scanCompetitor(id: string): Observable<CompetitorMention[]> {
+    return this.http.post<CompetitorMention[]>(`${this.apiUrl}/api/competitors/${id}/scan`, {}).pipe(catchError(this.handleError));
+  }
+
   // Technology Reports
   generateTechnologyReport(report: CreateTechnologyReport): Observable<TechnologyReport> {
     return this.http.post<TechnologyReport>(`${this.apiUrl}/api/technology-reports/generate`, report).pipe(catchError(this.handleError));
@@ -367,6 +606,57 @@ export class ApiService {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/api/technology-reports/${id}`).pipe(catchError(this.handleError));
   }
 
+  // Intelligence Reports
+  generateIntelligenceReport(request: GenerateIntelligenceReportRequest): Observable<IntelligenceReport> {
+    return this.http.post<IntelligenceReport>(`${this.apiUrl}/api/intelligence-reports/generate`, request).pipe(catchError(this.handleError));
+  }
+
+  getIntelligenceReports(pageNumber: number = 1, pageSize: number = 10): Observable<PagedResult<IntelligenceReportSummary>> {
+    return this.http.get<PagedResult<IntelligenceReportSummary>>(`${this.apiUrl}/api/intelligence-reports?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(catchError(this.handleError));
+  }
+
+  getIntelligenceReportById(id: string): Observable<IntelligenceReport> {
+    return this.http.get<IntelligenceReport>(`${this.apiUrl}/api/intelligence-reports/${id}`).pipe(catchError(this.handleError));
+  }
+
+  getIntelligenceReportsByKeyword(keyword: string, pageNumber: number = 1, pageSize: number = 10): Observable<PagedResult<IntelligenceReportSummary>> {
+    return this.http.get<PagedResult<IntelligenceReportSummary>>(`${this.apiUrl}/api/intelligence-reports/by-keyword/${encodeURIComponent(keyword)}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(catchError(this.handleError));
+  }
+
+  downloadIntelligenceReportPdf(id: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/api/intelligence-reports/${id}/download-pdf`, { responseType: 'blob' }).pipe(catchError(this.handleError));
+  }
+
+  deleteIntelligenceReport(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/api/intelligence-reports/${id}`).pipe(catchError(this.handleError));
+  }
+
+  // Trends & Analytics
+  generateTrendSnapshot(date?: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/api/trends/generate-snapshot`, { date }).pipe(catchError(this.handleError));
+  }
+
+  getKeywordTrend(keyword: string, days: number = 30): Observable<TrendPoint[]> {
+    return this.http.get<TrendPoint[]>(`${this.apiUrl}/api/trends/keyword/${encodeURIComponent(keyword)}?days=${days}`).pipe(catchError(this.handleError));
+  }
+
+  getCompetitorVisibility(id: string, days: number = 30): Observable<CompetitorVisibilityPoint[]> {
+    return this.http.get<CompetitorVisibilityPoint[]>(`${this.apiUrl}/api/trends/competitor/${id}?days=${days}`).pipe(catchError(this.handleError));
+  }
+
+  getNoiseVsSignal(keyword: string, days: number = 30): Observable<NoiseSignalPoint[]> {
+    return this.http.get<NoiseSignalPoint[]>(`${this.apiUrl}/api/trends/noise-vs-signal/${encodeURIComponent(keyword)}?days=${days}`).pipe(catchError(this.handleError));
+  }
+
+  compareTrends(keywords: string[], days: number = 30): Observable<TrendComparison> {
+    const query = encodeURIComponent(keywords.join(','));
+    return this.http.get<TrendComparison>(`${this.apiUrl}/api/trends/compare?keywords=${query}&days=${days}`).pipe(catchError(this.handleError));
+  }
+
+  getWeeklyDigest(): Observable<WeeklyDigest> {
+    return this.http.get<WeeklyDigest>(`${this.apiUrl}/api/trends/weekly-digest`).pipe(catchError(this.handleError));
+  }
+
   // Dashboard - Aggregate data from existing endpoints
   getDashboardSummary(): Observable<DashboardSummary> {
     return new Observable(subscriber => {
@@ -378,7 +668,7 @@ export class ApiService {
         const summary: DashboardSummary = {
           totalReports: reports?.items?.length || 0,
           totalArticles: news?.items?.length || 0,
-          activeAlerts: (alerts || []).filter((a: any) => a.status !== 'resolved').length,
+          activeAlerts: (alerts || []).filter((a: any) => !a.isAcknowledged).length,
           averageSentiment: this.calculateAverageSentiment([
             ...(reports?.items || []).map((r: any) => r.sentimentScore),
             ...(news?.items || []).map((n: any) => n.sentimentScore)
