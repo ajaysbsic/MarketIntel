@@ -3358,11 +3358,11 @@ Three critical fixes implemented to align company monitoring, fix AI analysis, a
 
 "api_provider": "google",
 
-"google_api_key": "AIzaSyCqynZZDEObvPPE6Wl_lZA3Ezyx_Hneywo",
+"google_api_key": "YOUR_GOOGLE_API_KEY_HERE",
 
 "google_model": "gemini-1.5-flash",
 
-"openai_api_key": "sk-proj-YOUR_OPENAI_KEY_HERE",  // Placeholder for future
+"openai_api_key": "YOUR_OPENAI_API_KEY_HERE",  // Placeholder for future
 
 "openai_model": "gpt-4o-mini"
 

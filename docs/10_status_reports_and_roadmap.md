@@ -5626,7 +5626,7 @@ Refer to `COMPREHENSIVE_DOCUMENTATION.md` for:
 
 "GoogleAI": {
 
-  "ApiKey": "AIzaSyBgNi-rHNfbhOr5k_9CMmS3fWqdUHqp3TA",  // ✅ Added
+  "ApiKey": "YOUR_GOOGLE_API_KEY_HERE",  // ✅ Added
 
   "Model": "gemini-2.5-flash",  // ✅ Already correct
 
@@ -5664,9 +5664,9 @@ Refer to `COMPREHENSIVE_DOCUMENTATION.md` for:
 
 "GoogleSearch": {
 
-  "ApiKey": "AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ",  // ✅ Added
+  "ApiKey": "YOUR_GOOGLE_SEARCH_API_KEY_HERE",  // ✅ Added
 
-  "SearchEngineId": "50edacb13c3074780",  // ✅ Added
+  "SearchEngineId": "YOUR_SEARCH_ENGINE_ID_HERE",  // ✅ Added
 
   ...
 
@@ -5700,7 +5700,7 @@ Refer to `COMPREHENSIVE_DOCUMENTATION.md` for:
 
 {
 
-  "google_ai_api_key": "AIzaSyBgNi-rHNfbhOr5k_9CMmS3fWqdUHqp3TA",  // ✅ Added
+  "google_ai_api_key": "YOUR_GOOGLE_API_KEY_HERE",  // ✅ Added
 
   "google_model": "gemini-2.5-flash",  // ✅ Added
 
@@ -5718,7 +5718,7 @@ Refer to `COMPREHENSIVE_DOCUMENTATION.md` for:
 
 {
 
-  "google_api_key": "AIzaSyBgNi-rHNfbhOr5k_9CMmS3fWqdUHqp3TA",  // ✅ Added
+  "google_api_key": "YOUR_GOOGLE_API_KEY_HERE",  // ✅ Added
 
   "google_model": "gemini-2.5-flash",  // ✅ Already correct
 
@@ -12066,7 +12066,7 @@ limit: 20, model: gemini-3-flash"
 
   "GoogleAI": {
 
-    "ApiKey": "AIzaSyAOUFooS8sUe0gsTkKkv7aHy5khdW2EvI8",
+    "ApiKey": "YOUR_GOOGLE_API_KEY_HERE",
 
     "Model": "gemini-3-flash-preview",
 

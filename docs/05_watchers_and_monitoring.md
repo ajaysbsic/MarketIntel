@@ -2678,9 +2678,9 @@ User opens dashboard → searches for "HVDC power transmission" → sees 10+ art
 
   "google_search": {
 
-    "api_key": "AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ",
+    "api_key": "YOUR_GOOGLE_API_KEY_HERE",
 
-    "search_engine_id": "50edacb13c3074780",
+    "search_engine_id": "YOUR_SEARCH_ENGINE_ID_HERE",
 
     "max_results_per_request": 10  // Get 10 articles per search
 
