@@ -34,23 +34,30 @@ public class AiChatService : IAiChatService
 You are an expert financial analyst and market intelligence specialist for Alfanar Market Intelligence.
 
 Your role:
-1. Answer questions based on the provided data context from our database
-2. Always cite your sources and dates when referencing specific data
-3. Be specific with numbers, percentages, and financial metrics
-4. Clearly indicate your confidence level (high, medium, low)
-5. Suggest related queries for follow-up analysis
-6. Highlight risks, opportunities, and trends
-7. Keep responses concise but informative (2-3 paragraphs max)
+1. Answer questions using BOTH our database AND live web search results
+2. **IMPORTANT**: When you see ""LATEST WEB SEARCH RESULTS"" in the context, these are LIVE INTERNET RESULTS retrieved today
+3. You CAN and SHOULD use live web search results to answer questions about current events, tenders, acquisitions, or recent news
+4. Always cite your sources (database sources OR web URLs)
+5. Be specific with numbers, percentages, and financial metrics
+6. Clearly indicate your confidence level (high, medium, low)
+7. Suggest related queries for follow-up analysis
+8. Highlight risks, opportunities, and trends
+9. Keep responses concise but informative (2-3 paragraphs max)
 
 When providing answers:
+- If live web search results are available, USE THEM to provide current information
 - Lead with the most important finding
-- Support with specific data points
+- Support with specific data points and URLs when available
 - Mention dates of information
-- List sources used
+- List sources used (including web URLs from search results)
 - Note any limitations or assumptions
 
-If insufficient data exists, explicitly state this and suggest what data would help.
-Do not make up data - only use what's provided in the context.
+**Search Capability**:
+- If the user explicitly asks to ""search"", ""look up"", or ""find on the internet"", prioritize WEB SEARCH RESULTS over database
+- Web search results are marked as ""LATEST WEB SEARCH RESULTS (Updated today)"" in context
+- These results come from live Google searches and NewsAPI - they are RELIABLE and CURRENT
+
+If insufficient data exists in BOTH database and web search, explicitly state this and suggest what data would help.
 ";
 
     public AiChatService(
@@ -127,12 +134,37 @@ Do not make up data - only use what's provided in the context.
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("=== CONTEXT FROM DATABASE ===");
+        sb.AppendLine("=== CONTEXT FROM DATABASE AND LIVE WEB ===");
         sb.AppendLine($"Current System Date: {context.CurrentDate:MMMM dd, yyyy}");
         sb.AppendLine($"Query Timestamp: {DateTime.UtcNow:MMMM dd, yyyy HH:mm:ss UTC}");
         sb.AppendLine();
 
-        if (context.WebSearchResults.Count > 0)
+        // Detect if user is explicitly requesting web search
+        var requestsWebSearch = Regex.IsMatch(request.Message, 
+            @"\b(search|look\s+up|find|internet|web|online|google|tell\s+me\s+about|any\s+news|recent|latest|tenders?|acquisitions?)\b", 
+            RegexOptions.IgnoreCase);
+
+        if (requestsWebSearch && context.WebSearchResults.Count > 0)
+        {
+            sb.AppendLine("🌐 === LIVE WEB SEARCH RESULTS (Retrieved from Internet TODAY) ===");
+            sb.AppendLine("NOTE: These are REAL, CURRENT results from Google Custom Search and NewsAPI.");
+            sb.AppendLine("Use these results to answer the user's question about current events.\n");
+            
+            foreach (var result in context.WebSearchResults.Take(8))
+            {
+                sb.AppendLine($"🔹 {result.Title}");
+                sb.AppendLine($"   🔗 URL: {result.Url}");
+                sb.AppendLine($"   📅 Retrieved: {result.RetrievedAt:MMMM dd, yyyy HH:mm UTC}");
+                sb.AppendLine($"   📝 Snippet: {result.Snippet}");
+                if (!string.IsNullOrEmpty(result.Source))
+                {
+                    sb.AppendLine($"   🏢 Source: {result.Source}");
+                }
+                sb.AppendLine();
+            }
+            sb.AppendLine("=== END OF LIVE WEB RESULTS ===\n");
+        }
+        else if (context.WebSearchResults.Count > 0)
         {
             sb.AppendLine("LATEST WEB SEARCH RESULTS (Updated today):");
             foreach (var result in context.WebSearchResults.Take(5))
@@ -188,7 +220,18 @@ Do not make up data - only use what's provided in the context.
         sb.AppendLine("=== USER QUESTION ===");
         sb.AppendLine(request.Message);
         sb.AppendLine();
-        sb.AppendLine("Based on the above context from our database, provide a specific, data-driven answer.");
+        
+        if (requestsWebSearch && context.WebSearchResults.Count > 0)
+        {
+            sb.AppendLine("**IMPORTANT INSTRUCTION**: The user is asking for current/live information.");
+            sb.AppendLine("You MUST use the LIVE WEB SEARCH RESULTS provided above to answer this query.");
+            sb.AppendLine("Include specific URLs, dates, and details from the web search results.");
+            sb.AppendLine("Cite your sources by including the URLs from the search results.");
+        }
+        else
+        {
+            sb.AppendLine("Based on the above context from our database and live web results (if available), provide a specific, data-driven answer.");
+        }
 
         return sb.ToString();
     }

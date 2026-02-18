@@ -42,8 +42,8 @@ import { environment } from '../environments/environment';
             <ul class="nav-menu">
               <!-- Core Features -->
               <li class="nav-section-title">📊 Core Intelligence</li>
-              <li><a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebarOnMobile()">Dashboard</a></li>
-              <li><a routerLink="/alerts" routerLinkActive="active" (click)="closeSidebarOnMobile()">Alerts</a></li>
+              <li><a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebarOnMobile()">🏠 Dashboard</a></li>
+              <li><a routerLink="/alerts" routerLinkActive="active" (click)="closeSidebarOnMobile()">🚨 Alerts</a></li>
               <li><a routerLink="/news" routerLinkActive="active" (click)="closeSidebarOnMobile()">📰 News & Articles</a></li>
               <li><a routerLink="/reports" routerLinkActive="active" (click)="closeSidebarOnMobile()">📑 Financial Reports</a></li>
               <li><a routerLink="/technology-intelligence" routerLinkActive="active" (click)="closeSidebarOnMobile()">🧭 Technology Intelligence</a></li>
@@ -58,13 +58,13 @@ import { environment } from '../environments/environment';
               <!-- Monitoring & Configuration -->
               <li class="nav-section-title">⚙️ Configuration</li>
               <li><a routerLink="/metrics-trends" routerLinkActive="active" (click)="closeSidebarOnMobile()">📈 Metrics & Trends</a></li>
-              <li><a routerLink="/monitoring" routerLinkActive="active" (click)="closeSidebarOnMobile()">Feed Configuration</a></li>
+              <li><a routerLink="/monitoring" routerLinkActive="active" (click)="closeSidebarOnMobile()">📡 Feed Configuration</a></li>
               <li><a routerLink="/keyword-monitors" routerLinkActive="active" (click)="closeSidebarOnMobile()">🔍 Keyword Monitors</a></li>
-              <li><a routerLink="/notification-preferences" routerLinkActive="active" (click)="closeSidebarOnMobile()">Notification Preferences</a></li>
+              <li><a routerLink="/notification-preferences" routerLinkActive="active" (click)="closeSidebarOnMobile()">🔔 Notification Preferences</a></li>
 
               <!-- Information -->
               <li class="nav-section-title">ℹ️ Information</li>
-              <li><a routerLink="/about" routerLinkActive="active" (click)="closeSidebarOnMobile()">About Us</a></li>
+              <li><a routerLink="/about" routerLinkActive="active" (click)="closeSidebarOnMobile()">👥 About Us</a></li>
               <li><a routerLink="/contact" routerLinkActive="active" (click)="closeSidebarOnMobile()">📧 Contact Us</a></li>
             </ul>
           </nav>
@@ -175,7 +175,7 @@ import { environment } from '../environments/environment';
       display: flex;
       flex-direction: column;
       transition: transform 0.3s ease, width 0.3s ease;
-      z-index: 100;
+      z-index: 50;
     }
 
     .sidebar-toggle {

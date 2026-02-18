@@ -149,15 +149,26 @@ public class RagContextService : IRagContextService
             return context;
         }
 
+        // Get keyword for web search - prioritize entity, then extract from query
         var keyword = entity ?? context.Entity;
+        
+        // If still no keyword, extract key terms from the query itself
         if (string.IsNullOrWhiteSpace(keyword))
         {
+            keyword = ExtractSearchKeywordFromQuery(query);
+        }
+        
+        if (string.IsNullOrWhiteSpace(keyword))
+        {
+            _logger.LogInformation("No keyword extracted from query for web search: {Query}", query);
             return context;
         }
 
         try
         {
+            _logger.LogInformation("Performing live web search for keyword: {Keyword} (from query: {Query})", keyword, query);
             context.WebSearchResults = await GetLiveWebSearchAsync(query, keyword);
+            _logger.LogInformation("Web search returned {Count} results", context.WebSearchResults.Count);
         }
         catch (Exception ex)
         {
@@ -165,6 +176,42 @@ public class RagContextService : IRagContextService
         }
 
         return context;
+    }
+    
+    /// <summary>
+    /// Extract meaningful search keyword from user query
+    /// Removes common words and extracts the most relevant search terms
+    /// </summary>
+    private string ExtractSearchKeywordFromQuery(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return string.Empty;
+
+        // Keywords that indicate search intent with potential context
+        var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
+            "of", "with", "by", "from", "about", "as", "into", "through", "during",
+            "before", "after", "above", "below", "between", "under", "again",
+            "further", "then", "once", "any", "all", "both", "each", "few", "more",
+            "most", "other", "some", "such", "no", "nor", "not", "only", "own",
+            "same", "so", "than", "too", "very", "can", "will", "just",
+            "are", "is", "was", "were", "be", "been", "being", "have", "has", "had",
+            "do", "does", "did", "i", "me", "my", "you", "your", "tell", "there",
+            "looking", "look", "search", "find", "get", "give", "show", "what",
+            "when", "where", "which", "who", "whom", "whose", "why", "how"
+        };
+
+        // Split query into words and filter
+        var words = Regex.Split(query.ToLowerInvariant(), @"\W+")
+            .Where(w => w.Length > 2 && !stopWords.Contains(w))
+            .ToArray();
+
+        // Take top 3 most relevant words for search
+        var searchKeyword = string.Join(" ", words.Take(3));
+        
+        _logger.LogDebug("Extracted search keyword '{Keyword}' from query '{Query}'", searchKeyword, query);
+        return searchKeyword;
     }
 
     /// <summary>

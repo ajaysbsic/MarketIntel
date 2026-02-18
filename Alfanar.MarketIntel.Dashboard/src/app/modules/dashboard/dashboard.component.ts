@@ -170,7 +170,12 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
                 </a>
               </div>
               <div class="alert-footer">
-                <span class="alert-counter">{{ currentAlertIndex + 1 }} / {{ alerts.length }}</span>
+                <div class="carousel-dots">
+                  <span *ngFor="let alert of alerts; let i = index" 
+                        class="dot" 
+                        [class.active]="i === currentAlertIndex"
+                        (click)="goToSlide(i)"></span>
+                </div>
               </div>
             </div>
           </div>
@@ -660,12 +665,44 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
     }
 
     .alerts-section {
-      background: #ffffff;
+      background: rgba(255, 255, 255, 0.15);
+      background-image: url('/assets/images/alfanar_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       border-radius: 12px;
       padding: 2rem;
       margin-bottom: 2rem;
-      border: 1px solid #e2e8f0;
+      border: 1px solid rgba(226, 232, 240, 0.3);
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+      backdrop-filter: blur(5px);
+      position: relative;
+    }
+
+    .alerts-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      z-index: 0;
+    }
+
+    .alerts-section > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    :host-context(.dark-theme) .alerts-section {
+      background: rgba(42, 42, 42, 0.15);
+      border-color: rgba(68, 68, 68, 0.3);
+    }
+
+    :host-context(.dark-theme) .alerts-section::before {
+      background: rgba(42, 42, 42, 0.85);
     }
 
     .alerts-header {
@@ -688,6 +725,11 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
       border: 1px solid #e2e8f0;
     }
 
+    :host-context(.dark-theme) .alert-card {
+      background: #1f2937;
+      border-color: #374151;
+    }
+
     .alert-top {
       display: flex;
       justify-content: space-between;
@@ -702,6 +744,11 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
       font-weight: 700;
       background: #e2e8f0;
       color: #1f2937;
+    }
+
+    :host-context(.dark-theme) .alert-badge {
+      background: #374151;
+      color: #e5e7eb;
     }
 
     .alert-badge.critical {
@@ -731,12 +778,20 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
       letter-spacing: 0.08em;
     }
 
+    :host-context(.dark-theme) .alert-type {
+      color: var(--text-secondary);
+    }
+
     .alert-meta {
       display: flex;
       justify-content: space-between;
       font-size: 0.75rem;
       color: #64748b;
       margin-top: 0.75rem;
+    }
+
+    :host-context(.dark-theme) .alert-meta {
+      color: var(--text-secondary);
     }
 
     /* ===== CAROUSEL STYLES ===== */
@@ -815,6 +870,10 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
       hyphens: auto;
     }
 
+    :host-context(.dark-theme) .alert-message {
+      color: var(--text-primary);
+    }
+
     .alert-message a {
       color: #1f47ba;
       text-decoration: underline;
@@ -844,19 +903,38 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
 
     .alert-footer {
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
       margin-top: 1rem;
       padding-top: 1rem;
       border-top: 1px solid #e2e8f0;
     }
 
-    .alert-counter {
-      font-size: 0.75rem;
-      color: #a0aec0;
-      font-weight: 600;
-      background: #f7fafc;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #cbd5e0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .dot.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      width: 12px;
+      height: 12px;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .dot:hover {
+      background: #94a3b8;
+      transform: scale(1.1);
     }
 
     .alert-actions {
@@ -1258,6 +1336,7 @@ export class DashboardComponent implements OnInit {
   alerts: SmartAlert[] = [];
   realtimeAlerts: RealTimeAlert[] = [];
   currentAlertIndex: number = 0;
+  private carouselInterval: any;
 
   constructor(
     private apiService: ApiService, 
@@ -1271,6 +1350,32 @@ export class DashboardComponent implements OnInit {
     this.signalRService.getAlerts$().subscribe(alerts => {
       this.realtimeAlerts = alerts;
     });
+  }
+
+  ngOnDestroy(): void {
+    this.stopCarouselAutoScroll();
+  }
+
+  startCarouselAutoScroll(): void {
+    this.stopCarouselAutoScroll();
+    this.carouselInterval = setInterval(() => {
+      if (this.alerts.length > 0) {
+        this.currentAlertIndex = (this.currentAlertIndex + 1) % this.alerts.length;
+      }
+    }, 3000);
+  }
+
+  stopCarouselAutoScroll(): void {
+    if (this.carouselInterval) {
+      clearInterval(this.carouselInterval);
+      this.carouselInterval = null;
+    }
+  }
+
+  goToSlide(index: number): void {
+    this.stopCarouselAutoScroll();
+    this.currentAlertIndex = index;
+    this.startCarouselAutoScroll();
   }
 
   loadDashboard(): void {
@@ -1312,15 +1417,23 @@ export class DashboardComponent implements OnInit {
   }
 
   nextAlert(): void {
+    this.stopCarouselAutoScroll();
     if (this.currentAlertIndex < this.alerts.length - 1) {
       this.currentAlertIndex++;
+    } else {
+      this.currentAlertIndex = 0;
     }
+    this.startCarouselAutoScroll();
   }
 
   previousAlert(): void {
+    this.stopCarouselAutoScroll();
     if (this.currentAlertIndex > 0) {
       this.currentAlertIndex--;
+    } else {
+      this.currentAlertIndex = this.alerts.length - 1;
     }
+    this.startCarouselAutoScroll();
   }
 
   isFirstAlert(): boolean {
@@ -1337,6 +1450,7 @@ export class DashboardComponent implements OnInit {
         if (!alerts || alerts.length === 0) {
           this.alerts = [];
           this.currentAlertIndex = 0;
+          this.stopCarouselAutoScroll();
           return;
         }
 
@@ -1368,11 +1482,13 @@ export class DashboardComponent implements OnInit {
         });
         
         this.currentAlertIndex = 0;
+        this.startCarouselAutoScroll();
       },
       error: (err) => {
         console.error('Error loading alerts:', err);
         this.alerts = [];
         this.currentAlertIndex = 0;
+        this.stopCarouselAutoScroll();
       }
     });
   }
