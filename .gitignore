@@ -34,6 +34,8 @@ __pycache__/
 .env.*.local
 *.local.json
 .secrets/
+appsettings.Development.json
+python_watcher/config*.json
 
 # User secrets
 **/Properties/launchSettings.json
