@@ -2356,49 +2356,49 @@ Removed all exposed API keys and sensitive credentials from configuration files 
 
 ### 1. **Alfanar.MarketIntel.Api/appsettings.json**
 
-- ✅ Removed GoogleAI ApiKey: `AIzaSyBgNi-rHNfbhOr5k_9CMmS3fWqdUHqp3TA` → replaced with empty string
+- ✅ Removed GoogleAI ApiKey → replaced with placeholder
 
-- ✅ Removed GoogleSearch ApiKey: `AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ` → replaced with empty string
+- ✅ Removed GoogleSearch ApiKey → replaced with placeholder
 
-- ✅ Removed GoogleSearch SearchEngineId: `50edacb13c3074780` → replaced with empty string
+- ✅ Removed GoogleSearch SearchEngineId → replaced with placeholder
 
-- ✅ Removed NewsApi ApiKey: `f97e61f347444bcd97c089996120f152` → replaced with empty string
+- ✅ Removed NewsApi ApiKey → replaced with placeholder
 
-- ✅ Removed AzureStorage ConnectionString (exposed AccountKey) → replaced with empty string
+- ✅ Removed AzureStorage ConnectionString (exposed AccountKey) → replaced with placeholder
 
 
 
 ### 2. **Alfanar.MarketIntel.Api/appsettings.Development.json**
 
-- ✅ Removed GoogleAI ApiKey: `AIzaSyBgNi-rHNfbhOr5k_9CMmS3fWqdUHqp3TA` → replaced with empty string
+- ✅ Removed GoogleAI ApiKey → replaced with placeholder
 
-- ✅ Removed GoogleSearch ApiKey: `AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ` → replaced with empty string
+- ✅ Removed GoogleSearch ApiKey → replaced with placeholder
 
-- ✅ Removed GoogleSearch SearchEngineId: `50edacb13c3074780` → replaced with empty string
+- ✅ Removed GoogleSearch SearchEngineId → replaced with placeholder
 
-- ✅ Removed NewsApi ApiKey: `f97e61f347444bcd97c089996120f152` → replaced with empty string
+- ✅ Removed NewsApi ApiKey → replaced with placeholder
 
-- ✅ Removed AzureStorage ConnectionString (exposed AccountKey) → replaced with empty string
+- ✅ Removed AzureStorage ConnectionString (exposed AccountKey) → replaced with placeholder
 
 
 
 ### 3. **python_watcher/config.json**
 
-- ✅ Removed google_ai_api_key: `AIzaSyBgNi-rHNfbhOr5k_9CMmS3fWqdUHqp3TA` → replaced with empty string
+- ✅ Removed google_ai_api_key → replaced with placeholder
 
 
 
 ### 4. **python_watcher/config_reports.json**
 
-- ✅ Removed google_api_key: `AIzaSyBgNi-rHNfbhOr5k_9CMmS3fWqdUHqp3TA` → replaced with empty string
+- ✅ Removed google_api_key → replaced with placeholder
 
 
 
 ### 5. **python_watcher/config_keyword_monitor.json**
 
-- ✅ Removed api_key: `AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ` → replaced with empty string
+- ✅ Removed api_key → replaced with placeholder
 
-- ✅ Removed search_engine_id: `50edacb13c3074780` → replaced with empty string
+- ✅ Removed search_engine_id → replaced with placeholder
 
 
 
