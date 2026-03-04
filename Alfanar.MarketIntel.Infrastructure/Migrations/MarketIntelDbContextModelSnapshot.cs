@@ -1384,6 +1384,659 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.ToTable("TechnologyReports");
                 });
 
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderAiAnalysis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("Confidence")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExtractedRequirementsJson")
+                        .HasMaxLength(16000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ModelName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("TenderVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TenderVersionId");
+
+                    b.ToTable("TenderAiAnalyses");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderAuditRaw", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("RawPayloadJson")
+                        .IsRequired()
+                        .HasMaxLength(16000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RetentionUntil")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("RetrievedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PayloadHash");
+
+                    b.HasIndex("SourceId", "ExternalId", "RetrievedAt");
+
+                    b.ToTable("TenderAuditRaw");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderAuthority", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AliasesJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("AuthorityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("CountryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryId");
+
+                    b.HasIndex("NormalizedName");
+
+                    b.HasIndex("CountryId", "NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("TenderAuthorities");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderCapabilityGap", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GapLevel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("InternalCapability")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Requirement")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("TenderVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("GapLevel");
+
+                    b.HasIndex("TenderVersionId");
+
+                    b.ToTable("TenderCapabilityGaps");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderCountry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("IsoCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("RegionGroup")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsoCode")
+                        .IsUnique();
+
+                    b.HasIndex("RegionGroup");
+
+                    b.ToTable("TenderCountries");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DocumentUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("FileHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("FileType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("RetrievedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StoragePath")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("TenderNoticeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenderNoticeId");
+
+                    b.HasIndex("TenderNoticeId", "FileHash");
+
+                    b.ToTable("TenderDocuments");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderIngestionRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Errors")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("ItemsFetched")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemsNew")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemsUpdated")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("WorkerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SourceId", "StartedAt");
+
+                    b.ToTable("TenderIngestionRuns");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderNotice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AuthorityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<Guid>("CountryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Currency")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("CurrentVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("EstimatedValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("FirstSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("PublishDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Sector")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrentVersionId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("LastChangedAt");
+
+                    b.HasIndex("AuthorityId", "PublishDate");
+
+                    b.HasIndex("CountryId", "PublishDate");
+
+                    b.HasIndex("SourceId", "ExternalId")
+                        .IsUnique();
+
+                    b.ToTable("TenderNotices");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderNotificationLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("DedupKey")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("DeliveryStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("RuleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenderNoticeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenderVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DedupKey")
+                        .IsUnique();
+
+                    b.HasIndex("RuleId");
+
+                    b.HasIndex("SentAt");
+
+                    b.HasIndex("TenderNoticeId");
+
+                    b.HasIndex("TenderVersionId");
+
+                    b.ToTable("TenderNotificationLogs");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderNotificationRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AuthorityFilter")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Channels")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CountryFilter")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Keywords")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SectorFilter")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal?>("ValueMax")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ValueMin")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Scope", "UserId");
+
+                    b.ToTable("TenderNotificationRules");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ComponentsJson")
+                        .HasMaxLength(16000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("RiskScore")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<string>("ScoringModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("TenderVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("WinProbability")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TenderVersionId");
+
+                    b.ToTable("TenderScores");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderSource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AuthMode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BaseUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ConnectorConfigJson")
+                        .HasMaxLength(16000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCanary")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LegalNotes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Owner")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("PollIntervalMin")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PollPriority")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RateLimitPolicyJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("RolloutStage")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsCanary");
+
+                    b.HasIndex("IsEnabled");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("PollPriority");
+
+                    b.HasIndex("RolloutStage");
+
+                    b.ToTable("TenderSources");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ChangeType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ChangedFieldsJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("DetectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NormalizedHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("RawHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("SnapshotJson")
+                        .HasMaxLength(16000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenderNoticeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DetectedAt");
+
+                    b.HasIndex("TenderNoticeId", "VersionNo")
+                        .IsUnique();
+
+                    b.ToTable("TenderVersions");
+                });
+
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TrendSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1663,6 +2316,154 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
                     b.Navigation("FinancialReport");
                 });
 
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderAiAnalysis", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderVersion", "TenderVersion")
+                        .WithMany()
+                        .HasForeignKey("TenderVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TenderVersion");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderAuditRaw", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderSource", "Source")
+                        .WithMany("AuditRawRecords")
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderAuthority", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderCountry", "Country")
+                        .WithMany("Authorities")
+                        .HasForeignKey("CountryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderCapabilityGap", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderVersion", "TenderVersion")
+                        .WithMany()
+                        .HasForeignKey("TenderVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TenderVersion");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderDocument", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderNotice", "TenderNotice")
+                        .WithMany("Documents")
+                        .HasForeignKey("TenderNoticeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TenderNotice");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderIngestionRun", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderSource", "Source")
+                        .WithMany("IngestionRuns")
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderNotice", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderAuthority", "Authority")
+                        .WithMany("Notices")
+                        .HasForeignKey("AuthorityId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderCountry", "Country")
+                        .WithMany("Notices")
+                        .HasForeignKey("CountryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderVersion", "CurrentVersion")
+                        .WithMany()
+                        .HasForeignKey("CurrentVersionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderSource", "Source")
+                        .WithMany("Notices")
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Authority");
+
+                    b.Navigation("Country");
+
+                    b.Navigation("CurrentVersion");
+
+                    b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderNotificationLog", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderNotificationRule", "Rule")
+                        .WithMany("NotificationLogs")
+                        .HasForeignKey("RuleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderNotice", "TenderNotice")
+                        .WithMany("NotificationLogs")
+                        .HasForeignKey("TenderNoticeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderVersion", "TenderVersion")
+                        .WithMany("NotificationLogs")
+                        .HasForeignKey("TenderVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rule");
+
+                    b.Navigation("TenderNotice");
+
+                    b.Navigation("TenderVersion");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderScore", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderVersion", "TenderVersion")
+                        .WithMany()
+                        .HasForeignKey("TenderVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TenderVersion");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderVersion", b =>
+                {
+                    b.HasOne("Alfanar.MarketIntel.Domain.Entities.TenderNotice", "TenderNotice")
+                        .WithMany("Versions")
+                        .HasForeignKey("TenderNoticeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TenderNotice");
+                });
+
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.WebSearchResult", b =>
                 {
                     b.HasOne("Alfanar.MarketIntel.Domain.Entities.KeywordMonitor", "KeywordMonitor")
@@ -1724,6 +2525,46 @@ namespace Alfanar.MarketIntel.Infrastructure.Migrations
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TechnologyReport", b =>
                 {
                     b.Navigation("ReportResults");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderAuthority", b =>
+                {
+                    b.Navigation("Notices");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderCountry", b =>
+                {
+                    b.Navigation("Authorities");
+
+                    b.Navigation("Notices");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderNotice", b =>
+                {
+                    b.Navigation("Documents");
+
+                    b.Navigation("NotificationLogs");
+
+                    b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderNotificationRule", b =>
+                {
+                    b.Navigation("NotificationLogs");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderSource", b =>
+                {
+                    b.Navigation("AuditRawRecords");
+
+                    b.Navigation("IngestionRuns");
+
+                    b.Navigation("Notices");
+                });
+
+            modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.TenderVersion", b =>
+                {
+                    b.Navigation("NotificationLogs");
                 });
 
             modelBuilder.Entity("Alfanar.MarketIntel.Domain.Entities.WebSearchResult", b =>

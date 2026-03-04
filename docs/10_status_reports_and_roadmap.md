@@ -5592,7 +5592,7 @@ Refer to `COMPREHENSIVE_DOCUMENTATION.md` for:
 
   "UseAzureBlobStorage": true,  // ✅ Changed from false
 
-  "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=ajaymarketstorage;AccountKey=hJo6Uts/BUPHwvcPknRoNKUzOcocz5ZFqzN/Ej+9bosOfrSgl080u6uV6RJjZtAxKfkkaVR6+Jdv+AStBFYxGg==;EndpointSuffix=core.windows.net",
+  "ConnectionString": "<AZURE_STORAGE_CONNECTION_STRING>",
 
   "ContainerName": "intelligence-reports"  // ✅ Updated from pdf-reports
 

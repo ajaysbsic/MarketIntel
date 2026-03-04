@@ -194,6 +194,89 @@ class MarketIntelApiClient:
             logger.error(f"Error posting web search results to API: {e}")
             return False
 
+    def ingest_tender_notice(self, notice_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Send a normalized tender notice to the API for ingestion.
+
+        Args:
+            notice_data: Dictionary matching TenderIngestRequestDto fields
+
+        Returns:
+            API response body on success, None/False otherwise
+        """
+        try:
+            base_url = self._get_base_url()
+            url = f"{base_url}/api/tenders/ingest"
+            headers = {'Content-Type': 'application/json'}
+
+            logger.debug(f"Posting tender notice to API: {notice_data.get('title', '')[:80]}")
+            resp = self.session.post(url, json=notice_data, headers=headers, timeout=self.request_timeout)
+
+            if resp.status_code in (200, 201):
+                try:
+                    return resp.json()
+                except Exception:
+                    return {"status": "ok"}
+
+            logger.error(f"Failed to ingest tender notice: {resp.status_code} - {resp.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Error posting tender notice to API: {e}")
+            return False
+
+    def get_tender_sources(self, enabled_only: bool = True) -> Optional[list]:
+        """
+        Fetch tender sources from the API.
+
+        Args:
+            enabled_only: When True, fetch only enabled sources.
+
+        Returns:
+            List of source dictionaries if successful, None otherwise.
+        """
+        try:
+            base_url = self._get_base_url()
+            include_disabled = "false" if enabled_only else "true"
+            url = f"{base_url}/api/tenders/sources?includeDisabled={include_disabled}"
+            logger.debug(f"Fetching tender sources from: {url}")
+
+            resp = self.session.get(url, timeout=self.request_timeout)
+            if resp.status_code == 200:
+                sources = resp.json()
+                logger.info(f"OK Successfully fetched {len(sources) if isinstance(sources, list) else 0} tender source(s)")
+                return sources if isinstance(sources, list) else []
+
+            logger.warning(f"Failed to fetch tender sources: {resp.status_code} - {resp.text}")
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching tender sources from API: {e}")
+            return None
+
+    def get_tender_feature_flags(self) -> Optional[Dict[str, Any]]:
+        """
+        Fetch tender feature flags from the API.
+
+        Returns:
+            Dictionary with global/source/country flags if successful, None otherwise.
+        """
+        try:
+            base_url = self._get_base_url()
+            url = f"{base_url}/api/tenders/feature-flags"
+            logger.debug(f"Fetching tender feature flags from: {url}")
+
+            resp = self.session.get(url, timeout=self.request_timeout)
+            if resp.status_code == 200:
+                payload = resp.json()
+                if isinstance(payload, dict):
+                    return payload
+                return {}
+
+            logger.warning(f"Failed to fetch tender feature flags: {resp.status_code} - {resp.text}")
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching tender feature flags from API: {e}")
+            return None
+
     def generate_intelligence_report(self, keyword: str) -> bool:
         """
         Trigger intelligence report generation for a keyword

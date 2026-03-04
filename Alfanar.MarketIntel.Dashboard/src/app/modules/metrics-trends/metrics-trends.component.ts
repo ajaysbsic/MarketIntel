@@ -284,7 +284,7 @@ import { ApiService } from '../../shared/services/api.service';
     /* Chart Section */
     .chart-section {
       margin-top: 3rem;
-      background: white;
+      background: var(--bg-secondary);
       padding: 2rem;
       border-radius: 12px;
       border: 1px solid var(--border-color, #e0e0e0);
@@ -299,7 +299,8 @@ import { ApiService } from '../../shared/services/api.service';
     }
 
     .simple-chart {
-      background: white;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
       padding: 1.5rem;
       border-radius: 8px;
       height: 100%;
@@ -310,7 +311,7 @@ import { ApiService } from '../../shared/services/api.service';
     .chart-header {
       font-size: 1rem;
       margin-bottom: 1.5rem;
-      color: #333;
+      color: var(--text-primary, #333);
       text-align: center;
     }
 
@@ -334,7 +335,7 @@ import { ApiService } from '../../shared/services/api.service';
 
     .bar-label {
       font-size: 0.75rem;
-      color: #666;
+      color: var(--text-secondary, #666);
       margin-bottom: 0.5rem;
       font-weight: 500;
     }
@@ -342,7 +343,8 @@ import { ApiService } from '../../shared/services/api.service';
     .bar-container {
       flex: 1;
       width: 100%;
-      background: #f0f0f0;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
       border-radius: 4px 4px 0 0;
       position: relative;
       display: flex;
@@ -364,7 +366,7 @@ import { ApiService } from '../../shared/services/api.service';
 
     .bar-value {
       font-size: 0.7rem;
-      color: #333;
+      color: var(--text-primary, #333);
       margin-top: 0.5rem;
       font-weight: 600;
     }
@@ -382,7 +384,7 @@ import { ApiService } from '../../shared/services/api.service';
     }
 
     .summary-card {
-      background: white;
+      background: var(--bg-secondary);
       padding: 1.5rem;
       border-radius: 12px;
       border: 1px solid var(--border-color, #e0e0e0);

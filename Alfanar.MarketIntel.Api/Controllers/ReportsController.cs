@@ -4,6 +4,7 @@ using Alfanar.MarketIntel.Application.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Alfanar.MarketIntel.Api.Controllers;
 
@@ -12,20 +13,20 @@ namespace Alfanar.MarketIntel.Api.Controllers;
 public class ReportsController : ControllerBase
 {
     private readonly IReportService _reportService;
-    private readonly IFileStorageService _fileStorage;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IHubContext<NotificationsHub> _hub;
     private readonly IValidator<IngestReportRequest> _validator;
     private readonly ILogger<ReportsController> _logger;
 
     public ReportsController(
         IReportService reportService,
-        IFileStorageService fileStorage,
+        IServiceProvider serviceProvider,
         IHubContext<NotificationsHub> hub,
         IValidator<IngestReportRequest> validator,
         ILogger<ReportsController> logger)
     {
         _reportService = reportService;
-        _fileStorage = fileStorage;
+        _serviceProvider = serviceProvider;
         _hub = hub;
         _validator = validator;
         _logger = logger;
@@ -287,7 +288,8 @@ public class ReportsController : ControllerBase
             var filePath = filePathResult.Data!;
             _logger.LogInformation("Retrieved file path for report {ReportId}: {FilePath}", id, filePath);
 
-            var fileStreamResult = await _fileStorage.GetFileStreamAsync(filePath);
+            var fileStorage = _serviceProvider.GetRequiredService<IFileStorageService>();
+            var fileStreamResult = await fileStorage.GetFileStreamAsync(filePath);
 
             if (!fileStreamResult.IsSuccess || fileStreamResult.Data == null)
             {

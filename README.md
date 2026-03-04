@@ -164,10 +164,12 @@ python main_watcher.py
 | [Dashboard UI](docs/08_dashboard_and_ui.md) | Component structure, theme system, customization |
 | [API & Features](docs/09_api_and_features.md) | Endpoint documentation, feature integration guides |
 | [Status & Roadmap](docs/10_status_reports_and_roadmap.md) | Current status, bugs, upcoming features |
+| [Tender Monitoring Plan](docs/11_tender_monitoring_saudi_middle_east.md) | Saudi + Middle East government tender bounded context blueprint |
+| [Tender Canary Rollout KT](docs/12_tender_canary_rollout_kt.md) | Knowledge transfer guide for staged rollout, feature flags, APIs, dashboard ops, and runbook |
 
 ## 🔗 Related Resources
 
-- **System Comparison**: [See how MarketIntel compares to competitors](COMPETITOR_SYSTEM_COMPARISON.md)
+- **System Comparison**: [See how MarketIntel compares to competitors](docs/COMPETITOR_SYSTEM_COMPARISON.md)
 - **Bug Reports**: [Known issues and fixes](BUG_FIXES_REPORT_2026-02-15.md)
 - **Implementation Guide**: [Feature setup and configuration](IMPLEMENTATION_SUMMARY_2026-02-16.md)
 

@@ -5046,7 +5046,7 @@ Once all tests pass, proceed to Part D: Update Python Watchers
 
 Storage Account: ajaymarketstorage
 
-Connection String: DefaultEndpointsProtocol=https;AccountName=ajaymarketstorage;AccountKey=hJo6Uts/...
+Connection String: <AZURE_STORAGE_CONNECTION_STRING>
 
 Container: pdf-reports
 
@@ -5078,7 +5078,7 @@ Resource Group: ajay-apps
 
 | `AzureStorage__UseAzureBlobStorage` | `true` |
 
-| `AzureStorage__ConnectionString` | `DefaultEndpointsProtocol=https;AccountName=ajaymarketstorage;AccountKey=hJo6Uts/BUPHwvcPknRoNKUzOcocz5ZFqzN/Ej+9bosOfrSgl080u6uV6RJjZtAxKfkkaVR6+Jdv+AStBFYxGg==;EndpointSuffix=core.windows.net` |
+| `AzureStorage__ConnectionString` | `<AZURE_STORAGE_CONNECTION_STRING>` |
 
 | `AzureStorage__ContainerName` | `pdf-reports` |
 
@@ -7262,7 +7262,7 @@ Settings → Configuration → Application settings
 
 Name: GoogleAI__ApiKey
 
-Value: AIzaSy_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Value: <GOOGLE_GEMINI_API_KEY>
 
 ```
 
@@ -7276,7 +7276,7 @@ Value: AIzaSy_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   "GoogleAI": {
 
-    "ApiKey": "AIzaSy_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "ApiKey": "<GOOGLE_GEMINI_API_KEY>",
 
     "Model": "gemini-2.5-flash"
 

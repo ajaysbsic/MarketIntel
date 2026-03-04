@@ -31,6 +31,10 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/technology-intelligence/technology-intelligence.component').then(m => m.TechnologyIntelligenceComponent),
   },
   {
+    path: 'tender-monitoring',
+    loadComponent: () => import('./modules/tender-monitoring/tender-monitoring.component').then(m => m.TenderMonitoringComponent),
+  },
+  {
     path: 'monitoring',
     loadComponent: () => import('./modules/monitoring/monitoring.component').then(m => m.MonitoringComponent),
   },

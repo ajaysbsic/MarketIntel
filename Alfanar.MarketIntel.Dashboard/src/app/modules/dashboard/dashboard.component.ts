@@ -1131,18 +1131,20 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
 
     .alerts-widget {
       margin: 2rem 0;
-      background: white;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
       border-radius: 14px;
       padding: 1.5rem;
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      box-shadow: var(--shadow-md);
     }
 
     .positioning-widget {
       margin: 2rem 0;
-      background: linear-gradient(135deg, #f6f8ff 0%, #eef2ff 100%);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
       border-radius: 14px;
       padding: 1.5rem;
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      box-shadow: var(--shadow-md);
     }
 
     .positioning-content {
@@ -1187,7 +1189,8 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
       align-items: flex-start;
       padding: 0.75rem;
       border-radius: 10px;
-      background: #f6f8ff;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
     }
 
     .widget-severity {
@@ -1196,8 +1199,9 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 600;
-      background: #e9eefb;
-      color: #1f47ba;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      color: var(--primary-color, #1f47ba);
       min-width: 72px;
       text-align: center;
     }
@@ -1225,6 +1229,7 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
     .widget-content strong {
       display: block;
       font-size: 0.95rem;
+      color: var(--text-primary);
     }
 
     .widget-meta {

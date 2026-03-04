@@ -12,25 +12,28 @@ namespace Alfanar.MarketIntel.Application.Services;
 /// </summary>
 public class AzureBlobStorageService : IFileStorageService
 {
-    private readonly BlobContainerClient _containerClient;
+    private readonly BlobContainerClient? _containerClient;
     private readonly ILogger<AzureBlobStorageService> _logger;
     private readonly long _maxFileSizeBytes;
     private readonly HashSet<string> _allowedExtensions;
+    private readonly string _containerName;
 
     public AzureBlobStorageService(IConfiguration configuration, ILogger<AzureBlobStorageService> logger)
     {
         _logger = logger;
 
         var connectionString = configuration["AzureStorage:ConnectionString"];
-        var containerName = configuration["AzureStorage:ContainerName"] ?? "pdf-reports";
+        _containerName = configuration["AzureStorage:ContainerName"] ?? "pdf-reports";
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("AzureStorage:ConnectionString is not configured.");
+            _logger.LogWarning("Azure blob storage connection string is not configured. File storage operations will fail gracefully.");
+            _containerClient = null;
         }
-
-        _containerClient = new BlobContainerClient(connectionString, containerName);
-        _containerClient.CreateIfNotExists(PublicAccessType.None);
+        else
+        {
+            _containerClient = new BlobContainerClient(connectionString, _containerName);
+        }
 
         _maxFileSizeBytes = long.TryParse(configuration["FileStorage:MaxFileSizeBytes"], out var max)
             ? max
@@ -49,7 +52,11 @@ public class AzureBlobStorageService : IFileStorageService
     {
         try
         {
-            await EnsureContainerExistsAsync();
+            var containerReady = await EnsureContainerExistsAsync();
+            if (!containerReady.IsSuccess)
+            {
+                return Result<string>.Failure(containerReady.Error ?? "Blob storage is unavailable");
+            }
 
             var safeFileName = SanitizeFileName(fileName);
             var extension = Path.GetExtension(safeFileName);
@@ -68,7 +75,7 @@ public class AzureBlobStorageService : IFileStorageService
             seekableStream.Position = 0;
 
             var blobName = BuildBlobName(safeFileName, subfolder);
-            var blobClient = _containerClient.GetBlobClient(blobName);
+            var blobClient = _containerClient!.GetBlobClient(blobName);
 
             if (await blobClient.ExistsAsync())
             {
@@ -99,9 +106,13 @@ public class AzureBlobStorageService : IFileStorageService
     {
         try
         {
-            await EnsureContainerExistsAsync();
+            var containerReady = await EnsureContainerExistsAsync();
+            if (!containerReady.IsSuccess)
+            {
+                return Result<byte[]>.Failure(containerReady.Error ?? "Blob storage is unavailable");
+            }
 
-            var blobClient = _containerClient.GetBlobClient(NormalizeBlobPath(filePath));
+            var blobClient = _containerClient!.GetBlobClient(NormalizeBlobPath(filePath));
             if (!await blobClient.ExistsAsync())
             {
                 return Result<byte[]>.Failure("File not found");
@@ -125,9 +136,13 @@ public class AzureBlobStorageService : IFileStorageService
     {
         try
         {
-            await EnsureContainerExistsAsync();
+            var containerReady = await EnsureContainerExistsAsync();
+            if (!containerReady.IsSuccess)
+            {
+                return Result.Failure(containerReady.Error ?? "Blob storage is unavailable");
+            }
 
-            var blobClient = _containerClient.GetBlobClient(NormalizeBlobPath(filePath));
+            var blobClient = _containerClient!.GetBlobClient(NormalizeBlobPath(filePath));
             var response = await blobClient.DeleteIfExistsAsync();
 
             if (!response.Value)
@@ -147,17 +162,35 @@ public class AzureBlobStorageService : IFileStorageService
 
     public async Task<bool> FileExistsAsync(string filePath)
     {
-        await EnsureContainerExistsAsync();
-        var blobClient = _containerClient.GetBlobClient(NormalizeBlobPath(filePath));
-        return await blobClient.ExistsAsync();
+        try
+        {
+            var containerReady = await EnsureContainerExistsAsync();
+            if (!containerReady.IsSuccess)
+            {
+                return false;
+            }
+
+            var blobClient = _containerClient!.GetBlobClient(NormalizeBlobPath(filePath));
+            return await blobClient.ExistsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error checking blob existence for {Path}", filePath);
+            return false;
+        }
     }
 
     public async Task<Result<FileInfo>> GetFileInfoAsync(string filePath)
     {
         try
         {
-            await EnsureContainerExistsAsync();
-            var blobClient = _containerClient.GetBlobClient(NormalizeBlobPath(filePath));
+            var containerReady = await EnsureContainerExistsAsync();
+            if (!containerReady.IsSuccess)
+            {
+                return Result<FileInfo>.Failure(containerReady.Error ?? "Blob storage is unavailable");
+            }
+
+            var blobClient = _containerClient!.GetBlobClient(NormalizeBlobPath(filePath));
 
             if (!await blobClient.ExistsAsync())
             {
@@ -177,8 +210,13 @@ public class AzureBlobStorageService : IFileStorageService
     {
         try
         {
-            await EnsureContainerExistsAsync();
-            var blobClient = _containerClient.GetBlobClient(NormalizeBlobPath(filePath));
+            var containerReady = await EnsureContainerExistsAsync();
+            if (!containerReady.IsSuccess)
+            {
+                return Result<Stream>.Failure(containerReady.Error ?? "Blob storage is unavailable");
+            }
+
+            var blobClient = _containerClient!.GetBlobClient(NormalizeBlobPath(filePath));
 
             if (!await blobClient.ExistsAsync())
             {
@@ -195,9 +233,23 @@ public class AzureBlobStorageService : IFileStorageService
         }
     }
 
-    private async Task EnsureContainerExistsAsync()
+    private async Task<Result> EnsureContainerExistsAsync()
     {
-        await _containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+        if (_containerClient == null)
+        {
+            return Result.Failure("Azure blob storage is not configured");
+        }
+
+        try
+        {
+            await _containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Azure blob container '{ContainerName}' is unavailable. File operations will fail gracefully.", _containerName);
+            return Result.Failure("Azure blob storage container is unavailable");
+        }
     }
 
     private async Task<Stream> ToSeekableStreamAsync(Stream source)

@@ -79,6 +79,12 @@ builder.Services.AddScoped<ICompetitorMentionRepository, CompetitorMentionReposi
 builder.Services.AddScoped<ITrendSnapshotRepository, TrendSnapshotRepository>(); // NEW
 builder.Services.AddScoped<INotificationPreferencesRepository, NotificationPreferencesRepository>(); // NEW
 builder.Services.AddScoped<INotificationQueueRepository, NotificationQueueRepository>(); // NEW
+builder.Services.AddScoped<ITenderSourceRepository, TenderSourceRepository>();
+builder.Services.AddScoped<ITenderNoticeRepository, TenderNoticeRepository>();
+builder.Services.AddScoped<ITenderVersionRepository, TenderVersionRepository>();
+builder.Services.AddScoped<ITenderIngestionRunRepository, TenderIngestionRunRepository>();
+builder.Services.AddScoped<ITenderNotificationRuleRepository, TenderNotificationRuleRepository>();
+builder.Services.AddScoped<ITenderNotificationLogRepository, TenderNotificationLogRepository>();
 
 // Service Registration
 builder.Services.AddScoped<INewsService, NewsService>();
@@ -95,6 +101,8 @@ builder.Services.AddScoped<IEmailService, EmailService>(); // NEW
 builder.Services.AddScoped<INotificationQueueService, NotificationQueueService>(); // NEW
 builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>(); // NEW
 builder.Services.AddScoped<TechThreatDetector>(); // NEW
+builder.Services.AddScoped<ITenderMonitoringService, TenderMonitoringService>();
+builder.Services.AddScoped<ITenderEventPublisher, TenderEventPublisher>();
 
 // Web Search & Monitoring Services
 builder.Services.AddScoped<IWebSearchProvider, GoogleSearchService>();
@@ -125,6 +133,11 @@ builder.Services.AddScoped<IKeywordMonitorJob, KeywordMonitorJob>();
 builder.Services.AddScoped<ITrendSnapshotJob, TrendSnapshotJob>();
 builder.Services.AddScoped<IAlertProcessingJob, AlertProcessingJob>();
 builder.Services.AddScoped<INotificationQueueJob, NotificationQueueJob>();
+builder.Services.AddScoped<ITenderValidateSourceHealthJob, TenderValidateSourceHealthJob>();
+builder.Services.AddScoped<ITenderReprocessFailedRunsJob, TenderReprocessFailedRunsJob>();
+builder.Services.AddScoped<ITenderNotificationDispatchJob, TenderNotificationDispatchJob>();
+builder.Services.AddScoped<ITenderBackfillMetadataJob, TenderBackfillMetadataJob>();
+builder.Services.AddScoped<ITenderDailyIntegrityCheckJob, TenderDailyIntegrityCheckJob>();
 if (hangfireEnabled)
 {
     builder.Services.AddHostedService<JobSchedulingService>();

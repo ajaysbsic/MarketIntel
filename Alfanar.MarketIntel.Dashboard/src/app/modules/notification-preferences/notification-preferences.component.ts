@@ -115,7 +115,8 @@ import { ApiService, NotificationPreferences } from '../../shared/services/api.s
     }
 
     .preferences-form {
-      background: white;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 1.5rem;
       box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
@@ -143,10 +144,12 @@ import { ApiService, NotificationPreferences } from '../../shared/services/api.s
 
     input[type='text'],
     input[type='email'] {
-      border: 1px solid #d4d7dd;
+      border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 0.65rem 0.9rem;
       font-size: 0.95rem;
+      background: var(--bg-primary);
+      color: var(--text-primary);
     }
 
     .input-error {
@@ -201,7 +204,8 @@ import { ApiService, NotificationPreferences } from '../../shared/services/api.s
     }
 
     .btn-secondary {
-      background: #e9eefb;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
       color: var(--primary-color, #1f47ba);
     }
   `],

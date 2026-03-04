@@ -167,7 +167,8 @@ type AlertToast = {
     }
 
     .summary-card {
-      background: white;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
       border-radius: 10px;
       padding: 1rem 1.25rem;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
@@ -198,8 +199,9 @@ type AlertToast = {
     .select-input {
       padding: 0.65rem 0.9rem;
       border-radius: 8px;
-      border: 1px solid #d4d7dd;
-      background: white;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
       min-width: 200px;
     }
 
@@ -210,7 +212,8 @@ type AlertToast = {
     }
 
     .alert-card {
-      background: white;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 1.25rem;
       box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
@@ -235,9 +238,10 @@ type AlertToast = {
     }
 
     .meta-item {
-      background: #f1f3f5;
+      background: var(--bg-primary);
       padding: 0.2rem 0.5rem;
       border-radius: 999px;
+      border: 1px solid var(--border-color);
     }
 
     .alert-actions {
@@ -321,7 +325,8 @@ type AlertToast = {
     }
 
     .btn-secondary {
-      background: #e9eefb;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
       color: var(--primary-color, #1f47ba);
     }
 
@@ -358,7 +363,8 @@ type AlertToast = {
     }
 
     .toast {
-      background: white;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
       border-radius: 10px;
       padding: 0.75rem 1rem;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);

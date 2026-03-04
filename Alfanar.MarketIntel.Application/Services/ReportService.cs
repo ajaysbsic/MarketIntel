@@ -8,6 +8,7 @@ using Alfanar.MarketIntel.Infrastructure.Repositories;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -25,7 +26,7 @@ public class ReportService : IReportService
     private readonly AlertRulesEngine _alertEngine;
     private readonly ILogger<ReportService> _logger;
     private readonly MarketIntelDbContext _context;
-    private readonly IFileStorageService _fileStorage;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IHttpClientFactory _httpClientFactory;
 
     public ReportService(
@@ -38,7 +39,7 @@ public class ReportService : IReportService
         AlertRulesEngine alertEngine,
         ILogger<ReportService> logger,
         MarketIntelDbContext context,
-        IFileStorageService fileStorage,
+        IServiceProvider serviceProvider,
         IHttpClientFactory httpClientFactory)
     {
         _reportRepository = reportRepository;
@@ -50,7 +51,7 @@ public class ReportService : IReportService
         _alertEngine = alertEngine;
         _logger = logger;
         _context = context;
-        _fileStorage = fileStorage;
+        _serviceProvider = serviceProvider;
         _httpClientFactory = httpClientFactory;
     }
 
@@ -373,7 +374,8 @@ public class ReportService : IReportService
 
             if (!string.IsNullOrWhiteSpace(report.FilePath))
             {
-                var deleteResult = await _fileStorage.DeleteFileAsync(report.FilePath);
+                var fileStorage = _serviceProvider.GetRequiredService<IFileStorageService>();
+                var deleteResult = await fileStorage.DeleteFileAsync(report.FilePath);
                 if (!deleteResult.IsSuccess)
                 {
                     _logger.LogWarning("Failed to delete stored file for report {Id}: {Error}", id, deleteResult.Error);
@@ -958,7 +960,8 @@ public class ReportService : IReportService
 
             var subfolder = BuildSubfolder(request);
 
-            var saveResult = await _fileStorage.SaveFileAsync(pdfStream, fileName, subfolder);
+            var fileStorage = _serviceProvider.GetRequiredService<IFileStorageService>();
+            var saveResult = await fileStorage.SaveFileAsync(pdfStream, fileName, subfolder);
             if (!saveResult.IsSuccess || saveResult.Data == null)
             {
                 pdfStream?.Dispose();

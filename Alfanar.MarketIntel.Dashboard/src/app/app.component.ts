@@ -47,6 +47,7 @@ import { environment } from '../environments/environment';
               <li><a routerLink="/news" routerLinkActive="active" (click)="closeSidebarOnMobile()">📰 News & Articles</a></li>
               <li><a routerLink="/reports" routerLinkActive="active" (click)="closeSidebarOnMobile()">📑 Financial Reports</a></li>
               <li><a routerLink="/technology-intelligence" routerLinkActive="active" (click)="closeSidebarOnMobile()">🧭 Technology Intelligence</a></li>
+              <li><a routerLink="/tender-monitoring" routerLinkActive="active" (click)="closeSidebarOnMobile()">📌 Tender Monitoring</a></li>
 
               <!-- AI Intelligence Platform -->
               <li class="nav-section-title">🤖 AI Intelligence</li>

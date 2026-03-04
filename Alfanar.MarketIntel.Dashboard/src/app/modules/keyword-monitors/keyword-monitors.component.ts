@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { NavigationStart, Router } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
 import {
   ApiService,
   KeywordMonitor,
@@ -795,7 +796,7 @@ import {
     }
   `]
 })
-export class KeywordMonitorsComponent implements OnInit {
+export class KeywordMonitorsComponent implements OnInit, OnDestroy {
   monitors: KeywordMonitor[] = [];
   newMonitor: CreateKeywordMonitor = {
     keyword: '',
@@ -813,11 +814,23 @@ export class KeywordMonitorsComponent implements OnInit {
   curationError = '';
   curatedInsight: CuratedIntelligence | null = null;
   latestReport: IntelligenceReportSummary | null = null;
+  private routerEventsSubscription?: Subscription;
 
   constructor(private api: ApiService, private router: Router) {}
 
   ngOnInit(): void {
+    this.routerEventsSubscription = this.router.events
+      .pipe(filter((event) => event instanceof NavigationStart))
+      .subscribe(() => {
+        this.closeResults();
+      });
+
     this.loadMonitors();
+  }
+
+  ngOnDestroy(): void {
+    this.routerEventsSubscription?.unsubscribe();
+    this.closeResults();
   }
 
   loadMonitors(): void {

@@ -5,12 +5,31 @@ Extracts text from PDFs using PyMuPDF with OCR fallback
 """
 
 import fitz  # PyMuPDF
-import pytesseract
-from PIL import Image
 import io
 import logging
 from typing import Dict, List, Optional
 from pathlib import Path
+
+# pytesseract itself imports PIL, so we need to guard its import separately
+# because a broken Pillow installation will raise during pytesseract import.
+_PIL_AVAILABLE = True
+try:
+    # attempt to import PIL first so we can catch missing _imaging early
+    from PIL import Image
+except Exception as e:
+    _PIL_AVAILABLE = False
+    logging.getLogger(__name__).warning(
+        f"Pillow import failed: {e} - OCR functionality will be disabled"
+    )
+    Image = None
+
+try:
+    import pytesseract
+except Exception as e:
+    pytesseract = None
+    logging.getLogger(__name__).warning(
+        f"pytesseract import failed: {e} - OCR functionality will be disabled"
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +95,10 @@ class PdfExtractor:
     
     def _ocr_page(self, page) -> str:
         """Perform OCR on a PDF page"""
+        if not _PIL_AVAILABLE:
+            logger.warning("Pillow not available, skipping OCR for page")
+            return ""
+
         try:
             # Render page to image
             pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better quality

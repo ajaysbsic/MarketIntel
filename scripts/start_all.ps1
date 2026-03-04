@@ -57,6 +57,11 @@ Write-Host "   cd `"$SolutionRoot\python_watcher`"" -ForegroundColor White
 Write-Host "   .venv\Scripts\Activate.ps1" -ForegroundColor White
 Write-Host "   python src/rss_watcher.py`n" -ForegroundColor White
 
+Write-Host "?? Terminal 4 - Tender Watcher (Optional):" -ForegroundColor Cyan
+Write-Host "   cd `\"$SolutionRoot\python_watcher`\"" -ForegroundColor White
+Write-Host "   .venv\Scripts\Activate.ps1" -ForegroundColor White
+Write-Host "   python src/tender_watcher.py`n" -ForegroundColor White
+
 Write-Host "?? Dashboard:" -ForegroundColor Cyan
 Write-Host "   https://localhost:7001/alerts.html`n" -ForegroundColor White
 

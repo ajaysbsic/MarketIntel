@@ -269,7 +269,7 @@ Edit `Alfanar.MarketIntel.Api\appsettings.Development.json`:
 
   "OpenAI": {
 
-    "ApiKey": "sk-your-actual-key-here",
+    "ApiKey": "<OPENAI_API_KEY>",
 
     "EnableAiCategorization": true
 

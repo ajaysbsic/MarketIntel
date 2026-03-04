@@ -45,8 +45,13 @@ class ReportWatcherV3:
         self.tech_keywords = load_keywords(keywords_path)
         
         # Initialize API client FIRST (needed for fetching targets)
+        # Use api_endpoint_reports if available, otherwise fall back to api_endpoint
+        api_endpoint = self.config.get('api_endpoint_reports') or self.config.get('api_endpoint')
+        if not api_endpoint:
+            raise ValueError("Neither 'api_endpoint_reports' nor 'api_endpoint' configured in config")
+        
         self.api_client = MarketIntelApiClient(
-            api_endpoint=self.config['api_endpoint_reports'],
+            api_endpoint=api_endpoint,
             verify_ssl=self.config.get('verify_ssl', True),
             request_timeout_seconds=self.config.get('request_timeout_seconds', 60)
         )

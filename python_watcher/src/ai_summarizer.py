@@ -10,7 +10,21 @@ import os
 import json
 from typing import Dict, Optional, Tuple
 from datetime import datetime
-import google.generativeai as genai
+
+# google.generativeai pulls in gRPC under the hood; broken installations
+# (missing compiled cygrpc, etc.) can crash at import time.  Wrap the
+# import in a try/except so that the rest of the watcher can start even if
+# the library is unusable.
+_GENAI_AVAILABLE = True
+try:
+    import google.generativeai as genai
+except Exception as e:
+    _GENAI_AVAILABLE = False
+    # logger not yet defined, so use root logger temporarily
+    logging.getLogger(__name__).warning(
+        f"google.generativeai import failed: {e} - AI features disabled"
+    )
+    genai = None  # keep name in locals for later reference
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +48,16 @@ class AiSummarizer:
         self.client = None
         
         if self.api_key and self.api_key != "YOUR_GOOGLE_AI_API_KEY":
-            try:
-                genai.configure(api_key=self.api_key)
-                self.client = genai.GenerativeModel(model)
-                logger.info(f"Google AI Summarizer initialized with model: {model}")
-            except Exception as e:
-                logger.error(f"Failed to initialize Google AI client: {e}")
-                self.client = None
+            if _GENAI_AVAILABLE:
+                try:
+                    genai.configure(api_key=self.api_key)
+                    self.client = genai.GenerativeModel(model)
+                    logger.info(f"Google AI Summarizer initialized with model: {model}")
+                except Exception as e:
+                    logger.error(f"Failed to initialize Google AI client: {e}")
+                    self.client = None
+            else:
+                logger.warning("google.generativeai library not available - AI summarization disabled")
         else:
             logger.warning("Google AI API key not configured - AI summarization disabled")
     

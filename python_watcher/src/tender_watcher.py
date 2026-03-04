@@ -1,0 +1,427 @@
+"""
+Government Tender Watcher
+Fetches tender notices from configured sources and ingests them into MarketIntel API.
+
+Supported source connector types:
+- seed: static notices in config (best for bootstrap/testing)
+- rss: RSS/Atom feeds mapped to tender notices
+- api-json: JSON endpoint with configurable field map
+"""
+
+import json
+import logging
+import hashlib
+import time
+import signal
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+
+import feedparser
+import requests
+
+from api_client import MarketIntelApiClient
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('tender_watcher.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+class TenderStateManager:
+    """Simple state manager for dedup across tender watcher runs."""
+
+    def __init__(self, state_file: Path):
+        self.state_file = state_file
+        self.state = self._load()
+
+    def _load(self) -> Dict[str, Any]:
+        if not self.state_file.exists():
+            return {"processed_keys": [], "updated_utc": datetime.utcnow().isoformat()}
+        try:
+            with open(self.state_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if "processed_keys" not in data:
+                    data["processed_keys"] = []
+                return data
+        except Exception as ex:
+            logger.warning(f"Failed to read state file, starting fresh: {ex}")
+            return {"processed_keys": [], "updated_utc": datetime.utcnow().isoformat()}
+
+    def save(self):
+        self.state["updated_utc"] = datetime.utcnow().isoformat()
+        with open(self.state_file, 'w', encoding='utf-8') as f:
+            json.dump(self.state, f, indent=2)
+
+    def is_processed(self, dedup_key: str) -> bool:
+        return dedup_key in self.state["processed_keys"]
+
+    def mark_processed(self, dedup_key: str):
+        self.state["processed_keys"].append(dedup_key)
+        if len(self.state["processed_keys"]) > 50000:
+            self.state["processed_keys"] = self.state["processed_keys"][-50000:]
+
+
+class TenderWatcher:
+    def __init__(self, config_path: Path):
+        self.config = self._load_config(config_path)
+        self.running = True
+        self.poll_interval = self.config.get("poll_interval_seconds", 3600)
+
+        self.api_client = MarketIntelApiClient(
+            api_endpoint=self.config.get("api_endpoint", "http://localhost:5021/api/tenders/ingest"),
+            verify_ssl=self.config.get("verify_ssl", True),
+            max_retries=self.config.get("max_retries", 3),
+            request_timeout_seconds=self.config.get("request_timeout_seconds", 60)
+        )
+
+        self.state_manager = TenderStateManager(Path(self.config.get("state_file", "tender_state.json")))
+
+        self.stats = {
+            "processed": 0,
+            "ingested": 0,
+            "duplicates": 0,
+            "errors": 0
+        }
+
+    @staticmethod
+    def _load_config(config_path: Path) -> Dict[str, Any]:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    def _compute_dedup_key(self, source_name: str, external_id: str) -> str:
+        raw = f"{source_name}|{external_id}".encode("utf-8")
+        return hashlib.sha256(raw).hexdigest()
+
+    def _parse_datetime(self, value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return parsed.isoformat()
+        except Exception:
+            try:
+                parsed = datetime.strptime(value, "%Y-%m-%d")
+                return parsed.isoformat()
+            except Exception:
+                return None
+
+    def _source_defaults(self, source: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "sourceName": source.get("name", "Unknown Source"),
+            "sourceType": source.get("type", "API"),
+            "sourceBaseUrl": source.get("base_url", ""),
+            "countryIsoCode": source.get("country_iso_code", "SA"),
+            "countryName": source.get("country_name", "Saudi Arabia"),
+            "authorityName": source.get("authority_name"),
+            "status": source.get("default_status", "Open"),
+            "currency": source.get("currency"),
+        }
+
+    @staticmethod
+    def _normalize_source_type(value: Optional[str]) -> str:
+        if not value:
+            return "API"
+        return value.strip()
+
+    def _source_base_url(self, source: Dict[str, Any]) -> str:
+        return source.get("base_url") or source.get("baseUrl") or ""
+
+    def _map_api_source_to_runtime(self, source: Dict[str, Any]) -> Dict[str, Any]:
+        source_type = self._normalize_source_type(source.get("type"))
+        connector = "api-json"
+        if source_type.upper() == "RSS":
+            connector = "rss"
+
+        mapped = {
+            "name": source.get("name", "Unknown Source"),
+            "enabled": source.get("isEnabled", source.get("enabled", True)),
+            "connector": connector,
+            "type": source_type,
+            "base_url": self._source_base_url(source),
+            "url": self._source_base_url(source),
+            "country_iso_code": source.get("countryIsoCode") or source.get("country_iso_code") or "SA",
+            "country_name": source.get("countryName") or source.get("country_name") or "Saudi Arabia",
+            "authority_name": source.get("authorityName") or source.get("authority_name"),
+            "currency": source.get("currency"),
+            "default_status": source.get("defaultStatus") or source.get("default_status") or "Open",
+            "poll_priority": source.get("pollPriority") or source.get("poll_priority") or 100,
+            "poll_interval_min": source.get("pollIntervalMin") or source.get("poll_interval_min") or 60,
+        }
+
+        connector_config_raw = source.get("connectorConfigJson") or source.get("connector_config_json")
+        if isinstance(connector_config_raw, str) and connector_config_raw.strip():
+            try:
+                connector_config_obj = json.loads(connector_config_raw)
+                if isinstance(connector_config_obj, dict):
+                    mapped.update(connector_config_obj)
+            except Exception as ex:
+                logger.warning(f"Invalid connectorConfigJson for source '{mapped.get('name', 'Unknown Source')}': {ex}")
+
+        return mapped
+
+    def _apply_source_overrides(self, source: Dict[str, Any]) -> Dict[str, Any]:
+        overrides = self.config.get("source_overrides", {})
+        source_name = source.get("name", "")
+        if not isinstance(overrides, dict) or source_name not in overrides:
+            return source
+
+        merged = dict(source)
+        override_values = overrides.get(source_name)
+        if isinstance(override_values, dict):
+            merged.update(override_values)
+        return merged
+
+    def _apply_api_feature_flags(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        if not self.config.get("apply_api_feature_flags", True):
+            return sources
+
+        flags = self.api_client.get_tender_feature_flags()
+        if not isinstance(flags, dict):
+            logger.warning("Feature flags not available from API; skipping watcher-side flag filtering")
+            return sources
+
+        global_enabled = bool(flags.get("globalEnabled", True))
+        if not global_enabled:
+            logger.warning("Tender monitoring globally disabled by API feature flags")
+            return []
+
+        allowed_sources = flags.get("allowedSources") or []
+        allowed_countries = flags.get("allowedCountries") or []
+
+        allowed_sources_set = {str(x).strip().lower() for x in allowed_sources if str(x).strip()}
+        allowed_countries_set = {str(x).strip().upper() for x in allowed_countries if str(x).strip()}
+
+        filtered: List[Dict[str, Any]] = []
+        for source in sources:
+            source_name = str(source.get("name") or "").strip().lower()
+            country_iso = str(source.get("country_iso_code") or "").strip().upper()
+
+            if allowed_sources_set and source_name not in allowed_sources_set:
+                continue
+
+            if allowed_countries_set and country_iso and country_iso not in allowed_countries_set:
+                continue
+
+            filtered.append(source)
+
+        logger.info(f"Watcher source filtering via API flags: {len(filtered)}/{len(sources)} source(s) enabled")
+        return filtered
+
+    def _get_sources_for_cycle(self) -> List[Dict[str, Any]]:
+        use_dynamic_sources = self.config.get("use_dynamic_sources", True)
+        fallback_to_config = self.config.get("fallback_to_config_sources", True)
+        include_disabled = self.config.get("dynamic_sources_include_disabled", False)
+
+        if use_dynamic_sources:
+            api_sources = self.api_client.get_tender_sources(enabled_only=not include_disabled)
+            if isinstance(api_sources, list) and len(api_sources) > 0:
+                runtime_sources = [self._map_api_source_to_runtime(item) for item in api_sources if isinstance(item, dict)]
+                runtime_sources = [self._apply_source_overrides(source) for source in runtime_sources]
+                logger.info(f"Using {len(runtime_sources)} source(s) from API")
+                return self._apply_api_feature_flags(runtime_sources)
+
+            if isinstance(api_sources, list) and len(api_sources) == 0:
+                logger.warning("No sources returned from API for tender watcher")
+            else:
+                logger.warning("Failed to load sources from API for tender watcher")
+
+            if not fallback_to_config:
+                return []
+
+            logger.info("Falling back to config-defined sources")
+
+        static_sources = self.config.get("sources", [])
+        runtime_sources = [self._apply_source_overrides(source) for source in static_sources if isinstance(source, dict)]
+        return self._apply_api_feature_flags(runtime_sources)
+
+    def _normalize_seed_item(self, source: Dict[str, Any], item: Dict[str, Any]) -> Dict[str, Any]:
+        defaults = self._source_defaults(source)
+        return {
+            **defaults,
+            "externalId": item.get("external_id") or item.get("id") or item.get("url") or item.get("title", ""),
+            "title": item.get("title", ""),
+            "summary": item.get("summary"),
+            "sector": item.get("sector"),
+            "category": item.get("category"),
+            "publishDate": self._parse_datetime(item.get("publish_date")) or datetime.utcnow().isoformat(),
+            "deadline": self._parse_datetime(item.get("deadline")),
+            "estimatedValue": item.get("estimated_value"),
+            "currency": item.get("currency") or defaults.get("currency"),
+            "sourceUrl": item.get("source_url") or item.get("url") or defaults.get("sourceBaseUrl") or "",
+            "status": item.get("status") or defaults.get("status", "Open"),
+            "rawPayloadJson": json.dumps(item, ensure_ascii=False),
+            "rawPayloadHash": hashlib.sha256(json.dumps(item, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+        }
+
+    def _extract_seed(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        notices = source.get("seed_notices", [])
+        return [self._normalize_seed_item(source, item) for item in notices]
+
+    def _extract_rss(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        url = source.get("url")
+        if not url:
+            return []
+
+        parsed = feedparser.parse(url)
+        notices: List[Dict[str, Any]] = []
+        for entry in parsed.get("entries", []):
+            item = {
+                "external_id": entry.get("id") or entry.get("link") or entry.get("title", ""),
+                "title": entry.get("title", "Untitled Tender"),
+                "summary": entry.get("summary", ""),
+                "publish_date": entry.get("published") or entry.get("updated"),
+                "source_url": entry.get("link", ""),
+                "status": source.get("default_status", "Open")
+            }
+            notices.append(self._normalize_seed_item(source, item))
+
+        return notices
+
+    def _get_path_value(self, obj: Dict[str, Any], path: str) -> Any:
+        current: Any = obj
+        for key in path.split('.'):
+            if not isinstance(current, dict):
+                return None
+            current = current.get(key)
+        return current
+
+    def _extract_api_json(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        url = source.get("url")
+        if not url:
+            return []
+
+        response = requests.get(url, timeout=source.get("timeout_seconds", 30), verify=self.config.get("verify_ssl", True))
+        response.raise_for_status()
+
+        payload = response.json()
+        list_path = source.get("list_path")
+        items = self._get_path_value(payload, list_path) if list_path else payload
+
+        if not isinstance(items, list):
+            return []
+
+        field_map = source.get("field_map", {})
+        notices: List[Dict[str, Any]] = []
+
+        for raw in items:
+            mapped = {
+                "external_id": self._get_path_value(raw, field_map.get("external_id", "id")),
+                "title": self._get_path_value(raw, field_map.get("title", "title")) or "Untitled Tender",
+                "summary": self._get_path_value(raw, field_map.get("summary", "summary")),
+                "sector": self._get_path_value(raw, field_map.get("sector", "sector")),
+                "category": self._get_path_value(raw, field_map.get("category", "category")),
+                "publish_date": self._get_path_value(raw, field_map.get("publish_date", "publish_date")),
+                "deadline": self._get_path_value(raw, field_map.get("deadline", "deadline")),
+                "estimated_value": self._get_path_value(raw, field_map.get("estimated_value", "estimated_value")),
+                "currency": self._get_path_value(raw, field_map.get("currency", "currency")),
+                "source_url": self._get_path_value(raw, field_map.get("source_url", "url")),
+                "status": self._get_path_value(raw, field_map.get("status", "status")) or source.get("default_status", "Open")
+            }
+            notices.append(self._normalize_seed_item(source, mapped))
+
+        return notices
+
+    def _extract_notices(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        connector = (source.get("connector") or "seed").lower()
+        if connector == "seed":
+            return self._extract_seed(source)
+        if connector == "rss":
+            return self._extract_rss(source)
+        if connector == "api-json":
+            return self._extract_api_json(source)
+        logger.warning(f"Unknown connector '{connector}' for source {source.get('name')}")
+        return []
+
+    def _process_source(self, source: Dict[str, Any]):
+        source_name = source.get("name", "Unknown Source")
+        if not source.get("enabled", True):
+            logger.info(f"Skipping disabled source: {source_name}")
+            return
+
+        logger.info(f"Processing source: {source_name}")
+
+        try:
+            notices = self._extract_notices(source)
+            logger.info(f"Source {source_name}: extracted {len(notices)} notices")
+
+            for notice in notices:
+                external_id = str(notice.get("externalId") or "")
+                if not external_id:
+                    self.stats["errors"] += 1
+                    continue
+
+                dedup_key = self._compute_dedup_key(source_name, external_id)
+                self.stats["processed"] += 1
+
+                if self.state_manager.is_processed(dedup_key):
+                    self.stats["duplicates"] += 1
+                    continue
+
+                response = self.api_client.ingest_tender_notice(notice)
+                if response:
+                    self.state_manager.mark_processed(dedup_key)
+                    self.stats["ingested"] += 1
+                else:
+                    self.stats["errors"] += 1
+
+        except Exception as ex:
+            logger.error(f"Error processing source {source_name}: {ex}", exc_info=True)
+            self.stats["errors"] += 1
+
+    def run_once(self):
+        sources = self._get_sources_for_cycle()
+        logger.info(f"Starting tender ingest cycle with {len(sources)} source(s)")
+
+        cycle_stats_before = dict(self.stats)
+        for source in sources:
+            if not self.running:
+                break
+            self._process_source(source)
+            time.sleep(self.config.get("inter_source_delay_seconds", 1))
+
+        self.state_manager.save()
+
+        ingested_delta = self.stats["ingested"] - cycle_stats_before["ingested"]
+        duplicate_delta = self.stats["duplicates"] - cycle_stats_before["duplicates"]
+        error_delta = self.stats["errors"] - cycle_stats_before["errors"]
+
+        logger.info(
+            f"Cycle complete: new={ingested_delta}, duplicates={duplicate_delta}, errors={error_delta}, total_ingested={self.stats['ingested']}"
+        )
+
+    def stop(self, *_):
+        logger.info("Shutdown signal received")
+        self.running = False
+
+    def run(self):
+        signal.signal(signal.SIGINT, self.stop)
+        signal.signal(signal.SIGTERM, self.stop)
+
+        logger.info("Tender watcher started")
+        logger.info(f"Poll interval: {self.poll_interval}s")
+
+        while self.running:
+            self.run_once()
+            if not self.running:
+                break
+            time.sleep(self.poll_interval)
+
+        self.api_client.close()
+        logger.info("Tender watcher stopped")
+
+
+def main():
+    config_path = Path("config_tender_monitor.json")
+    watcher = TenderWatcher(config_path)
+    watcher.run()
+
+
+if __name__ == "__main__":
+    main()

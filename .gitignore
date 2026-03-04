@@ -19,6 +19,9 @@ node_modules/
 **/logs/
 **/*.log
 python_watcher/state.json
+python_watcher/downloads/
+Alfanar.MarketIntel.Api/publish/
+Alfanar.MarketIntel.Api/*.zip
 
 # Python
 venv/
@@ -34,6 +37,7 @@ __pycache__/
 .env.*.local
 *.local.json
 .secrets/
+.secrets/removed_secrets_2026-03-04.txt
 appsettings.Development.json
 python_watcher/config*.json
 

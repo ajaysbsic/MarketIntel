@@ -75,6 +75,41 @@ public class JobSchedulingService : IHostedService
             "*/1 * * * *",
             job => job.ExecuteAsync(default),
             orchestrationService);
+
+        RegisterJob<ITenderValidateSourceHealthJob>(
+            "tender-validate-source-health",
+            jobsSection.GetSection("TenderValidateSourceHealth"),
+            "0 * * * *",
+            job => job.ExecuteAsync(default),
+            orchestrationService);
+
+        RegisterJob<ITenderReprocessFailedRunsJob>(
+            "tender-reprocess-failed-runs",
+            jobsSection.GetSection("TenderReprocessFailedRuns"),
+            "*/15 * * * *",
+            job => job.ExecuteAsync(default),
+            orchestrationService);
+
+        RegisterJob<ITenderNotificationDispatchJob>(
+            "tender-notification-dispatch",
+            jobsSection.GetSection("TenderNotificationDispatch"),
+            "*/2 * * * *",
+            job => job.ExecuteAsync(default),
+            orchestrationService);
+
+        RegisterJob<ITenderBackfillMetadataJob>(
+            "tender-backfill-metadata",
+            jobsSection.GetSection("TenderBackfillMetadata"),
+            "30 1 * * *",
+            job => job.ExecuteAsync(default),
+            orchestrationService);
+
+        RegisterJob<ITenderDailyIntegrityCheckJob>(
+            "tender-daily-integrity-check",
+            jobsSection.GetSection("TenderDailyIntegrityCheck"),
+            "0 2 * * *",
+            job => job.ExecuteAsync(default),
+            orchestrationService);
     }
 
     private void RegisterJob<TJob>(

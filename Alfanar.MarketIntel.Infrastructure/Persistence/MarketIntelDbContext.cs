@@ -34,6 +34,19 @@ public class MarketIntelDbContext : DbContext
     public DbSet<TrendSnapshot> TrendSnapshots => Set<TrendSnapshot>(); // NEW
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>(); // NEW
     public DbSet<NotificationQueue> NotificationQueues => Set<NotificationQueue>(); // NEW
+    public DbSet<TenderNotice> TenderNotices => Set<TenderNotice>();
+    public DbSet<TenderVersion> TenderVersions => Set<TenderVersion>();
+    public DbSet<TenderSource> TenderSources => Set<TenderSource>();
+    public DbSet<TenderAuthority> TenderAuthorities => Set<TenderAuthority>();
+    public DbSet<TenderCountry> TenderCountries => Set<TenderCountry>();
+    public DbSet<TenderDocument> TenderDocuments => Set<TenderDocument>();
+    public DbSet<TenderIngestionRun> TenderIngestionRuns => Set<TenderIngestionRun>();
+    public DbSet<TenderNotificationRule> TenderNotificationRules => Set<TenderNotificationRule>();
+    public DbSet<TenderNotificationLog> TenderNotificationLogs => Set<TenderNotificationLog>();
+    public DbSet<TenderAuditRaw> TenderAuditRaw => Set<TenderAuditRaw>();
+    public DbSet<TenderAiAnalysis> TenderAiAnalyses => Set<TenderAiAnalysis>();
+    public DbSet<TenderCapabilityGap> TenderCapabilityGaps => Set<TenderCapabilityGap>();
+    public DbSet<TenderScore> TenderScores => Set<TenderScore>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,6 +78,60 @@ public class MarketIntelDbContext : DbContext
                 .WithMany(r => r.RelatedArticles)
                 .HasForeignKey(x => x.RelatedFinancialReportId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // TenderAiAnalysis configuration
+        modelBuilder.Entity<TenderAiAnalysis>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ExtractedRequirementsJson).HasMaxLength(16000);
+            e.Property(x => x.Confidence).HasPrecision(5, 4);
+            e.Property(x => x.ModelName).HasMaxLength(200);
+
+            e.HasIndex(x => x.TenderVersionId);
+            e.HasIndex(x => x.CreatedAt);
+
+            e.HasOne(x => x.TenderVersion)
+                .WithMany()
+                .HasForeignKey(x => x.TenderVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TenderCapabilityGap configuration
+        modelBuilder.Entity<TenderCapabilityGap>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Requirement).HasMaxLength(2000).IsRequired();
+            e.Property(x => x.InternalCapability).HasMaxLength(2000);
+            e.Property(x => x.GapLevel).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(4000);
+
+            e.HasIndex(x => x.TenderVersionId);
+            e.HasIndex(x => x.GapLevel);
+            e.HasIndex(x => x.CreatedAt);
+
+            e.HasOne(x => x.TenderVersion)
+                .WithMany()
+                .HasForeignKey(x => x.TenderVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TenderScore configuration
+        modelBuilder.Entity<TenderScore>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.WinProbability).HasPrecision(5, 4);
+            e.Property(x => x.RiskScore).HasPrecision(5, 4);
+            e.Property(x => x.ComponentsJson).HasMaxLength(16000);
+            e.Property(x => x.ScoringModel).HasMaxLength(200);
+
+            e.HasIndex(x => x.TenderVersionId);
+            e.HasIndex(x => x.CreatedAt);
+
+            e.HasOne(x => x.TenderVersion)
+                .WithMany()
+                .HasForeignKey(x => x.TenderVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Tag configuration
@@ -507,6 +574,220 @@ public class MarketIntelDbContext : DbContext
             e.HasOne(x => x.WebSearchResult)
                 .WithMany()
                 .HasForeignKey(x => x.WebSearchResultId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TenderCountry configuration
+        modelBuilder.Entity<TenderCountry>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.IsoCode).HasMaxLength(10).IsRequired();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.RegionGroup).HasMaxLength(100).IsRequired();
+
+            e.HasIndex(x => x.IsoCode).IsUnique();
+            e.HasIndex(x => x.RegionGroup);
+            e.HasIndex(x => x.IsActive);
+        });
+
+        // TenderAuthority configuration
+        modelBuilder.Entity<TenderAuthority>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(300).IsRequired();
+            e.Property(x => x.AuthorityType).HasMaxLength(100).IsRequired();
+            e.Property(x => x.NormalizedName).HasMaxLength(300).IsRequired();
+            e.Property(x => x.AliasesJson).HasMaxLength(4000);
+
+            e.HasIndex(x => x.CountryId);
+            e.HasIndex(x => x.NormalizedName);
+            e.HasIndex(x => new { x.CountryId, x.NormalizedName }).IsUnique();
+
+            e.HasOne(x => x.Country)
+                .WithMany(c => c.Authorities)
+                .HasForeignKey(x => x.CountryId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // TenderSource configuration
+        modelBuilder.Entity<TenderSource>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Type).HasMaxLength(50).IsRequired();
+            e.Property(x => x.BaseUrl).HasMaxLength(2000).IsRequired();
+            e.Property(x => x.AuthMode).HasMaxLength(100);
+            e.Property(x => x.RateLimitPolicyJson).HasMaxLength(4000);
+            e.Property(x => x.ConnectorConfigJson).HasMaxLength(16000);
+            e.Property(x => x.RolloutStage).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LegalNotes).HasMaxLength(4000);
+            e.Property(x => x.Owner).HasMaxLength(200);
+
+            e.HasIndex(x => x.Name).IsUnique();
+            e.HasIndex(x => x.IsEnabled);
+            e.HasIndex(x => x.IsCanary);
+            e.HasIndex(x => x.RolloutStage);
+            e.HasIndex(x => x.PollPriority);
+        });
+
+        // TenderNotice configuration
+        modelBuilder.Entity<TenderNotice>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ExternalId).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Title).HasMaxLength(1000).IsRequired();
+            e.Property(x => x.Summary).HasMaxLength(4000);
+            e.Property(x => x.Sector).HasMaxLength(200);
+            e.Property(x => x.Category).HasMaxLength(200);
+            e.Property(x => x.Currency).HasMaxLength(20);
+            e.Property(x => x.SourceUrl).HasMaxLength(2000).IsRequired();
+            e.Property(x => x.Status).HasMaxLength(100).IsRequired();
+            e.Property(x => x.ContentHash).HasMaxLength(256).IsRequired();
+            e.Property(x => x.EstimatedValue).HasPrecision(18, 2);
+
+            e.HasIndex(x => new { x.SourceId, x.ExternalId }).IsUnique();
+            e.HasIndex(x => new { x.CountryId, x.PublishDate });
+            e.HasIndex(x => new { x.AuthorityId, x.PublishDate });
+            e.HasIndex(x => x.IsActive);
+            e.HasIndex(x => x.LastChangedAt);
+
+            e.HasOne(x => x.Source)
+                .WithMany(s => s.Notices)
+                .HasForeignKey(x => x.SourceId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Authority)
+                .WithMany(a => a.Notices)
+                .HasForeignKey(x => x.AuthorityId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasOne(x => x.Country)
+                .WithMany(c => c.Notices)
+                .HasForeignKey(x => x.CountryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.CurrentVersion)
+                .WithMany()
+                .HasForeignKey(x => x.CurrentVersionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // TenderVersion configuration
+        modelBuilder.Entity<TenderVersion>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.RawHash).HasMaxLength(256).IsRequired();
+            e.Property(x => x.NormalizedHash).HasMaxLength(256).IsRequired();
+            e.Property(x => x.ChangeType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ChangedFieldsJson).HasMaxLength(4000);
+            e.Property(x => x.SnapshotJson).HasMaxLength(16000);
+
+            e.HasIndex(x => new { x.TenderNoticeId, x.VersionNo }).IsUnique();
+            e.HasIndex(x => x.DetectedAt);
+
+            e.HasOne(x => x.TenderNotice)
+                .WithMany(n => n.Versions)
+                .HasForeignKey(x => x.TenderNoticeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TenderDocument configuration
+        modelBuilder.Entity<TenderDocument>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.DocumentUrl).HasMaxLength(2000).IsRequired();
+            e.Property(x => x.FileName).HasMaxLength(500);
+            e.Property(x => x.FileType).HasMaxLength(100);
+            e.Property(x => x.FileHash).HasMaxLength(256);
+            e.Property(x => x.StoragePath).HasMaxLength(1000);
+
+            e.HasIndex(x => x.TenderNoticeId);
+            e.HasIndex(x => new { x.TenderNoticeId, x.FileHash });
+
+            e.HasOne(x => x.TenderNotice)
+                .WithMany(n => n.Documents)
+                .HasForeignKey(x => x.TenderNoticeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TenderIngestionRun configuration
+        modelBuilder.Entity<TenderIngestionRun>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Status).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Errors).HasMaxLength(4000);
+            e.Property(x => x.WorkerId).HasMaxLength(200);
+
+            e.HasIndex(x => new { x.SourceId, x.StartedAt });
+            e.HasIndex(x => x.Status);
+
+            e.HasOne(x => x.Source)
+                .WithMany(s => s.IngestionRuns)
+                .HasForeignKey(x => x.SourceId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TenderNotificationRule configuration
+        modelBuilder.Entity<TenderNotificationRule>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Scope).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UserId).HasMaxLength(200);
+            e.Property(x => x.Channels).HasMaxLength(200).IsRequired();
+            e.Property(x => x.CountryFilter).HasMaxLength(500);
+            e.Property(x => x.SectorFilter).HasMaxLength(500);
+            e.Property(x => x.AuthorityFilter).HasMaxLength(500);
+            e.Property(x => x.Keywords).HasMaxLength(2000);
+            e.Property(x => x.ValueMin).HasPrecision(18, 2);
+            e.Property(x => x.ValueMax).HasPrecision(18, 2);
+
+            e.HasIndex(x => x.IsActive);
+            e.HasIndex(x => new { x.Scope, x.UserId });
+        });
+
+        // TenderNotificationLog configuration
+        modelBuilder.Entity<TenderNotificationLog>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Channel).HasMaxLength(50).IsRequired();
+            e.Property(x => x.DeliveryStatus).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProviderMessageId).HasMaxLength(500);
+            e.Property(x => x.DedupKey).HasMaxLength(256).IsRequired();
+
+            e.HasIndex(x => x.DedupKey).IsUnique();
+            e.HasIndex(x => x.SentAt);
+            e.HasIndex(x => x.RuleId);
+
+            e.HasOne(x => x.Rule)
+                .WithMany(r => r.NotificationLogs)
+                .HasForeignKey(x => x.RuleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.TenderNotice)
+                .WithMany(n => n.NotificationLogs)
+                .HasForeignKey(x => x.TenderNoticeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(x => x.TenderVersion)
+                .WithMany(v => v.NotificationLogs)
+                .HasForeignKey(x => x.TenderVersionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // TenderAuditRaw configuration
+        modelBuilder.Entity<TenderAuditRaw>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ExternalId).HasMaxLength(500).IsRequired();
+            e.Property(x => x.RawPayloadJson).HasMaxLength(16000).IsRequired();
+            e.Property(x => x.PayloadHash).HasMaxLength(256).IsRequired();
+
+            e.HasIndex(x => new { x.SourceId, x.ExternalId, x.RetrievedAt });
+            e.HasIndex(x => x.PayloadHash);
+
+            e.HasOne(x => x.Source)
+                .WithMany(s => s.AuditRawRecords)
+                .HasForeignKey(x => x.SourceId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

@@ -220,6 +220,134 @@ export interface TechnologySummary {
   insights: TechnologyInsight[];
 }
 
+export interface TenderNotice {
+  id: string;
+  externalId: string;
+  sourceName: string;
+  countryIsoCode: string;
+  countryName: string;
+  authorityName?: string;
+  title: string;
+  summary?: string;
+  sector?: string;
+  category?: string;
+  publishDate?: string;
+  deadline?: string;
+  estimatedValue?: number;
+  currency?: string;
+  sourceUrl: string;
+  status: string;
+  lastChangedAt: string;
+  currentVersionNo: number;
+}
+
+export interface TenderNotificationRule {
+  id: string;
+  scope: string;
+  userId?: string;
+  channels: string;
+  countryFilter?: string;
+  sectorFilter?: string;
+  authorityFilter?: string;
+  valueMin?: number;
+  valueMax?: number;
+  keywords?: string;
+  isActive: boolean;
+  createdUtc: string;
+}
+
+export interface CreateTenderNotificationRule {
+  scope: string;
+  userId?: string;
+  channels: string;
+  countryFilter?: string;
+  sectorFilter?: string;
+  authorityFilter?: string;
+  valueMin?: number;
+  valueMax?: number;
+  keywords?: string;
+  isActive: boolean;
+}
+
+export interface TenderIngestionRun {
+  id: string;
+  sourceId: string;
+  sourceName: string;
+  startedAt: string;
+  endedAt?: string;
+  status: string;
+  itemsFetched: number;
+  itemsNew: number;
+  itemsUpdated: number;
+  errors?: string;
+  retryCount: number;
+  workerId?: string;
+}
+
+export interface TenderSource {
+  id: string;
+  name: string;
+  type: string;
+  baseUrl: string;
+  authMode?: string;
+  pollPriority: number;
+  pollIntervalMin: number;
+  rateLimitPolicyJson?: string;
+  connectorConfigJson?: string;
+  isCanary: boolean;
+  rolloutStage: string;
+  isEnabled: boolean;
+  legalNotes?: string;
+  owner?: string;
+  createdUtc: string;
+}
+
+export interface CreateTenderSource {
+  name: string;
+  type: string;
+  baseUrl: string;
+  authMode?: string;
+  pollPriority: number;
+  pollIntervalMin: number;
+  rateLimitPolicyJson?: string;
+  connectorConfigJson?: string;
+  isCanary: boolean;
+  rolloutStage: string;
+  isEnabled: boolean;
+  legalNotes?: string;
+  owner?: string;
+}
+
+export interface UpdateTenderSourceConnectorConfig {
+  connectorConfigJson?: string;
+}
+
+export interface UpdateTenderSourceRollout {
+  rolloutStage: string;
+  isCanary?: boolean;
+  isEnabled?: boolean;
+}
+
+export interface TenderRolloutSummary {
+  totalSources: number;
+  disabledCount: number;
+  canaryCount: number;
+  pilotCount: number;
+  generalCount: number;
+}
+
+export interface PromoteTenderRolloutRequest {
+  fromStage: string;
+  toStage: string;
+  onlyEnabled: boolean;
+}
+
+export interface PromoteTenderRolloutResult {
+  fromStage: string;
+  toStage: string;
+  updatedCount: number;
+}
+
 // Web Search and Monitoring Interfaces
 export interface WebSearchResult {
   id: string;
@@ -485,6 +613,89 @@ export class ApiService {
   getTechnologyInsights(filter?: TechnologyIntelligenceFilter): Observable<TechnologyInsight[]> {
     const query = this.buildTechQuery(filter);
     return this.http.get<TechnologyInsight[]>(`${this.apiUrl}/api/technology-intelligence/insights${query}`).pipe(catchError(this.handleError));
+  }
+
+  // Tender Monitoring
+  getSaudiTenders(pageNumber: number = 1, pageSize: number = 50): Observable<TenderNotice[]> {
+    return this.http
+      .get<TenderNotice[]>(`${this.apiUrl}/api/tenders/saudi?pageNumber=${pageNumber}&pageSize=${pageSize}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getMiddleEastTenders(pageNumber: number = 1, pageSize: number = 50): Observable<TenderNotice[]> {
+    return this.http
+      .get<TenderNotice[]>(`${this.apiUrl}/api/tenders/middle-east?pageNumber=${pageNumber}&pageSize=${pageSize}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getTenderRules(): Observable<TenderNotificationRule[]> {
+    return this.http.get<TenderNotificationRule[]>(`${this.apiUrl}/api/tenders/rules`).pipe(catchError(this.handleError));
+  }
+
+  createTenderRule(rule: CreateTenderNotificationRule): Observable<TenderNotificationRule> {
+    return this.http.post<TenderNotificationRule>(`${this.apiUrl}/api/tenders/rules`, rule).pipe(catchError(this.handleError));
+  }
+
+  updateTenderRule(id: string, rule: CreateTenderNotificationRule): Observable<TenderNotificationRule> {
+    return this.http.put<TenderNotificationRule>(`${this.apiUrl}/api/tenders/rules/${id}`, rule).pipe(catchError(this.handleError));
+  }
+
+  deleteTenderRule(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/api/tenders/rules/${id}`).pipe(catchError(this.handleError));
+  }
+
+  getFailedTenderRuns(maxItems: number = 100): Observable<TenderIngestionRun[]> {
+    return this.http
+      .get<TenderIngestionRun[]>(`${this.apiUrl}/api/tenders/runs/failed?maxItems=${maxItems}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getTenderSources(includeDisabled: boolean = true): Observable<TenderSource[]> {
+    return this.http
+      .get<TenderSource[]>(`${this.apiUrl}/api/tenders/sources?includeDisabled=${includeDisabled}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  createTenderSource(source: CreateTenderSource): Observable<TenderSource> {
+    return this.http.post<TenderSource>(`${this.apiUrl}/api/tenders/sources`, source).pipe(catchError(this.handleError));
+  }
+
+  updateTenderSource(id: string, source: CreateTenderSource): Observable<TenderSource> {
+    return this.http.put<TenderSource>(`${this.apiUrl}/api/tenders/sources/${id}`, source).pipe(catchError(this.handleError));
+  }
+
+  deleteTenderSource(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/api/tenders/sources/${id}`).pipe(catchError(this.handleError));
+  }
+
+  getTenderSourceConnectorConfig(id: string): Observable<UpdateTenderSourceConnectorConfig> {
+    return this.http
+      .get<UpdateTenderSourceConnectorConfig>(`${this.apiUrl}/api/tenders/sources/${id}/connector-config`)
+      .pipe(catchError(this.handleError));
+  }
+
+  updateTenderSourceConnectorConfig(id: string, payload: UpdateTenderSourceConnectorConfig): Observable<TenderSource> {
+    return this.http
+      .put<TenderSource>(`${this.apiUrl}/api/tenders/sources/${id}/connector-config`, payload)
+      .pipe(catchError(this.handleError));
+  }
+
+  updateTenderSourceRolloutStage(id: string, payload: UpdateTenderSourceRollout): Observable<TenderSource> {
+    return this.http
+      .put<TenderSource>(`${this.apiUrl}/api/tenders/sources/${id}/rollout-stage`, payload)
+      .pipe(catchError(this.handleError));
+  }
+
+  getTenderRolloutSummary(): Observable<TenderRolloutSummary> {
+    return this.http
+      .get<TenderRolloutSummary>(`${this.apiUrl}/api/tenders/sources/rollout/summary`)
+      .pipe(catchError(this.handleError));
+  }
+
+  promoteTenderRollout(payload: PromoteTenderRolloutRequest): Observable<PromoteTenderRolloutResult> {
+    return this.http
+      .put<PromoteTenderRolloutResult>(`${this.apiUrl}/api/tenders/sources/rollout/promote`, payload)
+      .pipe(catchError(this.handleError));
   }
 
   // Web Search and Keyword Monitoring
