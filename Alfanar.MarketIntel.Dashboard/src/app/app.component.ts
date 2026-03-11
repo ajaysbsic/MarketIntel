@@ -53,14 +53,17 @@ import { environment } from '../environments/environment';
               <li class="nav-section-title">🤖 AI Intelligence</li>
               <li><a routerLink="/intelligence-reports" routerLinkActive="active" (click)="closeSidebarOnMobile()">📋 Intelligence Reports</a></li>
               <li><a routerLink="/competitor-tracking" routerLinkActive="active" (click)="closeSidebarOnMobile()">🏢 Competitor Tracking</a></li>
-              <li><a routerLink="/trends" routerLinkActive="active" (click)="closeSidebarOnMobile()">📈 Trends & Analytics</a></li>
+              <!-- Hidden temporarily: Trends & Analytics -->
+              <!-- <li><a routerLink="/trends" routerLinkActive="active" (click)="closeSidebarOnMobile()">📈 Trends & Analytics</a></li> -->
               <li><a routerLink="/ai-chat" routerLinkActive="active" (click)="closeSidebarOnMobile()">💬 AI Chat</a></li>
 
               <!-- Monitoring & Configuration -->
               <li class="nav-section-title">⚙️ Configuration</li>
-              <li><a routerLink="/metrics-trends" routerLinkActive="active" (click)="closeSidebarOnMobile()">📈 Metrics & Trends</a></li>
+              <!-- Hidden temporarily: Metrics & Trends -->
+              <!-- <li><a routerLink="/metrics-trends" routerLinkActive="active" (click)="closeSidebarOnMobile()">📈 Metrics & Trends</a></li> -->
               <li><a routerLink="/monitoring" routerLinkActive="active" (click)="closeSidebarOnMobile()">📡 Feed Configuration</a></li>
-              <li><a routerLink="/keyword-monitors" routerLinkActive="active" (click)="closeSidebarOnMobile()">🔍 Keyword Monitors</a></li>
+              <!-- Hidden temporarily: Keyword Monitors -->
+              <!-- <li><a routerLink="/keyword-monitors" routerLinkActive="active" (click)="closeSidebarOnMobile()">🔍 Keyword Monitors</a></li> -->
               <li><a routerLink="/notification-preferences" routerLinkActive="active" (click)="closeSidebarOnMobile()">🔔 Notification Preferences</a></li>
 
               <!-- Information -->
