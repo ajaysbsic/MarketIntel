@@ -6,6 +6,8 @@ Supported source connector types:
 - seed: static notices in config (best for bootstrap/testing)
 - rss: RSS/Atom feeds mapped to tender notices
 - api-json: JSON endpoint with configurable field map
+- html-list: HTML listing page crawl (metadata-only, no document fetch)
+- html-static: low-frequency static HTML overview sources
 """
 
 import json
@@ -16,11 +18,15 @@ import signal
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+from urllib.parse import urljoin
 
 import feedparser
 import requests
+from bs4 import BeautifulSoup
 
 from api_client import MarketIntelApiClient
+from tender_link_classifier import classify_batch, classify_with_ai, score_link
+from tender_detail_scraper import enrich_notices
 
 
 logging.basicConfig(
@@ -136,8 +142,11 @@ class TenderWatcher:
     def _map_api_source_to_runtime(self, source: Dict[str, Any]) -> Dict[str, Any]:
         source_type = self._normalize_source_type(source.get("type"))
         connector = "api-json"
-        if source_type.upper() == "RSS":
+        source_type_upper = source_type.upper()
+        if source_type_upper == "RSS":
             connector = "rss"
+        elif source_type_upper in {"SCRAPE", "HTML_LIST", "HTML_STATIC"}:
+            connector = "html-list"
 
         mapped = {
             "name": source.get("name", "Unknown Source"),
@@ -328,6 +337,148 @@ class TenderWatcher:
 
         return notices
 
+    def _extract_html_list(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Two-stage smart extraction pipeline:
+        Stage 1 — Extract all <a> links, classify via heuristics (+ optional AI)
+        Stage 2 — Follow qualified links to detail pages for structured enrichment
+        """
+        url = source.get("url")
+        if not url:
+            return []
+
+        response = requests.get(url, timeout=source.get("timeout_seconds", 45), verify=self.config.get("verify_ssl", True))
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # ---- Stage 1: Candidate extraction + classification ---- #
+
+        link_url_hint = source.get("link_url_hint")
+        heuristic_threshold = int(source.get("heuristic_score_threshold",
+                                             self.config.get("heuristic_defaults", {}).get("score_threshold", 40)))
+        excluded_url_patterns = self.config.get("heuristic_defaults", {}).get("excluded_url_patterns")
+        excluded_title_patterns = self.config.get("heuristic_defaults", {}).get("excluded_title_patterns")
+
+        seen_urls: set = set()
+        candidates: List[Dict[str, Any]] = []
+
+        for anchor in soup.find_all("a", href=True):
+            href = anchor.get("href", "").strip()
+            if not href:
+                continue
+
+            abs_url = urljoin(url, href)
+
+            # Deduplicate by URL
+            if abs_url in seen_urls:
+                continue
+            seen_urls.add(abs_url)
+
+            title = anchor.get_text(" ", strip=True)
+
+            # Gather parent/sibling text for context
+            parent = anchor.parent
+            parent_text = parent.get_text(" ", strip=True)[:500] if parent else ""
+
+            candidates.append({
+                "url": abs_url,
+                "title": title,
+                "parent_text": parent_text,
+            })
+
+        # Classify
+        use_ai = source.get("use_ai_classification",
+                            self.config.get("ai_classification", {}).get("enabled", False))
+
+        if use_ai:
+            ai_config = self.config.get("ai_classification", {})
+            qualified = classify_with_ai(
+                candidates,
+                link_url_hint=link_url_hint,
+                heuristic_threshold=heuristic_threshold,
+                ai_pre_filter_threshold=ai_config.get("min_heuristic_score_for_ai", 20),
+                ai_confidence_threshold=ai_config.get("confidence_threshold", 0.8),
+                model_name=ai_config.get("model", "gemini-1.5-flash"),
+                max_batch_size=ai_config.get("max_batch_size", 50),
+                excluded_url_patterns=excluded_url_patterns,
+                excluded_title_patterns=excluded_title_patterns,
+            )
+        else:
+            qualified = classify_batch(
+                candidates,
+                link_url_hint=link_url_hint,
+                threshold=heuristic_threshold,
+                excluded_url_patterns=excluded_url_patterns,
+                excluded_title_patterns=excluded_title_patterns,
+            )
+
+        logger.info(
+            f"Source {source.get('name')}: {len(candidates)} links found, "
+            f"{len(qualified)} passed classification (threshold={heuristic_threshold})"
+        )
+
+        if not qualified:
+            return []
+
+        # ---- Stage 2: Detail page enrichment ---- #
+
+        detail_follow = source.get("detail_page_follow",
+                                   self.config.get("detail_scraping", {}).get("default_follow", True))
+
+        if detail_follow:
+            detail_config = self.config.get("detail_scraping", {})
+            max_pages = int(source.get("detail_pages_per_source",
+                                       detail_config.get("default_max_pages", 25)))
+            delay_ms = int(source.get("detail_fetch_delay_ms",
+                                      detail_config.get("default_delay_ms", 2000)))
+            timeout_s = int(detail_config.get("timeout_seconds", 15))
+            user_agent = detail_config.get("user_agent", "AlfanarMarketIntel/1.0 (+https://alfanar.com)")
+
+            enrich_notices(
+                qualified,
+                max_pages=max_pages,
+                delay_ms=delay_ms,
+                timeout=timeout_s,
+                verify_ssl=self.config.get("verify_ssl", True),
+                user_agent=user_agent,
+            )
+
+        # ---- Build notice dicts ---- #
+
+        notices: List[Dict[str, Any]] = []
+        max_items = int(source.get("max_items", 100))
+
+        for cand in qualified[:max_items]:
+            source_url = cand.get("url", url)
+            external_id = self._compute_dedup_key(source.get("name", "Unknown Source"), source_url)
+
+            mapped = {
+                "external_id": external_id,
+                "title": cand.get("title", ""),
+                "summary": cand.get("description"),
+                "sector": cand.get("sector") or source.get("sector"),
+                "category": cand.get("notice_type") or source.get("category"),
+                "publish_date": cand.get("posting_date"),
+                "deadline": cand.get("deadline"),
+                "estimated_value": cand.get("estimated_value"),
+                "currency": source.get("currency"),
+                "source_url": source_url,
+                "status": source.get("default_status", "Open"),
+                "reference_number": cand.get("reference_number"),
+                "procuring_entity": cand.get("procuring_entity"),
+                "financier": cand.get("financier"),
+                "classifier_score": cand.get("classifier_score"),
+                "ai_classification": cand.get("ai_classification"),
+            }
+
+            notices.append(self._normalize_seed_item(source, mapped))
+
+        return notices
+
+    def _extract_html_static(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        return self._extract_html_list(source)
+
     def _extract_notices(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
         connector = (source.get("connector") or "seed").lower()
         if connector == "seed":
@@ -336,6 +487,10 @@ class TenderWatcher:
             return self._extract_rss(source)
         if connector == "api-json":
             return self._extract_api_json(source)
+        if connector == "html-list":
+            return self._extract_html_list(source)
+        if connector == "html-static":
+            return self._extract_html_static(source)
         logger.warning(f"Unknown connector '{connector}' for source {source.get('name')}")
         return []
 

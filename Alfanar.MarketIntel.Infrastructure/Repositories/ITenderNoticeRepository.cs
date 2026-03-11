@@ -11,5 +11,7 @@ public interface ITenderNoticeRepository
     Task AddAsync(TenderNotice entity);
     Task UpdateAsync(TenderNotice entity);
     Task DeleteAsync(TenderNotice entity);
+    Task<IEnumerable<TenderNotice>> GetBySourceNameAsync(string sourceName);
+    Task DeleteRangeAsync(IEnumerable<TenderNotice> entities);
     Task SaveChangesAsync();
 }

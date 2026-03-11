@@ -264,3 +264,60 @@ This keeps ingestion stable while enabling later OCR/embedding/RAG scoring workf
 6. Notification rule API + dedup logic + dispatch integration.
 7. Dashboard tabs + filters + admin run status panel.
 8. Optional Phase 2 placeholder tables + event hook.
+
+## Saudi/GCC Rollout Baseline (Phase 0-2)
+
+### Source tiers
+
+- **Tier A (`html_list`, no login, canary-enabled)**
+  - Ministry of Finance - Tenders
+  - Monafasat (Private Sector Competitions)
+  - KSA Tenders Gate
+  - Saudi Electrical Tenders - TendersOnTime
+  - BidDetail - Electrical Tenders
+  - Energy, Power & Electrical Tenders - GlobalTenders
+  - GCC Tenders Gate
+  - Gulf Tender Gate
+  - Global Tenders - GCC Region
+  - UAE Tenders Gate
+- **Tier B (`html_static`, no login, low frequency)**
+  - National e-Procurement Portal (Gov Overview)
+- **Tier C (login-required, disabled until auth/legal approval)**
+  - Etimad Platform
+  - TendersInfo Gulf
+
+### Canonical metadata contract (detection-only)
+
+- `external_id`
+- `title`
+- `authority`
+- `country`
+- `posted_at`
+- `deadline`
+- `status`
+- `source_url`
+- `notice_type`
+- `sector`
+- `value_estimate`
+- `currency`
+- `crawl_timestamp`
+- `source_fingerprint`
+
+`value_estimate` and `currency` may be null for new sources until mapping stabilizes. Full document retrieval remains out of scope.
+
+### API-first onboarding flow
+
+- Use `POST /api/tenders/sources/seed-saudi-gcc` to ingest the full Saudi/GCC source list from control-plane JSON.
+- Seed payload file: `docs/saudi_gcc_tender_sources.seed.json`.
+- Convenience command: `pwsh ./scripts/Seed-SaudiGccTenderSources.ps1 -ApiBaseUrl http://localhost:5021`.
+- Endpoint behavior:
+  - upserts by source name;
+  - writes standardized `ConnectorConfigJson` for metadata-only listing crawl;
+  - assigns rollout defaults (`Canary` for Tier A/B, `Disabled` for Tier C);
+  - applies legal notes and polling caps via source records.
+
+### Watcher connector behavior
+
+- `html-list`: listing/card/table metadata extraction only (no document downloads).
+- `html-static`: same extraction path with low-frequency source poll interval.
+- `ConnectorConfigJson` remains the runtime source of truth consumed by `python_watcher/src/tender_watcher.py`.

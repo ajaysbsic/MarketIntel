@@ -75,6 +75,20 @@ public class TenderNoticeRepository : ITenderNoticeRepository
         await Task.CompletedTask;
     }
 
+    public async Task<IEnumerable<TenderNotice>> GetBySourceNameAsync(string sourceName)
+    {
+        return await _context.TenderNotices
+            .Include(x => x.Source)
+            .Where(x => x.Source.Name == sourceName)
+            .ToListAsync();
+    }
+
+    public async Task DeleteRangeAsync(IEnumerable<TenderNotice> entities)
+    {
+        _context.TenderNotices.RemoveRange(entities);
+        await Task.CompletedTask;
+    }
+
     public async Task SaveChangesAsync()
     {
         await _context.SaveChangesAsync();

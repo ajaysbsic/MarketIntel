@@ -14,19 +14,22 @@ public class TenderMonitoringController : ControllerBase
     private readonly ITenderSourceRepository _sourceRepository;
     private readonly ITenderNotificationRuleRepository _ruleRepository;
     private readonly ITenderIngestionRunRepository _ingestionRunRepository;
+    private readonly ITenderNoticeRepository _noticeRepository;
 
     public TenderMonitoringController(
         IConfiguration configuration,
         ITenderMonitoringService service,
         ITenderSourceRepository sourceRepository,
         ITenderNotificationRuleRepository ruleRepository,
-        ITenderIngestionRunRepository ingestionRunRepository)
+        ITenderIngestionRunRepository ingestionRunRepository,
+        ITenderNoticeRepository noticeRepository)
     {
         _configuration = configuration;
         _service = service;
         _sourceRepository = sourceRepository;
         _ruleRepository = ruleRepository;
         _ingestionRunRepository = ingestionRunRepository;
+        _noticeRepository = noticeRepository;
     }
 
     [HttpGet("feature-flags")]
@@ -133,6 +136,166 @@ public class TenderMonitoringController : ControllerBase
         await _sourceRepository.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetSources), new { id = entity.Id }, MapSource(entity));
+    }
+
+    [HttpPost("sources/seed-saudi-gcc")]
+    [ProducesResponseType(typeof(SeedSaudiGccTenderSourcesResponseDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SeedSaudiGccSources([FromBody] SeedSaudiGccTenderSourcesRequestDto request)
+    {
+        if (request.Countries == null || request.Countries.Count == 0)
+        {
+            return BadRequest(new { message = "Countries payload is required" });
+        }
+
+        var existing = await _sourceRepository.GetAllAsync(includeDisabled: true);
+        var existingByName = existing.ToDictionary(x => x.Name, x => x, StringComparer.OrdinalIgnoreCase);
+
+        var response = new SeedSaudiGccTenderSourcesResponseDto();
+
+        foreach (var countryEntry in request.Countries)
+        {
+            var countryKey = countryEntry.Key;
+            var groups = countryEntry.Value;
+
+            if (groups == null)
+            {
+                continue;
+            }
+
+            foreach (var groupEntry in groups)
+            {
+                var groupKey = groupEntry.Key;
+                var items = groupEntry.Value ?? new List<SeedTenderSourceItemDto>();
+
+                foreach (var item in items)
+                {
+                    if (string.IsNullOrWhiteSpace(item.Name) || string.IsNullOrWhiteSpace(item.Url))
+                    {
+                        response.Warnings.Add("Skipped source with missing Name or Url.");
+                        continue;
+                    }
+
+                    var tier = ResolveTier(item);
+                    IncrementTierCounter(response, tier);
+
+                    var rolloutStage = tier == "C" ? "Disabled" : "Canary";
+                    var enabled = tier != "C";
+                    var pollIntervalMin = tier switch
+                    {
+                        "A" => 60,
+                        "B" => 360,
+                        _ => 180
+                    };
+
+                    var rateLimitPolicyJson = JsonSerializer.Serialize(new
+                    {
+                        maxRequestsPerHour = tier switch
+                        {
+                            "A" => 12,
+                            "B" => 2,
+                            _ => 4
+                        },
+                        minDelayMs = 3000,
+                        backoff = "exponential-jitter"
+                    });
+
+                    var connectorConfigJson = JsonSerializer.Serialize(new
+                    {
+                        connector = ResolveConnector(item.SourceType),
+                        source_type = item.SourceType,
+                        tier,
+                        country_iso_code = ResolveCountryIso(countryKey, groupKey),
+                        country_name = ResolveCountryName(countryKey, groupKey),
+                        region_scope = ResolveRegionScope(countryKey),
+                        group = groupKey,
+                        metadata_mode = "metadata_only",
+                        crawl_mode = "listing_only_no_documents",
+                        requires_web_crawling = item.RequiresWebCrawling,
+                        requires_login = item.RequiresLogin,
+                        supports_metadata_only = item.SupportsMetadataOnly,
+                        canonical_fields = new[]
+                        {
+                            "external_id",
+                            "title",
+                            "authority",
+                            "country",
+                            "posted_at",
+                            "deadline",
+                            "status",
+                            "source_url",
+                            "notice_type",
+                            "sector",
+                            "value_estimate",
+                            "currency",
+                            "crawl_timestamp",
+                            "source_fingerprint"
+                        },
+                        source_fingerprint_strategy = "source_url+title+deadline",
+                        include_documents = false,
+                        // Smart extraction profile
+                        use_ai_classification = false,
+                        detail_page_follow = !item.RequiresLogin,
+                        detail_fetch_delay_ms = 2000,
+                        detail_pages_per_source = 25,
+                        heuristic_score_threshold = 40,
+                        link_url_hint = ResolveLinkUrlHint(item.Name, item.Url)
+                    });
+
+                    var legalNotes = BuildLegalNotes(item, tier);
+
+                    if (!existingByName.TryGetValue(item.Name.Trim(), out var entity))
+                    {
+                        entity = new Alfanar.MarketIntel.Domain.Entities.TenderSource
+                        {
+                            Name = item.Name.Trim(),
+                            Type = "Scrape",
+                            BaseUrl = item.Url.Trim(),
+                            AuthMode = item.RequiresLogin ? "LoginRequired" : "None",
+                            PollPriority = tier switch
+                            {
+                                "A" => 80,
+                                "B" => 120,
+                                _ => 150
+                            },
+                            PollIntervalMin = pollIntervalMin,
+                            RateLimitPolicyJson = rateLimitPolicyJson,
+                            ConnectorConfigJson = connectorConfigJson,
+                            IsCanary = tier != "C",
+                            RolloutStage = rolloutStage,
+                            IsEnabled = enabled,
+                            LegalNotes = legalNotes,
+                            Owner = "Tender-GCC-Rollout",
+                            CreatedUtc = DateTime.UtcNow
+                        };
+
+                        await _sourceRepository.AddAsync(entity);
+                        existingByName[entity.Name] = entity;
+                        response.CreatedCount++;
+                    }
+                    else
+                    {
+                        entity.Type = "Scrape";
+                        entity.BaseUrl = item.Url.Trim();
+                        entity.AuthMode = item.RequiresLogin ? "LoginRequired" : "None";
+                        entity.PollIntervalMin = pollIntervalMin;
+                        entity.RateLimitPolicyJson = rateLimitPolicyJson;
+                        entity.ConnectorConfigJson = connectorConfigJson;
+                        entity.IsCanary = tier != "C";
+                        entity.RolloutStage = rolloutStage;
+                        entity.IsEnabled = enabled;
+                        entity.LegalNotes = legalNotes;
+                        entity.Owner = "Tender-GCC-Rollout";
+                        await _sourceRepository.UpdateAsync(entity);
+                        response.UpdatedCount++;
+                    }
+
+                    response.TotalProcessed++;
+                }
+            }
+        }
+
+        await _sourceRepository.SaveChangesAsync();
+        return Ok(response);
     }
 
     [HttpPut("sources/{id:guid}")]
@@ -582,5 +745,154 @@ public class TenderMonitoringController : ControllerBase
     private static bool IsCanaryStage(string stage)
     {
         return stage is "Canary" or "Pilot";
+    }
+
+    private static string ResolveTier(SeedTenderSourceItemDto item)
+    {
+        if (item.RequiresLogin)
+        {
+            return "C";
+        }
+
+        if (string.Equals(item.SourceType, "html_static", StringComparison.OrdinalIgnoreCase))
+        {
+            return "B";
+        }
+
+        return "A";
+    }
+
+    private static void IncrementTierCounter(SeedSaudiGccTenderSourcesResponseDto response, string tier)
+    {
+        switch (tier)
+        {
+            case "A":
+                response.TierACount++;
+                break;
+            case "B":
+                response.TierBCount++;
+                break;
+            case "C":
+                response.TierCCount++;
+                break;
+        }
+    }
+
+    private static string ResolveConnector(string? sourceType)
+    {
+        if (string.Equals(sourceType, "html_static", StringComparison.OrdinalIgnoreCase))
+        {
+            return "html-static";
+        }
+
+        return "html-list";
+    }
+
+    private static string ResolveCountryIso(string countryKey, string groupKey)
+    {
+        if (string.Equals(countryKey, "saudi_arabia", StringComparison.OrdinalIgnoreCase))
+        {
+            return "SA";
+        }
+
+        if (string.Equals(groupKey, "uae", StringComparison.OrdinalIgnoreCase))
+        {
+            return "AE";
+        }
+
+        return "GCC";
+    }
+
+    private static string ResolveCountryName(string countryKey, string groupKey)
+    {
+        if (string.Equals(countryKey, "saudi_arabia", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Saudi Arabia";
+        }
+
+        if (string.Equals(groupKey, "uae", StringComparison.OrdinalIgnoreCase))
+        {
+            return "United Arab Emirates";
+        }
+
+        return "GCC Region";
+    }
+
+    private static string ResolveRegionScope(string countryKey)
+    {
+        return string.Equals(countryKey, "saudi_arabia", StringComparison.OrdinalIgnoreCase) ? "Saudi" : "MiddleEast";
+    }
+
+    private static string BuildLegalNotes(SeedTenderSourceItemDto item, string tier)
+    {
+        var notes = item.Notes?.Trim() ?? string.Empty;
+        var loginNote = item.RequiresLogin
+            ? "Login-required source. Keep Disabled until legal/compliance approval and auth smoke tests pass."
+            : "Metadata-only listing crawl. Do not fetch tender documents.";
+        var robotsNote = "Respect robots/ToS and configured polling cap.";
+
+        return string.Join(" ", new[]
+        {
+            $"Tier {tier}.",
+            loginNote,
+            robotsNote,
+            notes
+        }.Where(x => !string.IsNullOrWhiteSpace(x)));
+    }
+
+    private static string ResolveLinkUrlHint(string name, string url)
+    {
+        var nameLower = name.ToLowerInvariant();
+        if (nameLower.Contains("tendersontime")) return "/tenders-details/";
+        if (nameLower.Contains("monafasat") || nameLower.Contains("etimad")) return "/tender/";
+        if (nameLower.Contains("ministry of finance") || nameLower.Contains("mof")) return "/en/tenders/";
+        if (nameLower.Contains("ksa tenders gate")) return "/tender";
+        if (nameLower.Contains("invest saudi")) return "/project";
+        if (nameLower.Contains("swcc")) return "/tender";
+        if (nameLower.Contains("sec procurement") || nameLower.Contains("sec ")) return "/tender";
+        if (nameLower.Contains("acwa")) return "/procurement";
+        if (nameLower.Contains("e-procurement")) return "/tender";
+        if (nameLower.Contains("dubai") && nameLower.Contains("tender")) return "/tender";
+        if (nameLower.Contains("dewa")) return "/tender";
+        if (nameLower.Contains("biddetail")) return "/tenders/";
+        if (nameLower.Contains("globaltender")) return "/tenders";
+        if (nameLower.Contains("gcc") && nameLower.Contains("tender")) return "/tender";
+        if (nameLower.Contains("gulf") && nameLower.Contains("tender")) return "/tender";
+        if (nameLower.Contains("tendersinfo")) return "/tender";
+        // Fallback: try to extract path pattern from URL
+        try
+        {
+            var uri = new Uri(url);
+            var segments = uri.AbsolutePath.Trim('/').Split('/');
+            if (segments.Length >= 1 && segments[0].Length > 2)
+                return "/" + segments[0] + "/";
+        }
+        catch { }
+        return "/tender";
+    }
+
+    // ---- Purge notices by source name ---- //
+
+    [HttpDelete("notices/purge-by-source")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> PurgeNoticesBySource([FromQuery] string sourceName)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+        {
+            return BadRequest(new { message = "sourceName query parameter is required" });
+        }
+
+        var notices = await _noticeRepository.GetBySourceNameAsync(sourceName.Trim());
+        var noticeList = notices.ToList();
+
+        if (noticeList.Count == 0)
+        {
+            return Ok(new { deletedCount = 0, sourceName = sourceName.Trim(), message = "No notices found for this source" });
+        }
+
+        await _noticeRepository.DeleteRangeAsync(noticeList);
+        await _noticeRepository.SaveChangesAsync();
+
+        return Ok(new { deletedCount = noticeList.Count, sourceName = sourceName.Trim() });
     }
 }

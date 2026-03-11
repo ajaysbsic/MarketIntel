@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Alfanar.MarketIntel.Application.DTOs;
 
 public class TenderIngestRequestDto
@@ -176,4 +178,40 @@ public class PromoteTenderRolloutResultDto
     public string FromStage { get; set; } = string.Empty;
     public string ToStage { get; set; } = string.Empty;
     public int UpdatedCount { get; set; }
+}
+
+public class SeedTenderSourceItemDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("requires_web_crawling")]
+    public bool RequiresWebCrawling { get; set; } = true;
+
+    [JsonPropertyName("requires_login")]
+    public bool RequiresLogin { get; set; }
+
+    [JsonPropertyName("supports_metadata_only")]
+    public bool SupportsMetadataOnly { get; set; } = true;
+    public string? Notes { get; set; }
+
+    [JsonPropertyName("source_type")]
+    public string SourceType { get; set; } = "html_list";
+}
+
+public class SeedSaudiGccTenderSourcesRequestDto
+{
+    public Dictionary<string, Dictionary<string, List<SeedTenderSourceItemDto>>> Countries { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public class SeedSaudiGccTenderSourcesResponseDto
+{
+    public int TotalProcessed { get; set; }
+    public int CreatedCount { get; set; }
+    public int UpdatedCount { get; set; }
+    public int TierACount { get; set; }
+    public int TierBCount { get; set; }
+    public int TierCCount { get; set; }
+    public List<string> Warnings { get; set; } = new();
 }
