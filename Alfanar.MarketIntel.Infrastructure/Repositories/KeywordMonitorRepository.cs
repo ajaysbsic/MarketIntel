@@ -48,8 +48,12 @@ public class KeywordMonitorRepository : IKeywordMonitorRepository
 
     public async Task<KeywordMonitor?> GetByKeywordAsync(string keyword)
     {
-        return await _context.KeywordMonitors
-            .FirstOrDefaultAsync(k => k.Keyword.ToLower() == keyword.ToLower());
+        var normalizedKeyword = NormalizeKeyword(keyword);
+        var monitors = await _context.KeywordMonitors
+            .AsNoTracking()
+            .ToListAsync();
+
+        return monitors.FirstOrDefault(k => NormalizeKeyword(k.Keyword) == normalizedKeyword);
     }
 
     public async Task<List<KeywordMonitor>> GetActiveMonitorsAsync()
@@ -76,5 +80,14 @@ public class KeywordMonitorRepository : IKeywordMonitorRepository
         return await _context.KeywordMonitors
             .Include(k => k.WebSearchResults)
             .FirstOrDefaultAsync(k => k.Id == id);
+    }
+
+    private static string NormalizeKeyword(string? keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return string.Empty;
+
+        return string.Join(' ', keyword.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            .ToLowerInvariant();
     }
 }

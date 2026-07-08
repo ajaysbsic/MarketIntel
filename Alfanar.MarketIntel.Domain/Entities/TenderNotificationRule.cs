@@ -9,6 +9,11 @@ public class TenderNotificationRule
     public string? CountryFilter { get; set; }
     public string? SectorFilter { get; set; }
     public string? AuthorityFilter { get; set; }
+    /// <summary>
+    /// Comma-separated list of company/entity name aliases (e.g. "SEC,Saudi Electricity,Water Authority").
+    /// Matched against title, summary, authority name, and source name of the tender (case-insensitive contains).
+    /// </summary>
+    public string? EntityFilter { get; set; }
     public decimal? ValueMin { get; set; }
     public decimal? ValueMax { get; set; }
     public string? Keywords { get; set; }

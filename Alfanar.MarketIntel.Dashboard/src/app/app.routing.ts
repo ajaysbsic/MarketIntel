@@ -35,6 +35,10 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/tender-monitoring/tender-monitoring.component').then(m => m.TenderMonitoringComponent),
   },
   {
+    path: 'tender-executive',
+    loadComponent: () => import('./modules/tender-executive/tender-executive.component').then(m => m.TenderExecutiveComponent),
+  },
+  {
     path: 'monitoring',
     loadComponent: () => import('./modules/monitoring/monitoring.component').then(m => m.MonitoringComponent),
   },

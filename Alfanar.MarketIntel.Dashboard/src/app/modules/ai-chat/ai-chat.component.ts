@@ -60,14 +60,14 @@ interface Citation {
 
             <!-- Confidence Level -->
             <div class="confidence-indicator" 
-                 [ngClass]="{'high': message.aiResponse?.confidence > 0.8, 'medium': message.aiResponse?.confidence > 0.5, 'low': message.aiResponse?.confidence <= 0.5}">
-              Confidence: {{ (message.aiResponse?.confidence * 100).toFixed(0) }}%
+                 [ngClass]="{'high': (message.aiResponse?.confidence ?? 0) > 0.8, 'medium': (message.aiResponse?.confidence ?? 0) > 0.5 && (message.aiResponse?.confidence ?? 0) <= 0.8, 'low': (message.aiResponse?.confidence ?? 0) <= 0.5}">
+              Confidence: {{ ((message.aiResponse?.confidence ?? 0) * 100).toFixed(0) }}%
             </div>
 
             <!-- Citations -->
-            <div *ngIf="message.aiResponse?.citations && message.aiResponse.citations.length > 0" class="citations">
+            <div *ngIf="(message.aiResponse?.citations?.length ?? 0) > 0" class="citations">
               <h4>📚 Sources Used:</h4>
-              <div *ngFor="let citation of message.aiResponse.citations" class="citation">
+              <div *ngFor="let citation of (message.aiResponse?.citations || [])" class="citation">
                 <a [href]="citation.url" target="_blank">
                   <strong>{{ citation.title }}</strong>
                 </a>
@@ -77,10 +77,10 @@ interface Citation {
             </div>
 
             <!-- Related Queries -->
-            <div *ngIf="message.aiResponse?.relatedQueries && message.aiResponse.relatedQueries.length > 0" class="related-queries">
+            <div *ngIf="(message.aiResponse?.relatedQueries?.length ?? 0) > 0" class="related-queries">
               <h4>💡 Related Queries:</h4>
               <div class="query-buttons">
-                <button *ngFor="let query of message.aiResponse.relatedQueries" 
+                <button *ngFor="let query of (message.aiResponse?.relatedQueries || [])" 
                         (click)="onRelatedQueryClick(query)"
                         class="query-button">
                   {{ query }}

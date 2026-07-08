@@ -1,0 +1,136 @@
+{
+  "countries": {
+    "saudi_arabia": {
+      "government": [
+        {
+          "name": "Etimad Platform",
+          "url": "https://portal.etimad.sa/en-us/services/servicedetails?ServiceGuid=4b226dda-1617-4a9e-b6dd-5666d985db0e",
+          "requires_web_crawling": true,
+          "requires_login": true,
+          "supports_metadata_only": true,
+          "notes": "Primary source for official SA government tenders. Listing pages expose metadata even without downloading documents.",
+          "source_type": "html_list",
+          "link_url_hint": "/tender/"
+        },
+        {
+          "name": "Ministry of Finance - Tenders",
+          "url": "https://mof.gov.sa/en/tenders/Pages/default.aspx",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/en/tenders/"
+        },
+        {
+          "name": "National e-Procurement Portal (Gov Overview)",
+          "url": "https://www.my.gov.sa/en/content/e-procurement",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_static",
+          "link_url_hint": "/tender"
+        }
+      ],
+      "semi_government_private": [
+        {
+          "name": "Monafasat (Private Sector Competitions)",
+          "url": "https://www.monafasat.sa/en",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tender/"
+        },
+        {
+          "name": "KSA Tenders Gate",
+          "url": "https://ksatendersgate.com/",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tender"
+        }
+      ],
+      "sector_electrical": [
+        {
+          "name": "Saudi Electrical Tenders - TendersOnTime",
+          "url": "https://www.tendersontime.com/saudi-arabia-tenders/electrical-tenders/",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tenders-details/"
+        },
+        {
+          "name": "BidDetail - Electrical Tenders",
+          "url": "https://www.biddetail.com/saudi-arabia-tenders/electrical-tenders",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tenders/"
+        },
+        {
+          "name": "Energy, Power & Electrical Tenders - GlobalTenders",
+          "url": "https://www.globaltenders.com/saudi-arabia/sa-energy-power-electrical-tenders",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tenders"
+        }
+      ]
+    },
+    "gcc": {
+      "regional": [
+        {
+          "name": "GCC Tenders Gate",
+          "url": "https://gcctendergate.com/",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tender"
+        },
+        {
+          "name": "Gulf Tender Gate",
+          "url": "https://gulftendergate.com/",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tender"
+        },
+        {
+          "name": "TendersInfo Gulf",
+          "url": "https://www.tendersinfogulf.com/",
+          "requires_web_crawling": true,
+          "requires_login": true,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tender"
+        },
+        {
+          "name": "Global Tenders - GCC Region",
+          "url": "https://www.globaltenders.com/gcc-tenders",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tenders"
+        }
+      ],
+      "uae": [
+        {
+          "name": "UAE Tenders Gate",
+          "url": "https://uaebusinessgate.ae/",
+          "requires_web_crawling": true,
+          "requires_login": false,
+          "supports_metadata_only": true,
+          "source_type": "html_list",
+          "link_url_hint": "/tender"
+        }
+      ]
+    }
+  }
+}

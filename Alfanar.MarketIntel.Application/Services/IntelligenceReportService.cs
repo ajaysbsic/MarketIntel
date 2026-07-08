@@ -49,6 +49,8 @@ public class IntelligenceReportService : IIntelligenceReportService
     {
         try
         {
+            request.Keyword = NormalizeKeywordInput(request.Keyword);
+
             if (string.IsNullOrWhiteSpace(request.Keyword))
                 return Result<IntelligenceReportDto>.Failure("Keyword is required");
 
@@ -555,6 +557,8 @@ Risks:
     {
         try
         {
+            keyword = NormalizeKeywordInput(keyword);
+
             if (string.IsNullOrWhiteSpace(keyword))
                 return Result<PagedResultDto<IntelligenceReportSummaryDto>>.Failure("Keyword is required");
 
@@ -676,6 +680,8 @@ Risks:
     {
         try
         {
+            keyword = NormalizeKeywordInput(keyword);
+
             if (string.IsNullOrWhiteSpace(keyword))
                 return Result<IntelligenceReportDto>.Failure("Keyword is required");
 
@@ -850,6 +856,14 @@ Risks:
             : string.Join(" ", highlights);
 
         return $"{sectionTitle} for {keyword}: {summary}";
+    }
+
+    private static string NormalizeKeywordInput(string? keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return string.Empty;
+
+        return string.Join(' ', keyword.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
     }
 
     private static string TrimToSentence(string text, int maxChars)

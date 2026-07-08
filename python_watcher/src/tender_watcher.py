@@ -8,11 +8,13 @@ Supported source connector types:
 - api-json: JSON endpoint with configurable field map
 - html-list: HTML listing page crawl (metadata-only, no document fetch)
 - html-static: low-frequency static HTML overview sources
+- html-browser: browser-based HTML crawl for authenticated or JS-heavy portals (for example Etimad)
 """
 
 import json
 import logging
 import hashlib
+import os
 import time
 import signal
 from pathlib import Path
@@ -252,11 +254,23 @@ class TenderWatcher:
 
     def _normalize_seed_item(self, source: Dict[str, Any], item: Dict[str, Any]) -> Dict[str, Any]:
         defaults = self._source_defaults(source)
+        authority_name = (
+            item.get("authority_name")
+            or item.get("procuring_entity")
+            or item.get("authority")
+            or defaults.get("authorityName")
+        )
+        country_iso = item.get("country_iso_code") or defaults.get("countryIsoCode")
+        country_name = item.get("country_name") or defaults.get("countryName")
+
         return {
             **defaults,
+            "countryIsoCode": country_iso,
+            "countryName": country_name,
+            "authorityName": authority_name,
             "externalId": item.get("external_id") or item.get("id") or item.get("url") or item.get("title", ""),
             "title": item.get("title", ""),
-            "summary": item.get("summary"),
+            "summary": item.get("summary") or item.get("description"),
             "sector": item.get("sector"),
             "category": item.get("category"),
             "publishDate": self._parse_datetime(item.get("publish_date")) or datetime.utcnow().isoformat(),
@@ -337,7 +351,87 @@ class TenderWatcher:
 
         return notices
 
-    def _extract_html_list(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _fetch_page_html(self, source: Dict[str, Any], use_browser: bool = False) -> str:
+        url = source.get("url")
+        if not url:
+            return ""
+
+        timeout_seconds = int(source.get("timeout_seconds", 45))
+        verify_ssl = self.config.get("verify_ssl", True)
+        user_agent = self.config.get("detail_scraping", {}).get("user_agent", "AlfanarMarketIntel/1.0 (+https://alfanar.com)")
+
+        if not use_browser:
+            try:
+                response = requests.get(
+                    url,
+                    timeout=timeout_seconds,
+                    verify=verify_ssl,
+                    headers={"User-Agent": user_agent, "Accept-Language": "en-US,en;q=0.9"}
+                )
+                response.raise_for_status()
+                return response.text
+            except requests.exceptions.SSLError:
+                logger.warning(f"SSL error fetching {url}; retrying with verify=False")
+                response = requests.get(
+                    url,
+                    timeout=timeout_seconds,
+                    verify=False,
+                    headers={"User-Agent": user_agent, "Accept-Language": "en-US,en;q=0.9"}
+                )
+                response.raise_for_status()
+                return response.text
+
+        try:
+            from playwright.sync_api import sync_playwright
+        except Exception as ex:
+            logger.warning(f"Playwright browser mode unavailable for source {source.get('name')}: {ex}")
+            return ""
+
+        browser_auth = source.get("browser_auth", {}) or {}
+        login_url = browser_auth.get("login_url")
+        username = os.getenv(browser_auth.get("username_env", "ETIMAD_USERNAME"), browser_auth.get("username", ""))
+        password = os.getenv(browser_auth.get("password_env", "ETIMAD_PASSWORD"), browser_auth.get("password", ""))
+        username_selector = browser_auth.get("username_selector")
+        password_selector = browser_auth.get("password_selector")
+        submit_selector = browser_auth.get("submit_selector")
+        wait_selector = browser_auth.get("post_login_wait_selector")
+        storage_state_path = browser_auth.get("storage_state_path")
+
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=browser_auth.get("headless", True))
+            context_kwargs: Dict[str, Any] = {"user_agent": user_agent}
+            if storage_state_path and Path(storage_state_path).exists():
+                context_kwargs["storage_state"] = storage_state_path
+            context = browser.new_context(**context_kwargs)
+            page = context.new_page()
+
+            if login_url:
+                page.goto(login_url, wait_until="domcontentloaded", timeout=timeout_seconds * 1000)
+                if username and password and username_selector and password_selector and submit_selector:
+                    page.fill(username_selector, username)
+                    page.fill(password_selector, password)
+                    page.click(submit_selector)
+                    if wait_selector:
+                        page.wait_for_selector(wait_selector, timeout=timeout_seconds * 1000)
+                    else:
+                        page.wait_for_load_state("networkidle", timeout=timeout_seconds * 1000)
+                else:
+                    logger.warning(
+                        f"Browser-auth source {source.get('name')} is missing login credentials/selectors; attempting public page load only"
+                    )
+
+            page.goto(url, wait_until="domcontentloaded", timeout=timeout_seconds * 1000)
+            page.wait_for_load_state("networkidle", timeout=timeout_seconds * 1000)
+            html = page.content()
+
+            if storage_state_path:
+                context.storage_state(path=storage_state_path)
+
+            context.close()
+            browser.close()
+            return html
+
+    def _extract_html_list(self, source: Dict[str, Any], use_browser: bool = False) -> List[Dict[str, Any]]:
         """
         Two-stage smart extraction pipeline:
         Stage 1 — Extract all <a> links, classify via heuristics (+ optional AI)
@@ -347,10 +441,11 @@ class TenderWatcher:
         if not url:
             return []
 
-        response = requests.get(url, timeout=source.get("timeout_seconds", 45), verify=self.config.get("verify_ssl", True))
-        response.raise_for_status()
+        html = self._fetch_page_html(source, use_browser=use_browser)
+        if not html:
+            return []
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(html, "html.parser")
 
         # ---- Stage 1: Candidate extraction + classification ---- #
 
@@ -479,6 +574,9 @@ class TenderWatcher:
     def _extract_html_static(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
         return self._extract_html_list(source)
 
+    def _extract_html_browser(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
+        return self._extract_html_list(source, use_browser=True)
+
     def _extract_notices(self, source: Dict[str, Any]) -> List[Dict[str, Any]]:
         connector = (source.get("connector") or "seed").lower()
         if connector == "seed":
@@ -491,6 +589,8 @@ class TenderWatcher:
             return self._extract_html_list(source)
         if connector == "html-static":
             return self._extract_html_static(source)
+        if connector == "html-browser":
+            return self._extract_html_browser(source)
         logger.warning(f"Unknown connector '{connector}' for source {source.get('name')}")
         return []
 

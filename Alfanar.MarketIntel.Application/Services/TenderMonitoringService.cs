@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Alfanar.MarketIntel.Application.Common;
 using Alfanar.MarketIntel.Application.DTOs;
 using Alfanar.MarketIntel.Application.Interfaces;
@@ -12,6 +14,54 @@ namespace Alfanar.MarketIntel.Application.Services;
 
 public class TenderMonitoringService : ITenderMonitoringService
 {
+    private static readonly IReadOnlyDictionary<string, string[]> EntityAliasRegistry =
+        new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["sec"] = new[]
+            {
+                "saudi electricity company",
+                "saudi electricity",
+                "electricity company",
+                "s.e.c",
+                "sec"
+            },
+            ["water-authorities"] = new[]
+            {
+                "national water company",
+                "nwc",
+                "saline water conversion corporation",
+                "swcc",
+                "marafiq",
+                "saudi water authority",
+                "saudi water partnership company",
+                "water transmission company",
+                "water authority"
+            },
+            ["gulf-construction"] = new[]
+            {
+                "neom",
+                "roshn",
+                "red sea global",
+                "diriyah company",
+                "qiddiya"
+            },
+            ["engineering-industrial"] = new[]
+            {
+                "saudi council of engineers",
+                "kacst",
+                "sabic",
+                "aramco",
+                "maaden"
+            }
+        };
+
+    private static readonly HashSet<string> IgnoredEntityTokens = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "all",
+        "saudi",
+        "gulf"
+    };
+
     private readonly ITenderSourceRepository _sourceRepository;
     private readonly ITenderNoticeRepository _noticeRepository;
     private readonly ITenderVersionRepository _versionRepository;
@@ -69,7 +119,8 @@ public class TenderMonitoringService : ITenderMonitoringService
             await _dbContext.TenderIngestionRuns.AddAsync(ingestionRun);
 
             var country = await GetOrCreateCountryAsync(request.CountryIsoCode, request.CountryName);
-            var authorityId = await GetOrCreateAuthorityIdAsync(country.Id, request.AuthorityName);
+            var authorityName = ResolveAuthorityName(request);
+            var authorityId = await GetOrCreateAuthorityIdAsync(country.Id, authorityName);
 
             var normalizedHash = ComputeHash($"{request.Title}|{request.Summary}|{request.Status}|{request.Deadline:O}|{request.EstimatedValue}");
             var rawHash = string.IsNullOrWhiteSpace(request.RawPayloadHash)
@@ -163,6 +214,11 @@ public class TenderMonitoringService : ITenderMonitoringService
             existing.LastSeenAt = DateTime.UtcNow;
             if (existing.ContentHash == normalizedHash)
             {
+                if (authorityId.HasValue && existing.AuthorityId != authorityId)
+                {
+                    existing.AuthorityId = authorityId;
+                }
+
                 ingestionRun.ItemsNew = 0;
                 ingestionRun.ItemsUpdated = 0;
                 ingestionRun.Status = "Completed";
@@ -288,11 +344,39 @@ public class TenderMonitoringService : ITenderMonitoringService
         }
     }
 
-    public async Task<Result<List<TenderNoticeDto>>> GetSaudiNoticesAsync(int pageNumber = 1, int pageSize = 50)
+    public async Task<Result<List<TenderNoticeDto>>> GetSaudiNoticesAsync(int pageNumber = 1, int pageSize = 50, TenderQueryFilterDto? filter = null)
     {
         try
         {
-            var notices = await _noticeRepository.GetByCountryIsoAsync("SA", pageNumber, pageSize);
+            var query = _dbContext.TenderNotices
+                .Include(x => x.Source)
+                .Include(x => x.Authority)
+                .Include(x => x.Country)
+                .Include(x => x.CurrentVersion)
+                .AsQueryable();
+
+            if (filter?.IncludeGcc == true)
+                query = query.Where(x => x.Country.RegionGroup == "MiddleEast" || x.Country.IsoCode == "SA");
+            else
+                query = query.Where(x => x.Country.IsoCode == "SA");
+
+            query = ApplyCommonFilters(query, filter);
+
+            var notices = await query
+                .OrderByDescending(x => x.PublishDate)
+                .ThenByDescending(x => x.LastChangedAt)
+                .ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(filter?.EntityFilter))
+            {
+                notices = notices.Where(x => EntityFilterMatches(filter.EntityFilter, x)).ToList();
+            }
+
+            notices = notices
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
             return Result<List<TenderNoticeDto>>.Success(notices.Select(MapNotice).ToList());
         }
         catch (Exception ex)
@@ -301,21 +385,34 @@ public class TenderMonitoringService : ITenderMonitoringService
         }
     }
 
-    public async Task<Result<List<TenderNoticeDto>>> GetMiddleEastNoticesAsync(int pageNumber = 1, int pageSize = 50)
+    public async Task<Result<List<TenderNoticeDto>>> GetMiddleEastNoticesAsync(int pageNumber = 1, int pageSize = 50, TenderQueryFilterDto? filter = null)
     {
         try
         {
-            var notices = await _dbContext.TenderNotices
+            var query = _dbContext.TenderNotices
                 .Include(x => x.Source)
                 .Include(x => x.Authority)
                 .Include(x => x.Country)
                 .Include(x => x.CurrentVersion)
                 .Where(x => x.Country.RegionGroup == "MiddleEast" && x.Country.IsoCode != "SA")
+                .AsQueryable();
+
+            query = ApplyCommonFilters(query, filter);
+
+            var notices = await query
                 .OrderByDescending(x => x.PublishDate)
                 .ThenByDescending(x => x.LastChangedAt)
+                .ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(filter?.EntityFilter))
+            {
+                notices = notices.Where(x => EntityFilterMatches(filter.EntityFilter, x)).ToList();
+            }
+
+            notices = notices
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToList();
 
             return Result<List<TenderNoticeDto>>.Success(notices.Select(MapNotice).ToList());
         }
@@ -323,6 +420,30 @@ public class TenderMonitoringService : ITenderMonitoringService
         {
             return Result<List<TenderNoticeDto>>.Failure($"Failed to load Middle East tenders: {ex.Message}");
         }
+    }
+
+    private static IQueryable<TenderNotice> ApplyCommonFilters(IQueryable<TenderNotice> query, TenderQueryFilterDto? filter)
+    {
+        query = ApplyQualityGuards(query);
+
+        if (filter == null)
+        {
+            return query;
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.SectorFilter))
+        {
+            var sector = filter.SectorFilter.Trim().ToUpperInvariant();
+            query = query.Where(x => x.Sector != null && x.Sector.ToUpper() == sector);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.StatusFilter))
+        {
+            var status = filter.StatusFilter.Trim().ToUpperInvariant();
+            query = query.Where(x => x.Status != null && x.Status.ToUpper() == status);
+        }
+
+        return query;
     }
 
     private async Task<TenderSource> GetOrCreateSourceAsync(TenderIngestRequestDto request)
@@ -472,7 +593,9 @@ public class TenderMonitoringService : ITenderMonitoringService
                     Channel = channel,
                     SentAt = DateTime.UtcNow,
                     DeliveryStatus = "Queued",
-                    DedupKey = dedupKey
+                    DedupKey = dedupKey,
+                    NotificationTitle = $"New Tender: {notice.Title}",
+                    NotificationBody = $"{notice.Authority?.Name ?? notice.Source?.Name} — {notice.Sector ?? notice.Category} | Deadline: {notice.Deadline?.ToString("yyyy-MM-dd") ?? "TBD"}"
                 });
 
                 _logger.LogInformation(
@@ -539,7 +662,185 @@ public class TenderMonitoringService : ITenderMonitoringService
             return false;
         }
 
+        if (!EntityFilterMatches(rule.EntityFilter, notice))
+        {
+            return false;
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// Matches canonical entity groups or free-text aliases against the tender authority,
+    /// source, and (for longer phrases) the title/summary.
+    /// </summary>
+    private static bool EntityFilterMatches(string? entityFilterCsv, TenderNotice notice)
+    {
+        var resolvedTerms = ResolveEntityTerms(entityFilterCsv);
+        if (resolvedTerms.Count == 0)
+        {
+            return true;
+        }
+
+        var authorityAliasTerms = GetAuthorityAliasTerms(notice.Authority?.AliasesJson);
+        var authorityHaystack = $"{notice.Authority?.NormalizedName} {notice.Authority?.Name} {string.Join(' ', authorityAliasTerms)}"
+            .ToUpperInvariant();
+        var contentHaystack = $"{notice.Title} {notice.Summary}"
+            .ToUpperInvariant();
+
+        foreach (var term in resolvedTerms.Select(x => x.ToUpperInvariant()))
+        {
+            if (ContainsAliasTerm(authorityHaystack, term))
+            {
+                return true;
+            }
+
+            if (term.Length >= 5 && ContainsAliasTerm(contentHaystack, term))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static IQueryable<TenderNotice> ApplyQualityGuards(IQueryable<TenderNotice> query)
+    {
+        return query.Where(x =>
+            x.Title != null &&
+            x.Title.Trim() != string.Empty &&
+            x.Title.ToUpper() != "TENDERS" &&
+            !x.Title.ToUpper().Contains("VIEW DETAILS") &&
+            !x.Title.ToUpper().Contains("GLOSSARY") &&
+            !x.Title.ToUpper().Contains("CONTRACTS AND PROJECTS") &&
+            !x.Title.ToUpper().Contains("TENDERS LIST") &&
+            !x.Title.ToUpper().Contains("CURRENTLY SELECTED") &&
+            !x.Title.ToUpper().Contains("SPECIAL COLORS") &&
+            !x.Title.ToUpper().Contains("START SERVICE") &&
+            !x.Title.ToUpper().Contains("CONTRACT AWARD") &&
+            !x.Title.ToUpper().Contains("CONTRACT AWARDS") &&
+            !x.Title.ToUpper().Contains("TENDERS DATABASE") &&
+            !x.Title.ToUpper().Contains("TENDERS POSTED BY") &&
+            !x.Title.ToUpper().Contains("TENDERS BY FINANCIERS") &&
+            !x.Title.ToUpper().Contains("TENDERS BY COUNTRY") &&
+            !x.Title.ToUpper().Contains("TENDERS BY GEO-POLITICAL") &&
+            !x.Title.ToUpper().Contains("TENDERS BY REGION") &&
+            (x.SourceUrl == null ||
+                (!x.SourceUrl.ToUpper().Contains("TWITTER.COM") &&
+                 !x.SourceUrl.ToUpper().Contains("X.COM") &&
+                 !x.SourceUrl.ToUpper().Contains("FACEBOOK.COM") &&
+                 !x.SourceUrl.ToUpper().Contains("LINKEDIN.COM") &&
+                 !x.SourceUrl.ToUpper().Contains("YOUTUBE.COM"))));
+    }
+
+    private static bool ContainsAliasTerm(string haystackUpper, string termUpper)
+    {
+        if (string.IsNullOrWhiteSpace(termUpper))
+        {
+            return false;
+        }
+
+        if (termUpper.Length <= 4 && termUpper.All(char.IsLetterOrDigit))
+        {
+            return Regex.IsMatch(haystackUpper, $@"(^|[^A-Z0-9]){Regex.Escape(termUpper)}([^A-Z0-9]|$)");
+        }
+
+        return haystackUpper.Contains(termUpper, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? ResolveAuthorityName(TenderIngestRequestDto request)
+    {
+        if (!string.IsNullOrWhiteSpace(request.AuthorityName))
+        {
+            return request.AuthorityName;
+        }
+
+        var haystack = $"{request.Title} {request.Summary} {request.SourceName}".ToUpperInvariant();
+
+        if (haystack.Contains("SAUDI ELECTRICITY COMPANY") || ContainsAliasTerm(haystack, "SEC"))
+        {
+            return "Saudi Electricity Company";
+        }
+
+        if (haystack.Contains("SAUDI WATER AUTHORITY") || haystack.Contains("NATIONAL WATER COMPANY") || ContainsAliasTerm(haystack, "NWC") || ContainsAliasTerm(haystack, "SWCC") || haystack.Contains("MARAFIQ"))
+        {
+            return "Saudi Water Authority";
+        }
+
+        if (haystack.Contains("ROSHN"))
+        {
+            return "ROSHN";
+        }
+
+        if (haystack.Contains("NEOM"))
+        {
+            return "NEOM";
+        }
+
+        if (haystack.Contains("MINISTRY OF FINANCE"))
+        {
+            return "Ministry of Finance";
+        }
+
+        return null;
+    }
+
+    private static List<string> ResolveEntityTerms(string? entityFilterCsv)
+    {
+        if (string.IsNullOrWhiteSpace(entityFilterCsv))
+        {
+            return new List<string>();
+        }
+
+        var tokens = entityFilterCsv
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToList();
+
+        var resolved = new List<string>();
+        foreach (var token in tokens)
+        {
+            if (IgnoredEntityTokens.Contains(token))
+            {
+                continue;
+            }
+
+            if (EntityAliasRegistry.TryGetValue(token, out var aliases))
+            {
+                resolved.AddRange(aliases);
+                continue;
+            }
+
+            resolved.Add(token);
+        }
+
+        return resolved
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static IEnumerable<string> GetAuthorityAliasTerms(string? aliasesJson)
+    {
+        if (string.IsNullOrWhiteSpace(aliasesJson))
+        {
+            return Array.Empty<string>();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(aliasesJson)
+                       ?.Where(x => !string.IsNullOrWhiteSpace(x))
+                       .Select(x => x.Trim())
+                       .Distinct(StringComparer.OrdinalIgnoreCase)
+                   ?? Array.Empty<string>();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
     }
 
     private static bool CsvFilterMatches(string? csv, string? value)

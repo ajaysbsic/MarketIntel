@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
 
 export interface RealTimeAlert {
@@ -18,6 +18,23 @@ export interface Metric {
   timestamp: string;
 }
 
+export interface TenderToastNotification {
+  notificationLogId: string;
+  id: string;
+  title: string;
+  body: string;
+  authorityName?: string;
+  sector?: string;
+  deadline?: string;
+  sourceUrl?: string;
+  countryIsoCode?: string;
+}
+
+export interface ReportAnalysisUpdate {
+  reportId: string;
+  analysis: any;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -26,6 +43,8 @@ export class SignalRService {
   private alertsSubject = new BehaviorSubject<RealTimeAlert[]>([]);
   private metricsSubject = new BehaviorSubject<Metric[]>([]);
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
+  private tenderNotificationsSubject = new BehaviorSubject<TenderToastNotification[]>([]);
+  private reportAnalysisSubject = new Subject<ReportAnalysisUpdate>();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelayMs = 2000;
@@ -88,6 +107,15 @@ export class SignalRService {
       this.metricsSubject.next([metric, ...updatedMetrics]);
     });
 
+    this.connection.on('newTender', (tender: TenderToastNotification) => {
+      const current = this.tenderNotificationsSubject.value;
+      this.tenderNotificationsSubject.next([tender, ...current].slice(0, 100));
+    });
+
+    this.connection.on('reportAnalysisComplete', (payload: ReportAnalysisUpdate) => {
+      this.reportAnalysisSubject.next(payload);
+    });
+
     this.connection.onreconnected(() => {
       console.log('SignalR reconnected');
       this.connectionStatusSubject.next(true);
@@ -114,6 +142,25 @@ export class SignalRService {
 
   getConnectionStatus(): Observable<boolean> {
     return this.connectionStatusSubject.asObservable();
+  }
+
+  getTenderNotifications$(): Observable<TenderToastNotification[]> {
+    return this.tenderNotificationsSubject.asObservable();
+  }
+
+  getReportAnalysisUpdates$(): Observable<ReportAnalysisUpdate> {
+    return this.reportAnalysisSubject.asObservable();
+  }
+
+  dismissTenderNotification(notificationLogId: string): void {
+    const filtered = this.tenderNotificationsSubject.value.filter(
+      (n) => n.notificationLogId !== notificationLogId
+    );
+    this.tenderNotificationsSubject.next(filtered);
+  }
+
+  clearTenderNotifications(): void {
+    this.tenderNotificationsSubject.next([]);
   }
 
   acknowledgeAlert(alertId: string): void {

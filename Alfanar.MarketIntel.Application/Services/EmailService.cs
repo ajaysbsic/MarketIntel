@@ -54,6 +54,33 @@ public class EmailService : IEmailService
         return Task.FromResult(Result<bool>.Failure("Digest emails not implemented"));
     }
 
+    public async Task<Result<bool>> SendTenderEmailAsync(string recipient, string subject, string bodyHtml, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!_configuration.GetValue("Email:Enabled", true))
+                return Result<bool>.Success(false);
+
+            using var smtpClient = BuildSmtpClient();
+            using var mail = new MailMessage
+            {
+                From = new MailAddress(_configuration["Email:FromAddress"] ?? "tenders@alfanar.com"),
+                Subject = subject,
+                Body = bodyHtml,
+                IsBodyHtml = true
+            };
+            mail.To.Add(recipient);
+            await smtpClient.SendMailAsync(mail, cancellationToken);
+            _logger.LogInformation("Tender email sent to {Recipient}", recipient);
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send tender email to {Recipient}", recipient);
+            return Result<bool>.Failure(ex.Message);
+        }
+    }
+
     private SmtpClient BuildSmtpClient()
     {
         var host = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";

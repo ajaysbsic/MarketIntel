@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ApiService, SmartAlert } from '../../shared/services/api.service';
+import { DomSanitizer } from '@angular/platform-browser';
+import { ApiService, DashboardSummary, SmartAlert } from '../../shared/services/api.service';
 import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.service';
 
 @Component({
@@ -10,290 +10,215 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="dashboard-container">
-      <!-- Hero Section with Image -->
-      <section class="hero-section">
-        <div class="hero-content">
-          <h1>Alfanar Market Intelligence</h1>
-          <p class="tagline">Real-Time Market Insights Powered by AI</p>
-        </div>
-        <div class="hero-image">
-          <img src="assets/images/alfanar-hero.jpg" alt="Alfanar Market Intelligence Platform" />
-        </div>
+    <div class="mi-dashboard" [ngClass]="'mode-' + activeTheme">
+      <div class="bg-grid"></div>
+
+      <section class="theme-switcher" aria-label="Dashboard visual mode">
+        <span>Visual Mode</span>
+        <button
+          type="button"
+          *ngFor="let theme of themes"
+          [class.active]="activeTheme === theme.id"
+          (click)="setTheme(theme.id)">
+          {{ theme.label }}
+        </button>
       </section>
 
-      <!-- Compact Insights Bar -->
-      <div class="insights-bar-compact">
-        <div class="insight-item-compact">
-          <div class="insight-icon-compact">📰</div>
-          <div class="insight-content-compact">
-            <span class="insight-label-compact">Articles</span>
-            <span class="insight-value-compact">{{ summary?.totalArticles || 0 }}</span>
+      <header class="hero-card">
+        <div class="hero-copy">
+          <span class="eyebrow">AI Market Command Center</span>
+          <h1>Market Intelligence Dashboard</h1>
+          <p>
+            Track sentiment, live risk signals, and competitor momentum in one operational view.
+          </p>
+          <div class="keyword-cloud" *ngIf="summary?.topKeywords?.length">
+            <span class="chip" *ngFor="let keyword of summary?.topKeywords?.slice(0, 6)">{{ keyword }}</span>
           </div>
         </div>
-        <div class="insight-divider-compact"></div>
-        <div class="insight-item-compact">
-          <div class="insight-icon-compact">📊</div>
-          <div class="insight-content-compact">
-            <span class="insight-label-compact">Reports</span>
-            <span class="insight-value-compact">{{ summary?.totalReports || 0 }}</span>
-          </div>
-        </div>
-        <div class="insight-divider-compact"></div>
-        <div class="insight-item-compact">
-          <div class="insight-icon-compact">✨</div>
-          <div class="insight-content-compact">
-            <span class="insight-label-compact">New Today</span>
-            <span class="insight-value-compact">{{ newTodayCount }}</span>
-          </div>
-        </div>
-        <div class="insight-divider-compact"></div>
-        <div class="insight-item-compact">
-          <div class="insight-icon-compact">🕒</div>
-          <div class="insight-content-compact">
-            <span class="insight-label-compact">Updated</span>
-            <span class="insight-value-compact">{{ lastUpdated }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Dashboard Heading with Logo -->
-      <div class="dashboard-heading-section">
-        <svg class="alfanar-logo-small" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="#667eea" stroke-width="2"/>
-          <circle cx="50" cy="50" r="35" fill="none" stroke="#764ba2" stroke-width="2"/>
-          <path d="M 50 25 L 70 50 L 50 75 L 30 50 Z" fill="#667eea" opacity="0.8"/>
-          <circle cx="50" cy="50" r="8" fill="#764ba2"/>
-        </svg>
-        <h2>Dashboard</h2>
-      </div>
+        <div class="hero-status">
+          <div class="status-row">
+            <span class="status-label">Last Sync</span>
+            <strong>{{ lastUpdated }}</strong>
+          </div>
+          <div class="status-row">
+            <span class="status-label">New Signals Today</span>
+            <strong>{{ newTodayCount }}</strong>
+          </div>
+          <div class="status-row live">
+            <span class="pulse"></span>
+            <span>Live intelligence feed active</span>
+          </div>
+        </div>
+      </header>
 
-      <!-- Summary Cards -->
-      <div class="summary-grid">
-        <div class="summary-card">
-          <h3>Total Articles</h3>
-          <p class="summary-value">{{ summary?.totalArticles || 0 }}</p>
-        </div>
-        <div class="summary-card">
-          <h3>Total Reports</h3>
-          <p class="summary-value">{{ summary?.totalReports || 0 }}</p>
-        </div>
-        <div class="summary-card alert-card">
-          <h3>Active Alerts</h3>
-          <p class="summary-value">{{ summary?.activeAlerts || 0 }}</p>
-        </div>
-        <div class="summary-card">
-          <h3>Avg Sentiment</h3>
-          <p class="summary-value" [ngClass]="getSentimentClass()">{{ (summary?.averageSentiment || 0).toFixed(2) }}</p>
-        </div>
-      </div>
+      <section class="kpi-grid">
+        <article class="kpi-card" *ngFor="let card of metricCards; let i = index" [style.animationDelay.ms]="i * 70">
+          <span class="kpi-icon">{{ card.icon }}</span>
+          <div class="kpi-main">
+            <span class="kpi-label">{{ card.label }}</span>
+            <strong class="kpi-value">{{ card.value }}</strong>
+          </div>
+          <span class="kpi-delta" [class.up]="card.delta >= 0" [class.down]="card.delta < 0">
+            {{ card.delta >= 0 ? '+' : '' }}{{ card.delta }}%
+          </span>
+        </article>
+      </section>
 
-      <!-- Alerts Widget -->
-      <section class="alerts-widget">
-        <div class="widget-header">
-          <h2>Alerts at a Glance</h2>
-          <a routerLink="/alerts" class="widget-link">View all</a>
-        </div>
-        <div class="widget-body" *ngIf="alerts.length; else noWidgetAlerts">
-          <div class="widget-alert" *ngFor="let alert of alerts.slice(0, 3)">
-            <span class="widget-severity" [ngClass]="getAlertClass(alert.severity)">
-              {{ alert.severity }}
-            </span>
-            <div class="widget-content">
-              <strong>{{ alert.title }}</strong>
-              <span class="widget-meta">
-                {{ alert.alertType }} • {{ alert.companyName || 'General' }} • {{ alert.createdAt | date: 'short' }}
+      <section class="insight-grid">
+        <article class="glass-card sentiment-card">
+          <div class="card-title-row">
+            <h2>Sentiment Radar</h2>
+            <span class="mini-tag">24h</span>
+          </div>
+
+          <div class="sentiment-layout">
+            <div class="sentiment-ring" [style.background]="sentimentRingGradient">
+              <div class="ring-center">
+                <strong>{{ sentimentScore | number:'1.0-0' }}</strong>
+                <span>Score</span>
+              </div>
+            </div>
+
+            <div class="sentiment-bars">
+              <div class="bar-row">
+                <span>Positive</span>
+                <div class="bar-track"><div class="bar-fill positive" [style.width.%]="positiveSentiment"></div></div>
+                <strong>{{ positiveSentiment | number:'1.0-1' }}%</strong>
+              </div>
+              <div class="bar-row">
+                <span>Neutral</span>
+                <div class="bar-track"><div class="bar-fill neutral" [style.width.%]="neutralSentiment"></div></div>
+                <strong>{{ neutralSentiment | number:'1.0-1' }}%</strong>
+              </div>
+              <div class="bar-row">
+                <span>Negative</span>
+                <div class="bar-track"><div class="bar-fill negative" [style.width.%]="negativeSentiment"></div></div>
+                <strong>{{ negativeSentiment | number:'1.0-1' }}%</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="glass-card region-card">
+          <div class="card-title-row">
+            <h2>Regional Activity Pulse</h2>
+            <span class="mini-tag">Global</span>
+          </div>
+
+          <div class="region-map" aria-label="Regional activity map">
+            <div class="map-grid"></div>
+            <div
+              class="map-point"
+              *ngFor="let point of regionMapPoints"
+              [style.left.%]="point.x"
+              [style.top.%]="point.y"
+              [title]="point.name + ' - ' + point.activity + ' signals'">
+              <span class="point-dot" [class.down]="point.delta < 0"></span>
+              <span class="point-label">{{ point.short }}</span>
+            </div>
+          </div>
+
+          <div class="region-list">
+            <div class="region-row" *ngFor="let region of regionSignals">
+              <div class="region-text">
+                <strong>{{ region.name }}</strong>
+                <span>{{ region.activity }} signals</span>
+              </div>
+              <div class="region-meter"><div class="meter-fill" [style.width.%]="region.intensity"></div></div>
+              <span class="region-delta" [class.up]="region.delta >= 0" [class.down]="region.delta < 0">
+                {{ region.delta >= 0 ? '+' : '' }}{{ region.delta }}%
               </span>
             </div>
           </div>
-        </div>
-        <ng-template #noWidgetAlerts>
-          <div class="widget-empty">No active alerts right now.</div>
-        </ng-template>
+        </article>
       </section>
 
-      <!-- Competitive Positioning -->
-      <section class="positioning-widget">
-        <div class="positioning-content">
-          <div>
-            <h2>Competitive Positioning</h2>
-            <p>Download the system comparison brief for leadership and sales positioning.</p>
+      <section class="intelligence-grid">
+        <article class="glass-card alerts-feed">
+          <div class="card-title-row">
+            <h2>Critical Intelligence Feed</h2>
+            <div class="actions-inline">
+              <button class="ghost-btn" (click)="loadAlerts()">Refresh</button>
+              <a routerLink="/alerts">Open Alerts</a>
+            </div>
           </div>
-          <a
-            class="positioning-link"
-            href="/assets/COMPETITOR_SYSTEM_COMPARISON.md"
-            target="_blank"
-            rel="noopener"
-          >
-            Open Comparison Doc
-          </a>
-        </div>
-      </section>
 
-      <!-- Smart Alerts Feed -->
-      <section class="alerts-section">
-        <div class="alerts-header">
-          <h2>Smart Alerts</h2>
-          <button class="btn-refresh" (click)="loadAlerts()">Refresh</button>
-        </div>
-        
-        <!-- Alerts Carousel -->
-        <div class="alerts-carousel" *ngIf="alerts.length > 0; else noAlerts">
-          <button class="carousel-nav-prev" 
-                  (click)="previousAlert()" 
-                  [disabled]="isFirstAlert()"
-                  title="Previous alert">
-            ◀
-          </button>
-          
-          <div class="carousel-container">
-            <div class="alert-card carousel-slide" 
-                 *ngIf="alerts[currentAlertIndex] as alert">
-              <div class="alert-top">
-                <span class="alert-badge" [ngClass]="getAlertClass(alert.severity)">
-                  {{ alert.severity }}
-                </span>
-                <span class="alert-type">{{ alert.alertType }}</span>
-              </div>
-              <h4>{{ alert.title }}</h4>
-              <div class="alert-message" [innerHTML]="sanitizeAlertContent(alert.message)"></div>
-              <div class="alert-meta">
-                <span class="company">🏢 {{ alert.companyName }}</span>
-                <span class="timestamp">🕐 {{ alert.createdAt | date: 'short' }}</span>
-              </div>
-              <div class="alert-actions">
-                <a *ngIf="alert.sourceUrl" 
-                   [href]="alert.sourceUrl" 
-                   target="_blank"
-                   class="read-more-link">
-                   📖 Read Full Article
-                </a>
-              </div>
-              <div class="alert-footer">
-                <div class="carousel-dots">
-                  <span *ngFor="let alert of alerts; let i = index" 
-                        class="dot" 
-                        [class.active]="i === currentAlertIndex"
-                        (click)="goToSlide(i)"></span>
-                </div>
+          <div class="focus-alert" *ngIf="alerts[currentAlertIndex] as alert; else noAlerts">
+            <div class="focus-head">
+              <span class="severity" [ngClass]="getAlertClass(alert.severity)">{{ alert.severity || 'info' }}</span>
+              <span class="type">{{ alert.alertType || 'signal' }}</span>
+              <span class="time">{{ alert.createdAt | date: 'short' }}</span>
+            </div>
+            <h3>{{ alert.title }}</h3>
+            <div class="message" [innerHTML]="sanitizeAlertContent(alert.message)"></div>
+            <div class="focus-foot">
+              <span>{{ alert.companyName || 'General' }}</span>
+              <div class="pager" *ngIf="alerts.length > 1">
+                <button type="button" (click)="previousAlert()">Prev</button>
+                <span>{{ currentAlertIndex + 1 }}/{{ alerts.length }}</span>
+                <button type="button" (click)="nextAlert()">Next</button>
               </div>
             </div>
           </div>
-          
-          <button class="carousel-nav-next" 
-                  (click)="nextAlert()" 
-                  [disabled]="isLastAlert()"
-                  title="Next alert">
-            ▶
-          </button>
-        </div>
-        
-        <ng-template #noAlerts>
-          <div class="empty">No alerts yet. Signals will appear here.</div>
-        </ng-template>
+
+          <ng-template #noAlerts>
+            <div class="empty-state">No active alerts right now. New intelligence signals will appear here.</div>
+          </ng-template>
+        </article>
+
+        <article class="glass-card mentions-card">
+          <div class="card-title-row">
+            <h2>Top Company Mentions</h2>
+            <a routerLink="/competitor-tracking">See Competitors</a>
+          </div>
+          <div class="mentions-list">
+            <div class="mention-row" *ngFor="let item of topCompanyMentions">
+              <span class="name-wrap">
+                <span class="name">{{ item.name }}</span>
+                <small>{{ item.context }}</small>
+              </span>
+              <div class="mention-bar"><div class="mention-fill" [style.width.%]="item.intensity"></div></div>
+              <strong>{{ item.count }}</strong>
+            </div>
+          </div>
+        </article>
       </section>
 
-      <!-- Platform Summary Section -->
-      <section class="platform-summary">
-        <div class="summary-container">
-          <div class="summary-content">
-            <h2>What is Alfanar Market Intelligence?</h2>
-            <p class="summary-description">
-              Alfanar Market Intelligence is a real-time AI-powered platform that continuously monitors global markets, 
-              analyzes news articles, financial reports, and industry trends using advanced natural language processing 
-              and sentiment analysis.
-            </p>
-            
-            <h3>Key Benefits</h3>
-            <ul class="benefits-list">
-              <li><strong>🚀 Real-Time Monitoring:</strong> Instant alerts for market-moving events across 50+ companies</li>
-              <li><strong>🤖 AI-Powered Analysis:</strong> Sentiment analysis and key insights extracted automatically</li>
-              <li><strong>📊 Financial Intelligence:</strong> Comprehensive reports, metrics, and trend analysis</li>
-              <li><strong>💡 Smart Alerts:</strong> Critical alerts for risks and opportunities</li>
-              <li><strong>🌍 Global Coverage:</strong> Monitor companies worldwide across multiple sectors</li>
-              <li><strong>📈 Metrics & Trends:</strong> Financial metrics, EBITDA, revenue growth tracking</li>
-            </ul>
-
-            <h3>How It Works</h3>
-            <ol class="how-it-works">
-              <li><strong>Continuous Monitoring:</strong> Python watcher monitors company RSS feeds and websites</li>
-              <li><strong>Data Ingestion:</strong> News and reports automatically ingested into our database</li>
-              <li><strong>AI Processing:</strong> Google Gemini analyzes sentiment, generates summaries</li>
-              <li><strong>Smart Alerts:</strong> Critical insights trigger real-time notifications</li>
-              <li><strong>Visualization:</strong> Beautiful dashboard displays all intelligence in one place</li>
-            </ol>
-          </div>
-
-          <div class="summary-features">
-            <div class="feature-card">
-              <div class="feature-icon">📰</div>
-              <h4>News & Articles</h4>
-              <p>{{ summary?.totalArticles || 0 }} articles monitored with sentiment analysis</p>
-            </div>
-            <div class="feature-card">
-              <div class="feature-icon">📑</div>
-              <h4>Financial Reports</h4>
-              <p>{{ summary?.totalReports || 0 }} reports analyzed for financial metrics</p>
-            </div>
-            <div class="feature-card">
-              <div class="feature-icon">💬</div>
-              <h4>AI Summaries</h4>
-              <p>Automated summaries and sentiment scoring for all content</p>
-            </div>
-            <div class="feature-card">
-              <div class="feature-icon">🚨</div>
-              <h4>Smart Alerts</h4>
-              <p>Real-time critical alerts for market-moving events</p>
-            </div>
-          </div>
-        </div>
+      <section class="quick-actions">
+        <a routerLink="/ai-chat" class="quick-link">
+          <span>AI Chat</span>
+          <small>Ask for strategic insight</small>
+        </a>
+        <a routerLink="/reports" class="quick-link">
+          <span>Financial Reports</span>
+          <small>Analyze filings and trends</small>
+        </a>
+        <a routerLink="/keyword-monitors" class="quick-link">
+          <span>Keyword Monitor</span>
+          <small>Track emerging technologies</small>
+        </a>
+        <a routerLink="/alerts" class="quick-link">
+          <span>Alert Rules</span>
+          <small>Tune severity and notifications</small>
+        </a>
       </section>
 
-      <!-- Sentiment Breakdown -->
-      <div class="sentiment-section">
-        <h2>Sentiment Distribution</h2>
-        <div class="sentiment-breakdown">
-          <div class="sentiment-item positive">
-            <span>Positive</span>
-            <strong>{{ (summary?.positiveSentiment || 0).toFixed(1) }}%</strong>
-          </div>
-          <div class="sentiment-item neutral">
-            <span>Neutral</span>
-            <strong>{{ (summary?.neutralSentiment || 0).toFixed(1) }}%</strong>
-          </div>
-          <div class="sentiment-item negative">
-            <span>Negative</span>
-            <strong>{{ (summary?.negativeSentiment || 0).toFixed(1) }}%</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- Top Keywords -->
-      <div class="keywords-section" *ngIf="summary?.topKeywords?.length">
-        <h2>Top Keywords</h2>
-        <div class="keywords-list">
-          <span class="keyword-tag" *ngFor="let keyword of summary.topKeywords">{{ keyword }}</span>
-        </div>
-      </div>
-
-      <!-- Loading State -->
-      <div class="loading" *ngIf="isLoading">
-        <div class="spinner"></div>
-        <p>Loading dashboard data...</p>
-      </div>
-
-      <!-- Error State -->
-      <div class="error" *ngIf="error">
+      <div class="error-state" *ngIf="error">
         <p>{{ error }}</p>
-        <button (click)="loadDashboard()">Retry</button>
+        <button type="button" (click)="loadDashboard()">Retry</button>
       </div>
 
-      <!-- Real-time alert toasts -->
+      <div class="loading-state" *ngIf="isLoading">
+        <span class="loader"></span>
+        <p>Building your intelligence snapshot...</p>
+      </div>
+
       <div class="toast-stack" *ngIf="realtimeAlerts.length">
         <div class="toast" *ngFor="let alert of realtimeAlerts.slice(0, 3)" [ngClass]="getAlertClass(alert.severity)">
           <div>
             <strong>{{ alert.title }}</strong>
-            <p>{{ alert.message || 'New alert detected' }}</p>
+            <p>{{ alert.message || 'New market signal received.' }}</p>
           </div>
           <span class="toast-time">{{ alert.createdAt | date: 'shortTime' }}</span>
         </div>
@@ -301,1050 +226,1013 @@ import { SignalRService, RealTimeAlert } from '../../shared/services/signalr.ser
     </div>
   `,
   styles: [`
-    .dashboard-container {
-      padding: 2rem 0;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap');
 
-    /* ===== HERO SECTION ===== */
-    .hero-section {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3rem;
-      align-items: center;
-      padding: 3rem 2rem;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-      border-radius: 12px;
-      margin-bottom: 3rem;
-      border: 1px solid rgba(102, 126, 234, 0.2);
-    }
-
-    .hero-content h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 1rem;
-      line-height: 1.2;
-    }
-
-    .hero-content .tagline {
-      font-size: 1.3rem;
-      color: var(--text-secondary, #666);
-      margin-bottom: 1.5rem;
-      font-weight: 500;
-    }
-
-    .hero-image {
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
-    }
-
-    .hero-image img {
-      width: 100%;
-      height: auto;
+    :host {
       display: block;
-      object-fit: cover;
     }
 
-    /* ===== PLATFORM SUMMARY SECTION ===== */
-    .platform-summary {
-      padding: 3rem 2rem;
-      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    .mi-dashboard {
+      --page-bg-1: #f4f7fc;
+      --page-bg-2: #e9f0fa;
+      --card-border: rgba(89, 132, 212, 0.25);
+      --text-main: #112948;
+      --text-muted: #607896;
+      --accent-cyan: #1f7df1;
+      position: relative;
+      overflow: hidden;
+      padding: 1.25rem;
+      border-radius: 18px;
+      color: var(--text-main);
+      background: radial-gradient(circle at 12% -20%, #1a3f86 0%, transparent 45%),
+        radial-gradient(circle at 92% 0%, #114b71 0%, transparent 35%),
+        linear-gradient(140deg, var(--page-bg-1), var(--page-bg-2));
+      font-family: 'Manrope', 'Segoe UI', sans-serif;
+      isolation: isolate;
+    }
+
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background-image: linear-gradient(rgba(133, 174, 247, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(133, 174, 247, 0.1) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .theme-switcher {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.9rem;
+      padding: 0.42rem;
       border-radius: 12px;
-      margin-bottom: 3rem;
-      border-left: 4px solid #667eea;
+      border: 1px solid rgba(98, 136, 196, 0.22);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 8px 18px rgba(31, 76, 143, 0.1);
     }
 
-    .summary-container {
+    .theme-switcher span {
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: 0 0.2rem;
+    }
+
+    .theme-switcher button {
+      border: 1px solid rgba(104, 144, 204, 0.26);
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--text-main);
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 0.3rem 0.64rem;
+      cursor: pointer;
+      transition: all 180ms ease;
+    }
+
+    .theme-switcher button.active {
+      background: var(--accent-cyan);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 8px 16px rgba(31, 125, 241, 0.28);
+    }
+
+    .hero-card,
+    .glass-card,
+    .quick-actions {
+      backdrop-filter: blur(16px);
+      background: linear-gradient(165deg, rgba(20, 45, 88, 0.86), rgba(9, 23, 48, 0.78));
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: 0 14px 30px rgba(1, 8, 20, 0.35);
+    }
+
+    .hero-card {
       display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 3rem;
-    }
-
-    .summary-content h2 {
-      font-size: 2rem;
-      color: #333;
+      grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+      gap: 1rem;
+      padding: 1.3rem;
       margin-bottom: 1rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      animation: fadeUp 500ms ease-out;
     }
 
-    .summary-description {
-      font-size: 1.05rem;
-      line-height: 1.8;
-      color: #555;
-      margin-bottom: 2rem;
-    }
-
-    .summary-content h3 {
-      font-size: 1.3rem;
-      color: #333;
-      margin-top: 2rem;
-      margin-bottom: 1rem;
-      font-weight: 600;
-    }
-
-    .benefits-list {
-      list-style: none;
-      padding: 0;
-      margin-bottom: 2rem;
-    }
-
-    .benefits-list li {
-      padding: 0.75rem 0;
-      color: #555;
-      font-size: 1rem;
-      line-height: 1.6;
-    }
-
-    .how-it-works {
-      padding-left: 2rem;
-      color: #555;
-    }
-
-    .how-it-works li {
-      padding: 0.75rem 0;
-      font-size: 1rem;
-      line-height: 1.6;
-    }
-
-    .summary-features {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    .feature-card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      border-left: 4px solid #667eea;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
-    }
-
-    .feature-card:hover {
-      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
-      transform: translateY(-2px);
-    }
-
-    .feature-icon {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .feature-card h4 {
-      font-size: 1.1rem;
-      color: #333;
-      margin-bottom: 0.5rem;
-    }
-
-    .feature-card p {
-      font-size: 0.95rem;
-      color: #666;
-      line-height: 1.5;
-    }
-
-    /* Responsive */
-    @media (max-width: 1024px) {
-      .hero-section {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-        padding: 2rem;
-      }
-
-      .hero-content h1 {
-        font-size: 2rem;
-      }
-
-      .summary-container {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .hero-section {
-        grid-template-columns: 1fr;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-      }
-
-      .hero-content h1 {
-        font-size: 1.5rem;
-      }
-
-      .hero-content .tagline {
-        font-size: 1.1rem;
-      }
-
-      .platform-summary {
-        padding: 2rem 1rem;
-        margin-bottom: 2rem;
-      }
-
-      .summary-container {
-        grid-template-columns: 1fr;
-      }
-
-      .summary-content h2 {
-        font-size: 1.5rem;
-      }
-    }
-    .dashboard-heading-section {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
-      padding: 0 2rem;
-    }
-
-    .alfanar-logo-small {
-      width: 35px;
-      height: 35px;
-      flex-shrink: 0;
-      filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.2));
-    }
-
-    .dashboard-heading-section h2 {
+    .hero-copy h1 {
       margin: 0;
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #333;
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(1.45rem, 3vw, 2rem);
+      letter-spacing: 0.02em;
     }
 
-    /* ===== COMPACT INSIGHTS BAR ===== */
-    .insights-bar-compact {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 0;
-      padding: 0.75rem 2rem;
-      margin-bottom: 2rem;
+    .hero-copy p {
+      margin: 0.55rem 0 0;
+      max-width: 60ch;
+      color: var(--text-muted);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 0.45rem;
+      color: var(--accent-cyan);
+      font-size: 0.74rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .keyword-cloud {
+      margin-top: 0.85rem;
       display: flex;
-      justify-content: space-around;
-      align-items: center;
-      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
       flex-wrap: wrap;
       gap: 0.5rem;
     }
 
-    .insight-item-compact {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: white;
-      flex: 1;
-      min-width: 120px;
-      text-align: left;
+    .chip {
+      padding: 0.3rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      border: 1px solid rgba(114, 174, 255, 0.4);
+      background: rgba(56, 214, 255, 0.12);
+      color: #d8edff;
     }
 
-    .insight-icon-compact {
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
-      backdrop-filter: blur(10px);
-      flex-shrink: 0;
-    }
-
-    .insight-content-compact {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .insight-label-compact {
-      font-size: 0.65rem;
-      opacity: 0.9;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      font-weight: 500;
-      line-height: 1;
-    }
-
-    .insight-value-compact {
-      font-size: 1rem;
-      font-weight: bold;
-      margin-top: 0.1rem;
-      line-height: 1.2;
-    }
-
-    .insight-divider-compact {
-      width: 1px;
-      height: 28px;
-      background: rgba(255, 255, 255, 0.3);
-      margin: 0 0.3rem;
-    }
-
-    h2 {
-      margin-bottom: 2rem;
-      margin-top: 0;
-      color: var(--text-primary);
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-
-    .summary-grid {
+    .hero-status {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .summary-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
+      gap: 0.6rem;
+      align-content: center;
+      padding: 0.75rem;
       border-radius: 12px;
-      padding: 1.75rem;
-      text-align: center;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
+      background: linear-gradient(180deg, rgba(8, 19, 42, 0.86), rgba(12, 29, 60, 0.65));
+      border: 1px solid rgba(112, 162, 249, 0.2);
     }
 
-    .summary-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.85rem;
     }
 
-    .summary-card:hover {
-      box-shadow: var(--shadow-md);
-      transform: translateY(-4px);
-      border-color: var(--primary-color);
+    .status-row strong {
+      font-size: 1rem;
+      color: var(--text-main);
     }
 
-    .summary-card.alert-card {
-      background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(243, 156, 18, 0.1));
-      border-color: var(--warning);
+    .status-label {
+      color: var(--text-muted);
     }
 
-    .summary-card.alert-card::before {
-      background: linear-gradient(90deg, #e74c3c 0%, #f39c12 100%);
-    }
-
-    .summary-card h3 {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      letter-spacing: 0.5px;
-      margin-bottom: 0.75rem;
+    .status-row.live {
+      justify-content: flex-start;
+      color: #c5ffd7;
+      margin-top: 0.2rem;
       font-weight: 600;
     }
 
-    .summary-value {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: var(--primary-color);
-      margin: 0;
+    .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2ef391;
+      box-shadow: 0 0 0 rgba(46, 243, 145, 0.7);
+      animation: pulse 1.7s infinite;
     }
 
-    .summary-value.positive {
-      color: #27ae60;
-    }
-
-    .summary-value.negative {
-      color: #e74c3c;
-    }
-
-    .summary-value.neutral {
-      color: #3498db;
-    }
-
-    .alerts-section {
-      background: rgba(255, 255, 255, 0.15);
-      background-image: url('/assets/images/alfanar_bg.jpg');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      border-radius: 12px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      border: 1px solid rgba(226, 232, 240, 0.3);
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-      backdrop-filter: blur(5px);
-      position: relative;
-    }
-
-    .alerts-section::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(255, 255, 255, 0.85);
-      border-radius: 12px;
-      z-index: 0;
-    }
-
-    .alerts-section > * {
-      position: relative;
-      z-index: 1;
-    }
-
-    :host-context(.dark-theme) .alerts-section {
-      background: rgba(42, 42, 42, 0.15);
-      border-color: rgba(68, 68, 68, 0.3);
-    }
-
-    :host-context(.dark-theme) .alerts-section::before {
-      background: rgba(42, 42, 42, 0.85);
-    }
-
-    .alerts-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.8rem;
       margin-bottom: 1rem;
     }
 
-    .alerts-grid {
+    .kpi-card {
+      min-height: 116px;
+      border-radius: 14px;
+      border: 1px solid rgba(107, 150, 230, 0.2);
+      background: linear-gradient(170deg, rgba(20, 42, 80, 0.93), rgba(11, 22, 48, 0.9));
+      padding: 0.85rem;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1rem;
+      gap: 0.4rem;
+      animation: fadeUp 420ms ease-out both;
     }
 
-    .alert-card {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 1rem;
-      border: 1px solid #e2e8f0;
-    }
-
-    :host-context(.dark-theme) .alert-card {
-      background: #1f2937;
-      border-color: #374151;
-    }
-
-    .alert-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
-
-    .alert-badge {
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      background: #e2e8f0;
-      color: #1f2937;
-    }
-
-    :host-context(.dark-theme) .alert-badge {
-      background: #374151;
-      color: #e5e7eb;
-    }
-
-    .alert-badge.critical {
-      background: #fecaca;
-      color: #7f1d1d;
-    }
-
-    .alert-badge.high {
-      background: #fed7aa;
-      color: #9a3412;
-    }
-
-    .alert-badge.medium {
-      background: #fde68a;
-      color: #92400e;
-    }
-
-    .alert-badge.low {
-      background: #bbf7d0;
-      color: #166534;
-    }
-
-    .alert-type {
-      font-size: 0.75rem;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    :host-context(.dark-theme) .alert-type {
-      color: var(--text-secondary);
-    }
-
-    .alert-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-top: 0.75rem;
-    }
-
-    :host-context(.dark-theme) .alert-meta {
-      color: var(--text-secondary);
-    }
-
-    /* ===== CAROUSEL STYLES ===== */
-    .alerts-carousel {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      min-height: 280px;
-    }
-
-    .carousel-nav-prev,
-    .carousel-nav-next {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
+    .kpi-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
+      background: rgba(56, 214, 255, 0.14);
+      border: 1px solid rgba(56, 214, 255, 0.4);
+      font-size: 0.73rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .kpi-main {
+      display: grid;
+      gap: 0.2rem;
+    }
+
+    .kpi-label {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .kpi-value {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.45rem;
+      line-height: 1;
+    }
+
+    .kpi-delta {
+      justify-self: start;
+      font-size: 0.76rem;
+      padding: 0.18rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid;
+    }
+
+    .kpi-delta.up {
+      color: #8af1be;
+      border-color: rgba(66, 217, 154, 0.5);
+      background: rgba(66, 217, 154, 0.12);
+    }
+
+    .kpi-delta.down {
+      color: #ffc0cf;
+      border-color: rgba(255, 107, 143, 0.45);
+      background: rgba(255, 107, 143, 0.12);
+    }
+
+    .insight-grid,
+    .intelligence-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 0.9rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .glass-card {
+      padding: 1rem;
+      animation: fadeUp 520ms ease-out both;
+    }
+
+    .card-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 0.9rem;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-family: 'Sora', sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    .mini-tag {
+      font-size: 0.7rem;
+      color: #cde4ff;
+      border: 1px solid rgba(135, 175, 247, 0.4);
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+    }
+
+    .sentiment-layout {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr);
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .sentiment-ring {
+      width: 126px;
+      height: 126px;
+      border-radius: 50%;
+      padding: 10px;
+      box-shadow: inset 0 0 0 1px rgba(146, 190, 255, 0.25);
+    }
+
+    .ring-center {
+      height: 100%;
+      border-radius: 50%;
+      display: grid;
+      place-content: center;
+      background: #081936;
+      border: 1px solid rgba(122, 168, 252, 0.3);
+      text-align: center;
+    }
+
+    .ring-center strong {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.3rem;
+      line-height: 1;
+    }
+
+    .ring-center span {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    .sentiment-bars {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 70px minmax(0, 1fr) 48px;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+    }
+
+    .bar-track,
+    .region-meter,
+    .mention-bar {
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(140, 177, 238, 0.22);
+    }
+
+    .bar-fill,
+    .meter-fill,
+    .mention-fill {
+      height: 100%;
+      border-radius: inherit;
+      transition: width 320ms ease;
+    }
+
+    .bar-fill.positive,
+    .meter-fill,
+    .mention-fill {
+      background: linear-gradient(90deg, #35d89e, #5ff0bb);
+    }
+
+    .bar-fill.neutral {
+      background: linear-gradient(90deg, #42b6ff, #76ceff);
+    }
+
+    .bar-fill.negative {
+      background: linear-gradient(90deg, #ff7e9d, #ffb0c2);
+    }
+
+    .region-list,
+    .mentions-list {
+      display: grid;
+      gap: 0.6rem;
+    }
+
+    .region-map {
+      position: relative;
+      height: 168px;
+      border-radius: 12px;
+      margin-bottom: 0.8rem;
+      border: 1px solid rgba(117, 159, 223, 0.25);
+      background: radial-gradient(circle at 25% 20%, rgba(71, 154, 241, 0.14), transparent 36%),
+        radial-gradient(circle at 80% 78%, rgba(67, 216, 170, 0.16), transparent 36%),
+        linear-gradient(145deg, rgba(16, 33, 68, 0.76), rgba(12, 24, 51, 0.7));
+      overflow: hidden;
+    }
+
+    .map-grid {
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(134, 174, 238, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(134, 174, 238, 0.12) 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.5;
+    }
+
+    .map-point {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transform: translate(-50%, -50%);
+    }
+
+    .point-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #57f0ba;
+      box-shadow: 0 0 0 4px rgba(87, 240, 186, 0.2);
+    }
+
+    .point-dot.down {
+      background: #ff9ab2;
+      box-shadow: 0 0 0 4px rgba(255, 154, 178, 0.2);
+    }
+
+    .point-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #dbeeff;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .region-row,
+    .mention-row {
+      display: grid;
+      gap: 0.55rem;
+      align-items: center;
+      grid-template-columns: minmax(92px, 1fr) minmax(0, 1fr) 54px;
       font-size: 0.8rem;
-      flex-shrink: 0;
     }
 
-    .carousel-nav-prev:hover:not(:disabled),
-    .carousel-nav-next:hover:not(:disabled) {
-      transform: scale(1.1);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-    }
-
-    .carousel-nav-prev:disabled,
-    .carousel-nav-next:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      background: #cbd5e0;
-    }
-
-    .carousel-container {
-      flex: 1;
+    .name-wrap {
+      display: grid;
+      gap: 0.1rem;
       min-width: 0;
     }
 
-    .carousel-slide {
-      animation: slideIn 0.3s ease-out;
-      min-height: 250px;
+    .name-wrap small {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .region-text {
+      display: grid;
+      gap: 0.1rem;
+    }
+
+    .region-text strong,
+    .mention-row .name {
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .region-text span {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+
+    .region-delta.up {
+      color: #8ff0bf;
+    }
+
+    .region-delta.down {
+      color: #ffb8c8;
+    }
+
+    .actions-inline {
       display: flex;
-      flex-direction: column;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .alert-message {
-      flex: 1;
-      line-height: 1.6;
-      color: #2d3748;
-      margin: 1rem 0;
-      font-size: 0.95rem;
-      overflow-y: auto;
-      max-height: 200px;
-      padding-right: 0.5rem;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      hyphens: auto;
-    }
-
-    :host-context(.dark-theme) .alert-message {
-      color: var(--text-primary);
-    }
-
-    .alert-message a {
-      color: #1f47ba;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-
-    .alert-message a:hover {
-      opacity: 0.8;
-    }
-
-    .alert-message img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 6px;
-      margin: 0.5rem 0;
-      display: block;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .alert-message p {
-      margin: 0.5rem 0;
-    }
-
-    .alert-message div {
-      margin: 0.25rem 0;
-    }
-
-    .alert-footer {
-      display: flex;
-      justify-content: center;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .carousel-dots {
-      display: flex;
-      justify-content: center;
       gap: 0.5rem;
       align-items: center;
     }
 
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #cbd5e0;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .dot.active {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      width: 12px;
-      height: 12px;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-    }
-
-    .dot:hover {
-      background: #94a3b8;
-      transform: scale(1.1);
-    }
-
-    .alert-actions {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .read-more-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 0.6rem 1.2rem;
-      border-radius: 6px;
+    .actions-inline a {
+      color: var(--accent-cyan);
       text-decoration: none;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: all 0.3s ease;
+      font-size: 0.8rem;
+    }
+
+    .ghost-btn,
+    .pager button,
+    .error-state button {
+      border: 1px solid rgba(134, 175, 248, 0.4);
+      background: rgba(83, 148, 255, 0.12);
+      color: #e9f4ff;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.38rem 0.62rem;
       cursor: pointer;
     }
 
-    .read-more-link:hover {
+    .focus-alert {
+      border: 1px solid rgba(115, 161, 241, 0.25);
+      border-radius: 12px;
+      background: linear-gradient(155deg, rgba(8, 20, 44, 0.92), rgba(13, 28, 56, 0.75));
+      padding: 0.85rem;
+    }
+
+    .focus-head {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 0.4rem;
+    }
+
+    .severity,
+    .type,
+    .time {
+      font-size: 0.7rem;
+      border-radius: 999px;
+      padding: 0.18rem 0.5rem;
+      border: 1px solid rgba(136, 178, 251, 0.35);
+      background: rgba(136, 178, 251, 0.16);
+      text-transform: capitalize;
+    }
+
+    .severity.critical {
+      background: rgba(255, 92, 129, 0.2);
+      border-color: rgba(255, 110, 143, 0.6);
+      color: #ffd0dc;
+    }
+
+    .severity.high {
+      background: rgba(255, 168, 70, 0.18);
+      border-color: rgba(255, 187, 90, 0.6);
+      color: #ffe2b8;
+    }
+
+    .severity.medium {
+      background: rgba(88, 186, 255, 0.2);
+      border-color: rgba(120, 202, 255, 0.7);
+      color: #def3ff;
+    }
+
+    .severity.low {
+      background: rgba(66, 217, 154, 0.2);
+      border-color: rgba(92, 232, 173, 0.7);
+      color: #d8ffe8;
+    }
+
+    .focus-alert h3 {
+      margin: 0.35rem 0 0.4rem;
+      font-size: 0.97rem;
+      line-height: 1.35;
+      font-family: 'Sora', sans-serif;
+    }
+
+    .message {
+      max-height: 140px;
+      overflow: auto;
+      color: var(--text-main);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      padding-right: 0.35rem;
+    }
+
+    .focus-foot {
+      margin-top: 0.55rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      flex-wrap: wrap;
+    }
+
+    .pager {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .pager span {
+      color: var(--text-main);
+      min-width: 3.3rem;
+      text-align: center;
+    }
+
+    .empty-state {
+      border: 1px dashed rgba(133, 177, 255, 0.35);
+      border-radius: 12px;
+      padding: 1.2rem;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 0.86rem;
+    }
+
+    .quick-actions {
+      padding: 0.65rem;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.6rem;
+    }
+
+    .quick-link {
+      border-radius: 10px;
+      border: 1px solid rgba(119, 167, 248, 0.25);
+      text-decoration: none;
+      color: #ebf4ff;
+      padding: 0.7rem;
+      background: linear-gradient(180deg, rgba(14, 35, 68, 0.75), rgba(11, 24, 48, 0.95));
+      display: grid;
+      gap: 0.2rem;
+      transition: transform 200ms ease, border-color 200ms ease;
+    }
+
+    .quick-link span {
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .quick-link small {
+      color: #a4bbde;
+      font-size: 0.72rem;
+    }
+
+    .quick-link:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      border-color: rgba(118, 189, 255, 0.7);
+    }
+
+    .loading-state,
+    .error-state {
+      margin-top: 0.9rem;
+      border-radius: 12px;
+      padding: 0.9rem;
+      text-align: center;
+      border: 1px solid rgba(130, 173, 248, 0.32);
+      background: rgba(12, 29, 58, 0.7);
+    }
+
+    .loader {
+      width: 22px;
+      height: 22px;
+      border: 2px solid rgba(130, 174, 248, 0.35);
+      border-top-color: #61ceff;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 0.35rem;
     }
 
     .toast-stack {
       position: fixed;
-      right: 24px;
-      bottom: 24px;
+      right: 20px;
+      bottom: 20px;
       display: grid;
-      gap: 0.75rem;
+      gap: 0.5rem;
       z-index: 2000;
     }
 
     .toast {
-      background: #13263b;
-      color: #fff;
-      padding: 0.9rem 1rem;
-      border-radius: 12px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+      min-width: 250px;
+      border-radius: 10px;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid rgba(133, 179, 255, 0.35);
+      background: rgba(8, 22, 47, 0.94);
       display: flex;
       justify-content: space-between;
-      gap: 1rem;
-      min-width: 240px;
+      gap: 0.8rem;
+      box-shadow: 0 12px 28px rgba(4, 11, 26, 0.45);
+      font-size: 0.78rem;
+    }
+
+    .toast strong {
+      display: block;
+      margin-bottom: 0.1rem;
+      font-size: 0.82rem;
     }
 
     .toast p {
-      margin: 0.25rem 0 0 0;
-      font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.8);
+      margin: 0;
+      color: var(--text-muted);
+      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .toast.critical {
-      background: #7f1d1d;
+      border-color: rgba(255, 111, 145, 0.7);
     }
 
     .toast.high {
-      background: #9a3412;
+      border-color: rgba(255, 195, 105, 0.7);
     }
 
     .toast.medium {
-      background: #92400e;
+      border-color: rgba(108, 204, 255, 0.7);
     }
 
     .toast.low {
-      background: #166534;
+      border-color: rgba(94, 232, 174, 0.7);
     }
 
     .toast-time {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--text-muted);
       white-space: nowrap;
+      align-self: flex-start;
+      font-size: 0.68rem;
     }
 
-    .btn-refresh {
-      background: #1f47ba;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 0.5rem 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
+    .mi-dashboard.mode-enterprise {
+      background: radial-gradient(circle at 12% -20%, rgba(80, 138, 236, 0.3) 0%, transparent 45%),
+        radial-gradient(circle at 92% 0%, rgba(77, 190, 223, 0.26) 0%, transparent 35%),
+        linear-gradient(140deg, #f4f7fc, #e9f0fa);
     }
 
-    .sentiment-section {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      box-shadow: var(--shadow-sm);
+    .mi-dashboard.mode-enterprise .hero-card,
+    .mi-dashboard.mode-enterprise .glass-card,
+    .mi-dashboard.mode-enterprise .quick-actions,
+    .mi-dashboard.mode-enterprise .focus-alert,
+    .mi-dashboard.mode-enterprise .hero-status,
+    .mi-dashboard.mode-enterprise .kpi-card,
+    .mi-dashboard.mode-enterprise .quick-link,
+    .mi-dashboard.mode-enterprise .loading-state,
+    .mi-dashboard.mode-enterprise .error-state,
+    .mi-dashboard.mode-enterprise .toast {
+      background: linear-gradient(165deg, rgba(255, 255, 255, 0.96), rgba(242, 248, 255, 0.88));
+      color: #132d50;
+      border-color: rgba(102, 138, 200, 0.25);
+      box-shadow: 0 14px 24px rgba(18, 49, 95, 0.12);
     }
 
-    .sentiment-section h2 {
-      margin-bottom: 1.5rem;
-      color: var(--text-primary);
-      font-size: 1.3rem;
+    .mi-dashboard.mode-neon {
+      --text-main: #e8fbff;
+      --text-muted: #9ecce1;
+      --accent-cyan: #32ecff;
+      background: radial-gradient(circle at 18% -20%, rgba(24, 63, 192, 0.45) 0%, transparent 45%),
+        radial-gradient(circle at 94% 0%, rgba(32, 182, 175, 0.35) 0%, transparent 34%),
+        linear-gradient(145deg, #060a1f, #130a2d);
     }
 
-    .sentiment-breakdown {
-      display: flex;
-      justify-content: space-around;
-      gap: 1rem;
+    .mi-dashboard.mode-neon .theme-switcher {
+      background: rgba(13, 16, 43, 0.85);
+      border-color: rgba(50, 236, 255, 0.35);
     }
 
-    .sentiment-item {
-      flex: 1;
-      padding: 1.5rem;
-      border-radius: 10px;
-      text-align: center;
-      color: white;
-      transition: transform 0.3s ease;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    .mi-dashboard.mode-neon .theme-switcher button {
+      background: rgba(18, 24, 59, 0.88);
+      border-color: rgba(50, 236, 255, 0.35);
+      color: #dff8ff;
     }
 
-    .sentiment-item:hover {
-      transform: translateY(-3px);
+    .mi-dashboard.mode-neon .hero-card,
+    .mi-dashboard.mode-neon .glass-card,
+    .mi-dashboard.mode-neon .quick-actions,
+    .mi-dashboard.mode-neon .focus-alert,
+    .mi-dashboard.mode-neon .hero-status,
+    .mi-dashboard.mode-neon .kpi-card,
+    .mi-dashboard.mode-neon .quick-link,
+    .mi-dashboard.mode-neon .loading-state,
+    .mi-dashboard.mode-neon .error-state,
+    .mi-dashboard.mode-neon .toast {
+      background: linear-gradient(165deg, rgba(17, 10, 43, 0.9), rgba(8, 21, 53, 0.84));
+      color: #e8fbff;
+      border-color: rgba(50, 236, 255, 0.3);
+      box-shadow: 0 14px 30px rgba(7, 248, 255, 0.12);
     }
 
-    .sentiment-item.positive {
-      background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    .mi-dashboard.mode-neon .chip {
+      color: #b3fcff;
+      border-color: rgba(49, 242, 255, 0.45);
+      background: rgba(49, 242, 255, 0.12);
     }
 
-    .sentiment-item.neutral {
-      background: linear-gradient(135deg, #3498db 0%, #5dade2 100%);
+    .mi-dashboard.mode-premium {
+      --text-main: #1e2a34;
+      --text-muted: #68727d;
+      --accent-cyan: #2f6ea5;
+      background: radial-gradient(circle at 12% -20%, rgba(161, 182, 191, 0.22) 0%, transparent 45%),
+        radial-gradient(circle at 92% 0%, rgba(180, 185, 178, 0.2) 0%, transparent 35%),
+        linear-gradient(145deg, #f7f7f4, #eff1ec);
     }
 
-    .sentiment-item.negative {
-      background: linear-gradient(135deg, #e74c3c 0%, #ec7063 100%);
+    .mi-dashboard.mode-premium .theme-switcher {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(122, 132, 145, 0.24);
+      box-shadow: none;
     }
 
-    .sentiment-item span {
-      display: block;
-      font-size: 0.95rem;
-      opacity: 0.95;
-      font-weight: 500;
+    .mi-dashboard.mode-premium .theme-switcher button {
+      background: rgba(250, 250, 247, 0.9);
+      border-color: rgba(122, 132, 145, 0.28);
+      color: #2a323c;
     }
 
-    .sentiment-item strong {
-      display: block;
-      font-size: 2rem;
-      margin-top: 0.75rem;
-      font-weight: 800;
+    .mi-dashboard.mode-premium .hero-card,
+    .mi-dashboard.mode-premium .glass-card,
+    .mi-dashboard.mode-premium .quick-actions,
+    .mi-dashboard.mode-premium .focus-alert,
+    .mi-dashboard.mode-premium .hero-status,
+    .mi-dashboard.mode-premium .kpi-card,
+    .mi-dashboard.mode-premium .quick-link,
+    .mi-dashboard.mode-premium .loading-state,
+    .mi-dashboard.mode-premium .error-state,
+    .mi-dashboard.mode-premium .toast {
+      background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(247, 248, 244, 0.94));
+      color: #222f3a;
+      border-color: rgba(122, 132, 145, 0.25);
+      box-shadow: 0 10px 20px rgba(31, 44, 54, 0.08);
     }
 
-    .keywords-section {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: var(--shadow-sm);
+    .mi-dashboard.mode-premium .chip {
+      color: #3b5c73;
+      border-color: rgba(98, 121, 137, 0.3);
+      background: rgba(128, 146, 162, 0.12);
     }
 
-    .keywords-section h2 {
-      margin-bottom: 1.5rem;
-      color: var(--text-primary);
-      font-size: 1.3rem;
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise {
+      --text-main: #e9f1ff;
+      --text-muted: #9fb4d7;
+      --accent-cyan: #58a6ff;
+      background: radial-gradient(circle at 12% -20%, rgba(72, 120, 222, 0.38) 0%, transparent 45%),
+        radial-gradient(circle at 92% 0%, rgba(53, 124, 170, 0.34) 0%, transparent 35%),
+        linear-gradient(140deg, #07142d, #0d1f40);
     }
 
-    .keywords-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .hero-card,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .glass-card,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .quick-actions,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .focus-alert,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .hero-status,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .kpi-card,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .quick-link,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .loading-state,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .error-state,
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .toast {
+      background: linear-gradient(165deg, rgba(16, 32, 66, 0.9), rgba(12, 24, 51, 0.84));
+      color: #e9f1ff;
+      border-color: rgba(96, 132, 194, 0.3);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
     }
 
-    .keyword-tag {
-      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-      color: white;
-      padding: 0.6rem 1.2rem;
-      border-radius: 999px;
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .theme-switcher {
+      background: rgba(11, 23, 48, 0.85);
+      border-color: rgba(96, 132, 194, 0.35);
+      box-shadow: none;
     }
 
-    .keyword-tag:hover {
-      transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    :host-context(body.dark-theme) .mi-dashboard.mode-enterprise .theme-switcher button {
+      background: rgba(18, 31, 60, 0.88);
+      border-color: rgba(101, 140, 203, 0.36);
+      color: #dbe8fd;
     }
 
-    .loading,
-    .error {
-      text-align: center;
-      padding: 3rem;
-      background: var(--bg-secondary);
-      border-radius: 8px;
-      margin-top: 2rem;
-      border: 1px solid var(--border-color);
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium {
+      --text-main: #e7edf5;
+      --text-muted: #9caabe;
+      --accent-cyan: #7ca3d8;
+      background: radial-gradient(circle at 12% -20%, rgba(122, 138, 170, 0.24) 0%, transparent 45%),
+        radial-gradient(circle at 92% 0%, rgba(99, 113, 138, 0.22) 0%, transparent 35%),
+        linear-gradient(145deg, #171d26, #111720);
     }
 
-    .alerts-widget {
-      margin: 2rem 0;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 1.5rem;
-      box-shadow: var(--shadow-md);
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .hero-card,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .glass-card,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .quick-actions,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .focus-alert,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .hero-status,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .kpi-card,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .quick-link,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .loading-state,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .error-state,
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .toast {
+      background: linear-gradient(165deg, rgba(25, 32, 44, 0.92), rgba(17, 24, 34, 0.88));
+      color: #e7edf5;
+      border-color: rgba(126, 139, 162, 0.32);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.33);
     }
 
-    .positioning-widget {
-      margin: 2rem 0;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 1.5rem;
-      box-shadow: var(--shadow-md);
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .theme-switcher {
+      background: rgba(19, 25, 35, 0.88);
+      border-color: rgba(126, 139, 162, 0.35);
+      box-shadow: none;
     }
 
-    .positioning-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
+    :host-context(body.dark-theme) .mi-dashboard.mode-premium .theme-switcher button {
+      background: rgba(30, 38, 50, 0.88);
+      border-color: rgba(128, 142, 166, 0.38);
+      color: #d8e0ed;
     }
 
-    .positioning-link {
-      background: var(--primary-color, #1f47ba);
-      color: white;
-      padding: 0.6rem 1rem;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
-    .widget-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
-    .widget-link {
-      color: var(--primary-color, #1f47ba);
-      font-weight: 600;
-      text-decoration: none;
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(46, 243, 145, 0.65);
+      }
+      70% {
+        box-shadow: 0 0 0 8px rgba(46, 243, 145, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(46, 243, 145, 0);
+      }
     }
 
-    .widget-body {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .widget-alert {
-      display: flex;
-      gap: 0.75rem;
-      align-items: flex-start;
-      padding: 0.75rem;
-      border-radius: 10px;
-      background: var(--bg-primary);
-      border: 1px solid var(--border-color);
-    }
-
-    .widget-severity {
-      text-transform: capitalize;
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: var(--bg-primary);
-      border: 1px solid var(--border-color);
-      color: var(--primary-color, #1f47ba);
-      min-width: 72px;
-      text-align: center;
-    }
-
-    .widget-severity.critical {
-      background: #ffe5e5;
-      color: #b42318;
-    }
-
-    .widget-severity.high {
-      background: #fff1d6;
-      color: #b25000;
-    }
-
-    .widget-severity.medium {
-      background: #e8f0ff;
-      color: #1f47ba;
-    }
-
-    .widget-severity.low {
-      background: #e9f7ef;
-      color: #1d7a3f;
-    }
-
-    .widget-content strong {
-      display: block;
-      font-size: 0.95rem;
-      color: var(--text-primary);
-    }
-
-    .widget-meta {
-      font-size: 0.8rem;
-      color: var(--text-secondary, #666);
-    }
-
-    .widget-empty {
-      color: var(--text-secondary, #666);
-    }
-
-    .error {
-      background: rgba(231, 76, 60, 0.1);
-      border: 2px solid var(--danger);
-    }
-
-    .error button {
-      margin-top: 1rem;
-      background-color: var(--danger);
-      color: white;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
-
-    .error button:hover {
-      background-color: #c0392b;
-      transform: translateY(-2px);
-    }
-
-    @media (max-width: 768px) {
-      .insights-bar {
-        padding: 1rem;
-        flex-direction: column;
-        gap: 0.75rem;
+    @media (max-width: 1250px) {
+      .kpi-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
-      .insight-item {
+      .insight-grid,
+      .intelligence-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .mi-dashboard {
+        padding: 0.85rem;
+      }
+
+      .hero-card {
+        grid-template-columns: 1fr;
+      }
+
+      .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .sentiment-layout {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+
+      .sentiment-bars {
         width: 100%;
-        justify-content: center;
       }
 
-      .insight-divider {
-        display: none;
+      .quick-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .summary-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+      .toast-stack {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
       }
 
-      .sentiment-breakdown {
-        flex-direction: column;
-      }
-
-      .sentiment-item {
-        margin-bottom: 0.5rem;
-      }
-
-      h1 {
-        font-size: 1.5rem;
-      }
-
-      .alerts-carousel {
-        gap: 0.75rem;
-        flex-wrap: wrap;
-      }
-
-      .carousel-nav-prev,
-      .carousel-nav-next {
-        width: 45px;
-        height: 45px;
-        font-size: 0.7rem;
-        padding: 0.5rem;
-      }
-
-      .carousel-container {
-        order: -1;
+      .toast {
+        min-width: 0;
         width: 100%;
-        min-height: 300px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .kpi-grid,
+      .quick-actions {
+        grid-template-columns: 1fr;
       }
 
-      .carousel-slide {
-        min-height: 280px;
+      .region-row,
+      .mention-row {
+        grid-template-columns: 1fr;
       }
 
-      .alert-message {
-        font-size: 0.9rem;
-        max-height: 150px;
+      .region-delta,
+      .mention-row strong {
+        justify-self: end;
       }
 
-      .alert-footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
+      .name-wrap small {
+        white-space: normal;
       }
     }
   `],
 })
-export class DashboardComponent implements OnInit {
-  summary: any;
+export class DashboardComponent implements OnInit, OnDestroy {
+  themes: Array<{ id: 'enterprise' | 'neon' | 'premium'; label: string }> = [
+    { id: 'enterprise', label: 'Enterprise' },
+    { id: 'neon', label: 'Neon AI Ops' },
+    { id: 'premium', label: 'Premium Minimal' }
+  ];
+  activeTheme: 'enterprise' | 'neon' | 'premium' = 'enterprise';
+
+  summary: DashboardSummary | null = null;
   isLoading = false;
   error: string | null = null;
   newTodayCount = 0;
   lastUpdated = 'Never';
   alerts: SmartAlert[] = [];
+  newsItems: Array<{ title: string; source?: string }> = [];
+  reportItems: Array<{ title: string; company?: string }> = [];
   realtimeAlerts: RealTimeAlert[] = [];
-  currentAlertIndex: number = 0;
-  private carouselInterval: any;
+  currentAlertIndex = 0;
+  private carouselInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    private apiService: ApiService, 
+    private apiService: ApiService,
     private signalRService: SignalRService,
     private sanitizer: DomSanitizer
   ) {}
@@ -1352,6 +1240,7 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.loadDashboard();
     this.loadAlerts();
+    this.loadMentionsSources();
     this.signalRService.getAlerts$().subscribe(alerts => {
       this.realtimeAlerts = alerts;
     });
@@ -1361,26 +1250,8 @@ export class DashboardComponent implements OnInit {
     this.stopCarouselAutoScroll();
   }
 
-  startCarouselAutoScroll(): void {
-    this.stopCarouselAutoScroll();
-    this.carouselInterval = setInterval(() => {
-      if (this.alerts.length > 0) {
-        this.currentAlertIndex = (this.currentAlertIndex + 1) % this.alerts.length;
-      }
-    }, 3000);
-  }
-
-  stopCarouselAutoScroll(): void {
-    if (this.carouselInterval) {
-      clearInterval(this.carouselInterval);
-      this.carouselInterval = null;
-    }
-  }
-
-  goToSlide(index: number): void {
-    this.stopCarouselAutoScroll();
-    this.currentAlertIndex = index;
-    this.startCarouselAutoScroll();
+  setTheme(theme: 'enterprise' | 'neon' | 'premium'): void {
+    this.activeTheme = theme;
   }
 
   loadDashboard(): void {
@@ -1401,19 +1272,50 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  updateLastUpdated(): void {
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    this.lastUpdated = `${hours}:${minutes}`;
+  loadAlerts(): void {
+    this.apiService.getSmartAlerts().subscribe({
+      next: (alerts) => {
+        if (!alerts || alerts.length === 0) {
+          this.alerts = [];
+          this.newTodayCount = 0;
+          this.currentAlertIndex = 0;
+          this.stopCarouselAutoScroll();
+          return;
+        }
+
+        const dedupById = new Map<string, SmartAlert>();
+        for (const alert of alerts) {
+          if (alert.id && !dedupById.has(alert.id)) {
+            dedupById.set(alert.id, alert);
+          }
+        }
+
+        const dedupByContent = new Map<string, SmartAlert>();
+        for (const alert of dedupById.values()) {
+          const contentKey = [alert.alertType, alert.title, alert.companyName].join('|');
+          if (!dedupByContent.has(contentKey)) {
+            dedupByContent.set(contentKey, alert);
+          }
+        }
+
+        this.alerts = Array.from(dedupByContent.values());
+        this.newTodayCount = this.getTodayCount(this.alerts);
+        this.currentAlertIndex = 0;
+        this.startCarouselAutoScroll();
+      },
+      error: (err) => {
+        console.error('Error loading alerts:', err);
+        this.alerts = [];
+        this.currentAlertIndex = 0;
+        this.newTodayCount = 0;
+        this.stopCarouselAutoScroll();
+      }
+    });
   }
 
-  getSentimentClass(): string {
-    if (!this.summary?.averageSentiment) return '';
-    const sentiment = this.summary.averageSentiment;
-    if (sentiment > 0.3) return 'positive';
-    if (sentiment < -0.3) return 'negative';
-    return 'neutral';
+  sanitizeAlertContent(html: string): string {
+    if (!html) return '';
+    return this.sanitizer.bypassSecurityTrustHtml(html) as unknown as string;
   }
 
   getAlertClass(severity: string | undefined): string {
@@ -1423,88 +1325,291 @@ export class DashboardComponent implements OnInit {
 
   nextAlert(): void {
     this.stopCarouselAutoScroll();
-    if (this.currentAlertIndex < this.alerts.length - 1) {
-      this.currentAlertIndex++;
-    } else {
-      this.currentAlertIndex = 0;
-    }
+    this.currentAlertIndex = this.currentAlertIndex < this.alerts.length - 1 ? this.currentAlertIndex + 1 : 0;
     this.startCarouselAutoScroll();
   }
 
   previousAlert(): void {
     this.stopCarouselAutoScroll();
-    if (this.currentAlertIndex > 0) {
-      this.currentAlertIndex--;
-    } else {
-      this.currentAlertIndex = this.alerts.length - 1;
-    }
+    this.currentAlertIndex = this.currentAlertIndex > 0 ? this.currentAlertIndex - 1 : this.alerts.length - 1;
     this.startCarouselAutoScroll();
   }
 
-  isFirstAlert(): boolean {
-    return this.currentAlertIndex === 0;
-  }
+  get metricCards(): Array<{ label: string; value: string; delta: number; icon: string }> {
+    const score = this.sentimentScore;
+    const riskDelta = this.alerts.length > 12 ? -8.5 : this.alerts.length > 5 ? -3.2 : 2.4;
 
-  isLastAlert(): boolean {
-    return this.currentAlertIndex === this.alerts.length - 1;
-  }
-
-  loadAlerts(): void {
-    this.apiService.getSmartAlerts().subscribe({
-      next: (alerts) => {
-        if (!alerts || alerts.length === 0) {
-          this.alerts = [];
-          this.currentAlertIndex = 0;
-          this.stopCarouselAutoScroll();
-          return;
-        }
-
-        // Deduplicate by ID first (fastest)
-        const dedupById = new Map<string, any>();
-        for (const alert of alerts) {
-          if (alert.id && !dedupById.has(alert.id)) {
-            dedupById.set(alert.id, alert);
-          }
-        }
-        
-        // Then deduplicate by content (AlertType + Title + CompanyName)
-        const dedupByContent = new Map<string, any>();
-        for (const alert of dedupById.values()) {
-          const contentKey = `${alert.alertType}|${alert.title}|${alert.companyName}`;
-          if (!dedupByContent.has(contentKey)) {
-            dedupByContent.set(contentKey, alert);
-          }
-        }
-        
-        // Convert to array
-        this.alerts = Array.from(dedupByContent.values());
-        
-        console.log('Alerts loaded:', {
-          returned: alerts.length,
-          afterIdDedup: dedupById.size,
-          afterContentDedup: dedupByContent.size,
-          final: this.alerts.length
-        });
-        
-        this.currentAlertIndex = 0;
-        this.startCarouselAutoScroll();
+    return [
+      {
+        label: 'News Articles',
+        value: this.formatNumber(this.summary?.totalArticles ?? 0),
+        delta: 12.4,
+        icon: 'NS'
       },
-      error: (err) => {
-        console.error('Error loading alerts:', err);
-        this.alerts = [];
-        this.currentAlertIndex = 0;
-        this.stopCarouselAutoScroll();
+      {
+        label: 'Financial Reports',
+        value: this.formatNumber(this.summary?.totalReports ?? 0),
+        delta: 7.8,
+        icon: 'FR'
+      },
+      {
+        label: 'Active Alerts',
+        value: this.formatNumber(this.summary?.activeAlerts ?? this.alerts.length),
+        delta: riskDelta,
+        icon: 'AL'
+      },
+      {
+        label: 'AI Sentiment Score',
+        value: score.toFixed(1),
+        delta: score >= 65 ? 5.6 : -2.1,
+        icon: 'AI'
+      },
+      {
+        label: 'Realtime Mentions',
+        value: this.formatNumber(this.alerts.length),
+        delta: 9.1,
+        icon: 'RT'
+      }
+    ];
+  }
+
+  get positiveSentiment(): number {
+    return this.normalizePercent(this.summary?.positiveSentiment ?? 0);
+  }
+
+  get neutralSentiment(): number {
+    return this.normalizePercent(this.summary?.neutralSentiment ?? 0);
+  }
+
+  get negativeSentiment(): number {
+    return this.normalizePercent(this.summary?.negativeSentiment ?? 0);
+  }
+
+  get sentimentScore(): number {
+    const normalized = ((this.summary?.averageSentiment ?? 0) + 1) * 50;
+    return Math.max(0, Math.min(100, normalized));
+  }
+
+  get sentimentRingGradient(): string {
+    const positive = this.positiveSentiment;
+    const neutral = this.neutralSentiment;
+    const negative = this.negativeSentiment;
+    const neutralStop = positive + neutral;
+    const finalStop = positive + neutral + negative;
+    const safeFinalStop = Math.min(100, Math.max(finalStop, 0));
+
+    return 'conic-gradient('
+      + '#35d89e 0 ' + positive + '%, '
+      + '#43b7ff ' + positive + '% ' + neutralStop + '%, '
+      + '#ff7997 ' + neutralStop + '% ' + safeFinalStop + '%, '
+      + '#1d335f ' + safeFinalStop + '% 100%)';
+  }
+
+  get regionSignals(): Array<{ name: string; activity: number; intensity: number; delta: number }> {
+    const base = Math.max(this.alerts.length, 8);
+    return [
+      { name: 'North America', activity: Math.round(base * 1.4), intensity: 84, delta: 18 },
+      { name: 'Europe', activity: Math.round(base * 1.2), intensity: 72, delta: 11 },
+      { name: 'Middle East', activity: Math.round(base * 1.1), intensity: 66, delta: 21 },
+      { name: 'Asia Pacific', activity: Math.round(base * 1.25), intensity: 76, delta: 15 },
+      { name: 'Africa', activity: Math.round(base * 0.75), intensity: 49, delta: -4 }
+    ];
+  }
+
+  get regionMapPoints(): Array<{ name: string; short: string; x: number; y: number; activity: number; delta: number }> {
+    const mapping: Record<string, { short: string; x: number; y: number }> = {
+      'North America': { short: 'NA', x: 17, y: 38 },
+      'Europe': { short: 'EU', x: 47, y: 29 },
+      'Middle East': { short: 'ME', x: 58, y: 42 },
+      'Asia Pacific': { short: 'AP', x: 77, y: 47 },
+      'Africa': { short: 'AF', x: 50, y: 62 }
+    };
+
+    return this.regionSignals.map(region => ({
+      name: region.name,
+      short: mapping[region.name]?.short ?? region.name.slice(0, 2).toUpperCase(),
+      x: mapping[region.name]?.x ?? 50,
+      y: mapping[region.name]?.y ?? 50,
+      activity: region.activity,
+      delta: region.delta
+    }));
+  }
+
+  get topCompanyMentions(): Array<{ name: string; count: number; intensity: number; context: string }> {
+    const map = new Map<string, number>();
+    const sources = new Map<string, Set<string>>();
+
+    for (const alert of this.alerts) {
+      const key = (alert.companyName || 'General').trim();
+      map.set(key, (map.get(key) ?? 0) + 1);
+      if (!sources.has(key)) {
+        sources.set(key, new Set<string>());
+      }
+      sources.get(key)?.add('alerts');
+    }
+
+    for (const item of this.newsItems) {
+      const key = this.extractCompanyCandidate(item.title);
+      if (!key) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
+      if (!sources.has(key)) {
+        sources.set(key, new Set<string>());
+      }
+      sources.get(key)?.add('news');
+    }
+
+    for (const report of this.reportItems) {
+      const key = (report.company || this.extractCompanyCandidate(report.title)).trim();
+      if (!key) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
+      if (!sources.has(key)) {
+        sources.set(key, new Set<string>());
+      }
+      sources.get(key)?.add('reports');
+    }
+
+    const list = Array.from(map.entries())
+      .filter(([name]) => name && name.toLowerCase() !== 'general')
+      .map(([name, count]) => ({
+        name,
+        count,
+        context: this.buildMentionContext(sources.get(name))
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const max = list[0]?.count ?? 1;
+
+    if (list.length === 0) {
+      return [
+        { name: 'No Mention Data', count: 0, intensity: 0, context: 'No alerts/news/reports parsed yet' },
+        { name: 'Connect More Sources', count: 0, intensity: 0, context: 'Try enabling additional feeds' },
+        { name: 'Monitor Active Entities', count: 0, intensity: 0, context: 'Mentions appear as data streams in' }
+      ];
+    }
+
+    return list.map(item => ({
+      ...item,
+      intensity: Math.round((item.count / max) * 100)
+    }));
+  }
+
+  private loadMentionsSources(): void {
+    this.apiService.getNewsArticles(1, 120).subscribe({
+      next: response => {
+        const items = Array.isArray(response) ? response : (response?.items || []);
+        this.newsItems = items.map((item: any) => ({
+          title: item?.title || '',
+          source: item?.source
+        }));
+      },
+      error: () => {
+        this.newsItems = [];
+      }
+    });
+
+    this.apiService.getFinancialReports(1, 120).subscribe({
+      next: response => {
+        const items = Array.isArray(response) ? response : (response?.items || response?.data || []);
+        this.reportItems = items.map((item: any) => ({
+          title: item?.title || '',
+          company: item?.company || item?.companyName || ''
+        }));
+      },
+      error: () => {
+        this.reportItems = [];
       }
     });
   }
 
-  sanitizeAlertMessage(message: string): string {
-    if (!message) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(message) as any;
+  private extractCompanyCandidate(text: string): string {
+    if (!text) return '';
+
+    const cleaned = text
+      .replace(/[|:;,()[\]{}]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleaned) return '';
+
+    const stopwords = new Set([
+      'the', 'and', 'for', 'with', 'from', 'into', 'market', 'report', 'news', 'analysis',
+      'global', 'regional', 'update', 'intelligence', 'technology', 'financial', 'quarterly'
+    ]);
+
+    const words = cleaned.split(' ');
+    const titleWords = words.filter(word => {
+      const w = word.trim();
+      if (!w) return false;
+      if (stopwords.has(w.toLowerCase())) return false;
+      return /^[A-Z][a-zA-Z0-9&.-]*$/.test(w);
+    });
+
+    if (titleWords.length === 0) {
+      return '';
+    }
+
+    const candidate = titleWords.slice(0, 3).join(' ').trim();
+    return candidate.length < 3 ? '' : candidate;
   }
 
-  sanitizeAlertContent(html: string): any {
-    if (!html) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(html);
+  private buildMentionContext(raw?: Set<string>): string {
+    const values = raw ? Array.from(raw.values()) : [];
+    if (values.length === 0) {
+      return 'Derived from activity streams';
+    }
+
+    const readable = values.map(value => {
+      if (value === 'alerts') return 'alerts';
+      if (value === 'news') return 'news';
+      if (value === 'reports') return 'reports';
+      return value;
+    });
+
+    return 'Seen in ' + readable.join(', ');
+  }
+
+  private startCarouselAutoScroll(): void {
+    this.stopCarouselAutoScroll();
+    this.carouselInterval = setInterval(() => {
+      if (this.alerts.length > 0) {
+        this.currentAlertIndex = (this.currentAlertIndex + 1) % this.alerts.length;
+      }
+    }, 4000);
+  }
+
+  private stopCarouselAutoScroll(): void {
+    if (this.carouselInterval) {
+      clearInterval(this.carouselInterval);
+      this.carouselInterval = null;
+    }
+  }
+
+  private updateLastUpdated(): void {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    this.lastUpdated = hours + ':' + minutes;
+  }
+
+  private normalizePercent(value: number): number {
+    if (!Number.isFinite(value)) {
+      return 0;
+    }
+    return Math.max(0, Math.min(100, value));
+  }
+
+  private formatNumber(value: number): string {
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
+  }
+
+  private getTodayCount(alerts: SmartAlert[]): number {
+    const today = new Date();
+    return alerts.filter(alert => {
+      const created = new Date(alert.createdAt);
+      return created.getFullYear() === today.getFullYear()
+        && created.getMonth() === today.getMonth()
+        && created.getDate() === today.getDate();
+    }).length;
   }
 }

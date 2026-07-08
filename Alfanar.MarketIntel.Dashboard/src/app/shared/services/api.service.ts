@@ -249,6 +249,7 @@ export interface TenderNotificationRule {
   countryFilter?: string;
   sectorFilter?: string;
   authorityFilter?: string;
+  entityFilter?: string;
   valueMin?: number;
   valueMax?: number;
   keywords?: string;
@@ -263,10 +264,33 @@ export interface CreateTenderNotificationRule {
   countryFilter?: string;
   sectorFilter?: string;
   authorityFilter?: string;
+  entityFilter?: string;
   valueMin?: number;
   valueMax?: number;
   keywords?: string;
   isActive: boolean;
+}
+
+export interface TenderNotificationInboxItem {
+  id: string;
+  tenderNoticeId: string;
+  channel: string;
+  notificationTitle?: string;
+  notificationBody?: string;
+  isRead: boolean;
+  readAt?: string;
+  sentAt: string;
+  tenderTitle: string;
+  authorityName?: string;
+  sector?: string;
+  sourceUrl: string;
+  deadline?: string;
+  countryIsoCode?: string;
+}
+
+export interface TenderNotificationInboxResponse {
+  unreadCount: number;
+  items: TenderNotificationInboxItem[];
 }
 
 export interface TenderIngestionRun {
@@ -512,7 +536,11 @@ export class ApiService {
 
   // Reports
   getFinancialReports(page: number = 1, pageSize: number = 10): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/api/reports?page=${page}&pageSize=${pageSize}`).pipe(catchError(this.handleError));
+    return this.http.get<any>(`${this.apiUrl}/api/reports?pageNumber=${page}&pageSize=${pageSize}`).pipe(catchError(this.handleError));
+  }
+
+  generateReportAnalysis(reportId: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/api/reports/${reportId}/analyze`, {}).pipe(catchError(this.handleError));
   }
 
   // Alerts
@@ -616,15 +644,56 @@ export class ApiService {
   }
 
   // Tender Monitoring
-  getSaudiTenders(pageNumber: number = 1, pageSize: number = 50): Observable<TenderNotice[]> {
+  getSaudiTenders(
+    pageNumber: number = 1,
+    pageSize: number = 50,
+    entity?: string,
+    sector?: string,
+    status?: string,
+    includeGcc: boolean = false
+  ): Observable<TenderNotice[]> {
+    let url = `${this.apiUrl}/api/tenders/saudi?pageNumber=${pageNumber}&pageSize=${pageSize}&includeGcc=${includeGcc}`;
+    if (entity) url += `&entity=${encodeURIComponent(entity)}`;
+    if (sector) url += `&sector=${encodeURIComponent(sector)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    return this.http.get<TenderNotice[]>(url).pipe(catchError(this.handleError));
+  }
+
+  getMiddleEastTenders(
+    pageNumber: number = 1,
+    pageSize: number = 50,
+    entity?: string,
+    sector?: string,
+    status?: string
+  ): Observable<TenderNotice[]> {
+    let url = `${this.apiUrl}/api/tenders/middle-east?pageNumber=${pageNumber}&pageSize=${pageSize}`;
+    if (entity) url += `&entity=${encodeURIComponent(entity)}`;
+    if (sector) url += `&sector=${encodeURIComponent(sector)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    return this.http.get<TenderNotice[]>(url).pipe(catchError(this.handleError));
+  }
+
+  getTenderNotificationInbox(): Observable<TenderNotificationInboxResponse> {
     return this.http
-      .get<TenderNotice[]>(`${this.apiUrl}/api/tenders/saudi?pageNumber=${pageNumber}&pageSize=${pageSize}`)
+      .get<TenderNotificationInboxResponse>(`${this.apiUrl}/api/tenders/notifications`)
       .pipe(catchError(this.handleError));
   }
 
-  getMiddleEastTenders(pageNumber: number = 1, pageSize: number = 50): Observable<TenderNotice[]> {
+  getUnreadTenderNotificationCount(): Observable<{ count: number }> {
     return this.http
-      .get<TenderNotice[]>(`${this.apiUrl}/api/tenders/middle-east?pageNumber=${pageNumber}&pageSize=${pageSize}`)
+      .get<{ count: number }>(`${this.apiUrl}/api/tenders/notifications/unread-count`)
+      .pipe(catchError(this.handleError));
+  }
+
+  markTenderNotificationRead(id: string): Observable<any> {
+    return this.http
+      .post(`${this.apiUrl}/api/tenders/notifications/${id}/read`, {})
+      .pipe(catchError(this.handleError));
+  }
+
+  markAllTenderNotificationsRead(): Observable<any> {
+    return this.http
+      .post(`${this.apiUrl}/api/tenders/notifications/read-all`, {})
       .pipe(catchError(this.handleError));
   }
 

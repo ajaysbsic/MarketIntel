@@ -1,17 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import {
   ApiService,
   TenderNotice,
   TenderIngestionRun,
   TenderNotificationRule,
   CreateTenderNotificationRule,
+  TenderNotificationInboxItem,
   TenderSource,
   CreateTenderSource,
   UpdateTenderSourceRollout,
   TenderRolloutSummary
 } from '../../shared/services/api.service';
+import { SignalRService, TenderToastNotification } from '../../shared/services/signalr.service';
 
 @Component({
   selector: 'app-tender-monitoring',
@@ -20,20 +23,63 @@ import {
   template: `
     <section class="tender-page">
       <header class="hero">
-        <h2>Government Tender Monitoring</h2>
-        <p>Track Saudi and Middle East tenders with freshness, status, and source visibility.</p>
+        <div class="hero-row">
+          <div>
+            <h2>Government Tender Monitoring</h2>
+            <p>Track Saudi and Middle East tenders with freshness, status, and source visibility.</p>
+          </div>
+          <button type="button" class="bell-btn" (click)="toggleInbox()" [class.has-unread]="unreadCount > 0" title="Tender Notifications">
+            &#128276;
+            <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+          </button>
+        </div>
       </header>
 
+      <!-- Notification Inbox Panel -->
+      <section class="inbox-panel" *ngIf="showInbox">
+        <div class="inbox-header">
+          <strong>Tender Notifications</strong>
+          <button type="button" class="link" (click)="markAllRead()" *ngIf="unreadCount > 0">Mark all read</button>
+          <button type="button" class="link danger" (click)="showInbox = false">Close</button>
+        </div>
+        <div class="loading" *ngIf="loadingInbox">Loading...</div>
+        <div class="empty" *ngIf="!loadingInbox && !inbox.length">No notifications yet.</div>
+        <div class="inbox-list">
+          <div class="inbox-item" *ngFor="let item of inbox" [class.unread]="!item.isRead" (click)="markRead(item)">
+            <div class="inbox-title">{{ item.notificationTitle || item.tenderTitle }}</div>
+            <div class="inbox-body">{{ item.notificationBody }}</div>
+            <div class="inbox-meta">{{ item.authorityName }} &bull; {{ item.sector }} &bull; {{ item.sentAt | date: 'dd MMM HH:mm' }}</div>
+            <a [href]="item.sourceUrl" target="_blank" class="inbox-link">Open Tender</a>
+          </div>
+        </div>
+      </section>
+
       <div class="tabs">
-        <button type="button" [class.active]="activeTab === 'saudi'" (click)="activeTab = 'saudi'">Saudi</button>
-        <button type="button" [class.active]="activeTab === 'middleEast'" (click)="activeTab = 'middleEast'">Middle East</button>
-        <button type="button" [class.active]="activeTab === 'sources'" (click)="activeTab = 'sources'">Sources</button>
-        <button type="button" [class.active]="activeTab === 'rules'" (click)="activeTab = 'rules'">Rules</button>
-        <button type="button" [class.active]="activeTab === 'ops'" (click)="activeTab = 'ops'">Ops</button>
+        <button type="button" [class.active]="activeTab === 'saudi'" (click)="setTab('saudi')">Saudi</button>
+        <button type="button" [class.active]="activeTab === 'middleEast'" (click)="setTab('middleEast')">Middle East</button>
+        <button type="button" [class.active]="activeTab === 'sources'" (click)="setTab('sources')">Sources</button>
+        <button type="button" [class.active]="activeTab === 'rules'" (click)="setTab('rules')">Rules</button>
+        <button type="button" [class.active]="activeTab === 'ops'" (click)="setTab('ops')">Ops</button>
+      </div>
+
+      <!-- Entity Filter Chips (Saudi + Middle East) -->
+      <div class="filter-bar" *ngIf="activeTab === 'saudi' || activeTab === 'middleEast'">
+        <div class="chip-group">
+          <button type="button" class="chip" [class.active]="activeEntityFilter === ''" (click)="setEntityFilter('')">All</button>
+          <button type="button" class="chip" [class.active]="activeEntityFilter === 'sec'" (click)="setEntityFilter('sec')">SEC / Saudi Electricity</button>
+          <button type="button" class="chip" [class.active]="activeEntityFilter === 'water-authorities'" (click)="setEntityFilter('water-authorities')">Water Authorities</button>
+          <button type="button" class="chip" [class.active]="activeEntityFilter === 'gulf-construction'" (click)="setEntityFilter('gulf-construction')">Gulf Construction</button>
+          <button type="button" class="chip" [class.active]="activeEntityFilter === 'engineering-industrial'" (click)="setEntityFilter('engineering-industrial')">Engineering / Industrial</button>
+        </div>
+        <div class="gcc-toggle" *ngIf="activeTab === 'saudi'">
+          <button type="button" class="chip" [class.active]="includeGcc" (click)="toggleGcc()">
+            {{ includeGcc ? 'GCC Included' : 'Saudi Only' }}
+          </button>
+        </div>
       </div>
 
       <section class="panel" *ngIf="activeTab === 'saudi'">
-        <h3>Saudi Tenders</h3>
+        <h3>Saudi Tenders <span class="count-badge" *ngIf="saudiTenders.length">{{ saudiTenders.length }}</span></h3>
         <div class="loading" *ngIf="loadingSaudi">Loading Saudi tenders...</div>
         <div class="error" *ngIf="errorSaudi">{{ errorSaudi }}</div>
 
@@ -54,12 +100,12 @@ import {
               <tr *ngFor="let item of saudiTenders">
                 <td>
                   <strong>{{ item.title }}</strong>
-                  <div class="sub">v{{ item.currentVersionNo }} • {{ item.countryIsoCode }}</div>
+                  <div class="sub">v{{ item.currentVersionNo }} &bull; {{ item.countryIsoCode }}</div>
                 </td>
-                <td>{{ item.authorityName || '—' }}</td>
-                <td>{{ item.sector || '—' }}</td>
-                <td>{{ item.publishDate ? (item.publishDate | date: 'yyyy-MM-dd') : '—' }}</td>
-                <td>{{ item.deadline ? (item.deadline | date: 'yyyy-MM-dd') : '—' }}</td>
+                <td>{{ item.authorityName || '&mdash;' }}</td>
+                <td>{{ item.sector || '&mdash;' }}</td>
+                <td>{{ item.publishDate ? (item.publishDate | date: 'yyyy-MM-dd') : '&mdash;' }}</td>
+                <td [class.deadline-soon]="isDeadlineSoon(item.deadline)">{{ item.deadline ? (item.deadline | date: 'yyyy-MM-dd') : '&mdash;' }}</td>
                 <td><span class="pill">{{ item.status }}</span></td>
                 <td><a [href]="item.sourceUrl" target="_blank">Open</a></td>
               </tr>
@@ -72,7 +118,7 @@ import {
       </section>
 
       <section class="panel" *ngIf="activeTab === 'middleEast'">
-        <h3>Middle East Tenders</h3>
+        <h3>Middle East Tenders <span class="count-badge" *ngIf="middleEastTenders.length">{{ middleEastTenders.length }}</span></h3>
         <div class="loading" *ngIf="loadingMiddleEast">Loading Middle East tenders...</div>
         <div class="error" *ngIf="errorMiddleEast">{{ errorMiddleEast }}</div>
 
@@ -93,12 +139,12 @@ import {
               <tr *ngFor="let item of middleEastTenders">
                 <td>
                   <strong>{{ item.title }}</strong>
-                  <div class="sub">v{{ item.currentVersionNo }} • {{ item.countryIsoCode }}</div>
+                  <div class="sub">v{{ item.currentVersionNo }} &bull; {{ item.countryIsoCode }}</div>
                 </td>
                 <td>{{ item.countryName }}</td>
-                <td>{{ item.authorityName || '—' }}</td>
-                <td>{{ item.publishDate ? (item.publishDate | date: 'yyyy-MM-dd') : '—' }}</td>
-                <td>{{ item.deadline ? (item.deadline | date: 'yyyy-MM-dd') : '—' }}</td>
+                <td>{{ item.authorityName || '&mdash;' }}</td>
+                <td>{{ item.publishDate ? (item.publishDate | date: 'yyyy-MM-dd') : '&mdash;' }}</td>
+                <td [class.deadline-soon]="isDeadlineSoon(item.deadline)">{{ item.deadline ? (item.deadline | date: 'yyyy-MM-dd') : '&mdash;' }}</td>
                 <td><span class="pill">{{ item.status }}</span></td>
                 <td><a [href]="item.sourceUrl" target="_blank">Open</a></td>
               </tr>
@@ -123,8 +169,8 @@ import {
             <span>Disabled: {{ rolloutSummary.disabledCount }}</span>
           </div>
           <div class="rollout-actions">
-            <button type="button" class="secondary" (click)="promoteAll('Canary', 'Pilot')">Promote Canary → Pilot</button>
-            <button type="button" class="secondary" (click)="promoteAll('Pilot', 'General')">Promote Pilot → General</button>
+            <button type="button" class="secondary" (click)="promoteAll('Canary', 'Pilot')">Promote Canary &rarr; Pilot</button>
+            <button type="button" class="secondary" (click)="promoteAll('Pilot', 'General')">Promote Pilot &rarr; General</button>
           </div>
           <div class="loading" *ngIf="loadingRollout">Updating rollout...</div>
           <div class="error" *ngIf="errorRollout">{{ errorRollout }}</div>
@@ -255,7 +301,7 @@ import {
                 <td>
                   <span class="pill" [class.danger]="!source.isEnabled">{{ source.isEnabled ? 'Enabled' : 'Disabled' }}</span>
                 </td>
-                <td>{{ source.owner || '—' }}</td>
+                <td>{{ source.owner || '&mdash;' }}</td>
                 <td>
                   <button type="button" class="link" (click)="editSource(source)">Edit</button>
                   <button type="button" class="link" (click)="toggleSourceStatus(source)">{{ source.isEnabled ? 'Disable' : 'Enable' }}</button>
@@ -316,6 +362,11 @@ import {
 
           <div class="row">
             <label>
+              Entity Filter <span class="hint">(use group keys like &quot;sec&quot;, &quot;water-authorities&quot;, &quot;gulf-construction&quot; or custom aliases)</span>
+              <input type="text" [(ngModel)]="ruleForm.entityFilter" name="entityFilter" placeholder="sec or water-authorities" />
+            </label>
+
+            <label>
               Value Min
               <input type="number" [(ngModel)]="ruleForm.valueMin" name="valueMin" />
             </label>
@@ -324,8 +375,10 @@ import {
               Value Max
               <input type="number" [(ngModel)]="ruleForm.valueMax" name="valueMax" />
             </label>
+          </div>
 
-            <label>
+          <div class="row">
+            <label class="full-width">
               Keywords
               <input type="text" [(ngModel)]="ruleForm.keywords" name="keywords" placeholder="substation,transformer" />
             </label>
@@ -370,6 +423,7 @@ import {
                 <th>Country</th>
                 <th>Sector</th>
                 <th>Authority</th>
+                <th>Entity Filter</th>
                 <th>Keywords</th>
                 <th>Range</th>
                 <th>Actions</th>
@@ -379,18 +433,19 @@ import {
               <tr *ngFor="let rule of filteredRules">
                 <td>{{ rule.scope }}</td>
                 <td>{{ rule.channels }}</td>
-                <td>{{ rule.countryFilter || '—' }}</td>
-                <td>{{ rule.sectorFilter || '—' }}</td>
-                <td>{{ rule.authorityFilter || '—' }}</td>
-                <td>{{ rule.keywords || '—' }}</td>
-                <td>{{ rule.valueMin ?? '—' }} - {{ rule.valueMax ?? '—' }}</td>
+                <td>{{ rule.countryFilter || '&mdash;' }}</td>
+                <td>{{ rule.sectorFilter || '&mdash;' }}</td>
+                <td>{{ rule.authorityFilter || '&mdash;' }}</td>
+                <td>{{ rule.entityFilter || '&mdash;' }}</td>
+                <td>{{ rule.keywords || '&mdash;' }}</td>
+                <td>{{ rule.valueMin ?? '&mdash;' }} - {{ rule.valueMax ?? '&mdash;' }}</td>
                 <td>
                   <button type="button" class="link" (click)="editRule(rule)">Edit</button>
                   <button type="button" class="link danger" (click)="deleteRule(rule.id)">Delete</button>
                 </td>
               </tr>
               <tr *ngIf="!filteredRules.length">
-                <td colspan="8" class="empty">No active rules found.</td>
+                <td colspan="9" class="empty">No active rules found.</td>
               </tr>
             </tbody>
           </table>
@@ -423,7 +478,7 @@ import {
                 <td>{{ run.itemsFetched }}</td>
                 <td>{{ run.itemsNew }}</td>
                 <td>{{ run.itemsUpdated }}</td>
-                <td class="error-cell">{{ run.errors || '—' }}</td>
+                <td class="error-cell">{{ run.errors || '&mdash;' }}</td>
               </tr>
               <tr *ngIf="!failedRuns.length">
                 <td colspan="7" class="empty">No failed runs found.</td>
@@ -721,10 +776,148 @@ import {
     :host-context(.dark-theme) .pill.danger {
       background: var(--bg-primary, #1a1a1a);
     }
+
+    /* â”€â”€ New: hero row, bell, inbox, filter chips â”€â”€ */
+    .hero-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .bell-btn {
+      position: relative;
+      background: var(--bg-secondary, #f9fafb);
+      border: 1px solid var(--border-color, #d1d5db);
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      cursor: pointer;
+      font-size: 1.35rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .bell-btn.has-unread {
+      border-color: var(--primary-color, #1f47ba);
+      color: var(--primary-color, #1f47ba);
+    }
+
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #dc2626;
+      color: #fff;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.1rem 0.35rem;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .inbox-panel {
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 10px;
+      background: var(--bg-primary, #fff);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    .inbox-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.9rem;
+      border-bottom: 1px solid var(--border-color, #e5e7eb);
+      background: var(--bg-secondary, #f9fafb);
+    }
+
+    .inbox-header strong { flex: 1; }
+
+    .inbox-list { max-height: 420px; overflow-y: auto; }
+
+    .inbox-item {
+      padding: 0.6rem 0.9rem;
+      border-bottom: 1px solid var(--border-color, #f3f4f6);
+      cursor: default;
+      transition: background 0.15s;
+    }
+
+    .inbox-item:hover { background: var(--bg-secondary, #f9fafb); }
+    .inbox-item.unread { border-left: 3px solid var(--primary-color, #1f47ba); }
+
+    .inbox-title { font-weight: 600; font-size: 0.88rem; margin-bottom: 0.15rem; }
+    .inbox-body { font-size: 0.82rem; color: var(--text-secondary, #4b5563); margin-bottom: 0.2rem; }
+    .inbox-meta { font-size: 0.75rem; color: var(--text-secondary, #6b7280); }
+    .inbox-link { font-size: 0.78rem; }
+
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .chip-group {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .gcc-toggle { flex-shrink: 0; }
+
+    .chip {
+      padding: 0.35rem 0.75rem;
+      border: 1px solid var(--border-color, #d1d5db);
+      border-radius: 999px;
+      background: var(--bg-secondary, #f9fafb);
+      color: var(--text-secondary, #4b5563);
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: all 0.15s;
+    }
+
+    .chip.active {
+      background: var(--primary-color, #1f47ba);
+      color: #fff;
+      border-color: var(--primary-color, #1f47ba);
+    }
+
+    .count-badge {
+      display: inline-block;
+      background: var(--primary-color, #1f47ba);
+      color: #fff;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.1rem 0.45rem;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+    }
+
+    .deadline-soon { color: #b45309; font-weight: 600; }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-secondary, #9ca3af);
+      font-weight: 400;
+    }
   `]
 })
-export class TenderMonitoringComponent implements OnInit {
+export class TenderMonitoringComponent implements OnInit, OnDestroy {
   activeTab: 'saudi' | 'middleEast' | 'sources' | 'rules' | 'ops' = 'saudi';
+
+  // -- Filter state --
+  activeEntityFilter = '';
+  includeGcc = false;
+
+  // -- Notification inbox state --
+  showInbox = false;
+  inbox: TenderNotificationInboxItem[] = [];
+  loadingInbox = false;
+  unreadCount = 0;
 
   saudiTenders: TenderNotice[] = [];
   middleEastTenders: TenderNotice[] = [];
@@ -756,6 +949,7 @@ export class TenderMonitoringComponent implements OnInit {
     countryFilter: undefined,
     sectorFilter: undefined,
     authorityFilter: undefined,
+    entityFilter: undefined,
     valueMin: undefined,
     valueMax: undefined,
     keywords: undefined,
@@ -780,7 +974,12 @@ export class TenderMonitoringComponent implements OnInit {
     owner: undefined
   };
 
-  constructor(private readonly apiService: ApiService) {}
+  private signalRSub?: import('rxjs').Subscription;
+
+  constructor(
+    private readonly apiService: ApiService,
+    private readonly signalR: SignalRService
+  ) {}
 
   ngOnInit(): void {
     this.loadSaudi();
@@ -788,6 +987,86 @@ export class TenderMonitoringComponent implements OnInit {
     this.loadSources();
     this.loadRules();
     this.loadFailedRuns();
+    this.loadUnreadCount();
+    this.signalRSub = this.signalR.getTenderNotifications$().subscribe(notifications => {
+      this.unreadCount = notifications.length;
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.signalRSub?.unsubscribe();
+  }
+
+  setTab(tab: 'saudi' | 'middleEast' | 'sources' | 'rules' | 'ops'): void {
+    this.activeTab = tab;
+  }
+
+  setEntityFilter(filter: string): void {
+    this.activeEntityFilter = filter;
+    this.reloadTenders();
+  }
+
+  toggleGcc(): void {
+    this.includeGcc = !this.includeGcc;
+    this.loadSaudi();
+  }
+
+  toggleInbox(): void {
+    this.showInbox = !this.showInbox;
+    if (this.showInbox) {
+      this.loadInbox();
+    }
+  }
+
+  markRead(item: TenderNotificationInboxItem): void {
+    if (item.isRead) return;
+    this.apiService.markTenderNotificationRead(item.id).subscribe({
+      next: () => {
+        item.isRead = true;
+        this.unreadCount = Math.max(0, this.unreadCount - 1);
+      }
+    });
+  }
+
+  markAllRead(): void {
+    this.apiService.markAllTenderNotificationsRead().subscribe({
+      next: () => {
+        this.inbox.forEach(i => (i.isRead = true));
+        this.unreadCount = 0;
+      }
+    });
+  }
+
+  isDeadlineSoon(deadline?: string): boolean {
+    if (!deadline) return false;
+    const d = new Date(deadline);
+    const diff = (d.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    return diff >= 0 && diff <= 7;
+  }
+
+  private reloadTenders(): void {
+    if (this.activeTab === 'saudi' || this.activeTab === 'middleEast') {
+      this.loadSaudi();
+      this.loadMiddleEast();
+    }
+  }
+
+  private loadInbox(): void {
+    this.loadingInbox = true;
+    this.apiService.getTenderNotificationInbox().subscribe({
+      next: (data) => {
+        this.inbox = data?.items ?? [];
+        this.unreadCount = data?.unreadCount ?? 0;
+        this.loadingInbox = false;
+      },
+      error: () => { this.loadingInbox = false; }
+    });
+  }
+
+  private loadUnreadCount(): void {
+    this.apiService.getUnreadTenderNotificationCount().subscribe({
+      next: (res) => { this.unreadCount = res?.count ?? 0; }
+    });
   }
 
   private loadSources(): void {
@@ -838,8 +1117,8 @@ export class TenderMonitoringComponent implements OnInit {
   private loadSaudi(): void {
     this.loadingSaudi = true;
     this.errorSaudi = '';
-
-    this.apiService.getSaudiTenders(1, 100).subscribe({
+    const ef = this.activeEntityFilter || undefined;
+    this.apiService.getSaudiTenders(1, 100, ef, undefined, undefined, this.includeGcc).subscribe({
       next: (data) => {
         this.saudiTenders = data || [];
         this.loadingSaudi = false;
@@ -854,8 +1133,8 @@ export class TenderMonitoringComponent implements OnInit {
   private loadMiddleEast(): void {
     this.loadingMiddleEast = true;
     this.errorMiddleEast = '';
-
-    this.apiService.getMiddleEastTenders(1, 100).subscribe({
+    const ef = this.activeEntityFilter || undefined;
+    this.apiService.getMiddleEastTenders(1, 100, ef).subscribe({
       next: (data) => {
         this.middleEastTenders = data || [];
         this.loadingMiddleEast = false;
@@ -1019,6 +1298,7 @@ export class TenderMonitoringComponent implements OnInit {
       countryFilter: this.ruleForm.countryFilter || undefined,
       sectorFilter: this.ruleForm.sectorFilter || undefined,
       authorityFilter: this.ruleForm.authorityFilter || undefined,
+      entityFilter: this.ruleForm.entityFilter || undefined,
       keywords: this.ruleForm.keywords || undefined
     };
 
@@ -1046,6 +1326,7 @@ export class TenderMonitoringComponent implements OnInit {
       countryFilter: rule.countryFilter,
       sectorFilter: rule.sectorFilter,
       authorityFilter: rule.authorityFilter,
+      entityFilter: rule.entityFilter,
       valueMin: rule.valueMin,
       valueMax: rule.valueMax,
       keywords: rule.keywords,
@@ -1086,6 +1367,7 @@ export class TenderMonitoringComponent implements OnInit {
         rule.countryFilter,
         rule.sectorFilter,
         rule.authorityFilter,
+        rule.entityFilter,
         rule.keywords,
         rule.userId
       ]
@@ -1106,6 +1388,7 @@ export class TenderMonitoringComponent implements OnInit {
       countryFilter: undefined,
       sectorFilter: undefined,
       authorityFilter: undefined,
+      entityFilter: undefined,
       valueMin: undefined,
       valueMax: undefined,
       keywords: undefined,

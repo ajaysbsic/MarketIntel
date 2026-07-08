@@ -63,8 +63,11 @@ public class ReportsController : ControllerBase
 
         if (!result.IsSuccess)
         {
-            if (result.Error?.Contains("already exists") == true)
+            if (result.Error?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true
+                || result.Error?.Contains("older than latest", StringComparison.OrdinalIgnoreCase) == true)
+            {
                 return Conflict(new { message = result.Error });
+            }
 
             return BadRequest(new { message = result.Error });
         }

@@ -13,7 +13,10 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from urllib.parse import quote_plus, urljoin
 import feedparser
+import requests
+from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 
 from api_client import MarketIntelApiClient
@@ -56,14 +59,20 @@ class RssWatcher:
             request_timeout_seconds=self.config.get('request_timeout_seconds', 60)
         )
         
-        # Now fetch feeds from API using initialized api_client
-        self.feeds = self._fetch_feeds_from_api() or self._load_feeds(feeds_file)
+        # Now fetch feeds from API using initialized api_client.
+        # Only fall back to feeds.json if the API is unavailable, not when the database is simply empty.
+        api_feeds = self._fetch_feeds_from_api()
+        self.feeds = api_feeds if api_feeds is not None else self._load_feeds(feeds_file)
         self.state_manager = StateManager(Path('state.json'))
         
         # Initialize AI summarizer for ingestion-time processing
         # Prioritize environment variable for security in production
         google_ai_key = os.getenv('GOOGLE_AI_API_KEY') or self.config.get('google_ai_api_key')
-        self.ai_processor = SummaryAndSentimentProcessor(google_ai_key=google_ai_key)
+        google_model = self.config.get('google_model', 'gemini-2.5-flash')
+        self.ai_processor = SummaryAndSentimentProcessor(
+            google_ai_key=google_ai_key,
+            model=google_model
+        )
         
         self.running = True
         self.stats = {
@@ -110,7 +119,7 @@ class RssWatcher:
             logger.info(f"INFO Fetching active feeds from API: {feeds_endpoint}")
             response = self.api_client.get_feeds(feeds_endpoint)
             
-            if response and isinstance(response, list):
+            if isinstance(response, list):
                 feeds = []
                 for feed_data in response:
                     feeds.append({
@@ -125,7 +134,7 @@ class RssWatcher:
                 logger.info(f"OK Fetched {len(active_feeds)} active feeds from API database")
                 return active_feeds
             else:
-                logger.warning("No feeds returned from API")
+                logger.warning("No valid feed list returned from API")
                 return None
         except Exception as e:
             logger.warning(f"WARN Failed to fetch feeds from API: {e}. Will try fallback feeds.json")
@@ -154,6 +163,104 @@ class RssWatcher:
             tags.append(entry.category)
             
         return list(set(tags))
+
+    def _company_query(self, feed: Dict[str, Any]) -> str:
+        """Build a clean company/news query from the configured feed name."""
+        company_name = (feed.get('name') or '').strip()
+        for suffix in [' News Feed', ' Feed', ' News', ' RSS']:
+            if company_name.endswith(suffix):
+                company_name = company_name[:-len(suffix)].strip()
+
+        generic_terms = {
+            'company', 'corporation', 'corp', 'inc', 'limited', 'ltd', 'plc',
+            'group', 'global', 'international', 'engineering', 'electrical'
+        }
+        filtered_tokens = [token for token in company_name.split() if token.lower() not in generic_terms]
+        normalized_name = ' '.join(filtered_tokens[:4]).strip()
+        return normalized_name or company_name or feed.get('category', 'company news') or 'company news'
+
+    def _build_google_news_rss_url(self, feed: Dict[str, Any]) -> str:
+        """Fallback Bing News RSS search feed for company monitoring, biased toward English results."""
+        query = quote_plus(self._company_query(feed))
+        return (
+            f"https://www.bing.com/news/search?q={query}"
+            f"&format=rss&setlang=en-US&cc=US&mkt=en-US"
+        )
+
+    def _resolve_feed_url(self, feed: Dict[str, Any]) -> str:
+        """Return a usable RSS/Atom source even when the configured URL is a normal company webpage."""
+        configured_url = (feed.get('url') or '').strip()
+        feed_name = feed.get('name', configured_url or 'Unknown feed')
+
+        if not configured_url:
+            fallback_url = self._build_google_news_rss_url(feed)
+            logger.warning(f"WARN Feed '{feed_name}' has no URL. Falling back to Bing News RSS search.")
+            return fallback_url
+
+        url_lower = configured_url.lower()
+        if any(marker in url_lower for marker in ['/feed', '/rss', '.xml', 'format=rss', 'rss=', 'atom']):
+            return configured_url
+
+        try:
+            response = requests.get(
+                configured_url,
+                timeout=self.config.get('request_timeout_seconds', 60),
+                verify=self.config.get('verify_ssl', True),
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (compatible; MarketIntelBot/1.0)',
+                    'Accept-Language': 'en-US,en;q=0.9'
+                }
+            )
+            response.raise_for_status()
+
+            content_type = response.headers.get('content-type', '').lower()
+            if any(marker in content_type for marker in ['xml', 'rss', 'atom']):
+                return response.url
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            candidates = []
+
+            for tag in soup.find_all(['link', 'a'], href=True):
+                href = tag.get('href', '')
+                if not href:
+                    continue
+
+                absolute_url = urljoin(response.url, href)
+                absolute_url_lower = absolute_url.lower()
+                rel_value = tag.get('rel', [])
+                if isinstance(rel_value, list):
+                    rel_text = ' '.join(rel_value).lower()
+                else:
+                    rel_text = str(rel_value).lower()
+
+                type_text = str(tag.get('type', '')).lower()
+                label_text = ' '.join(filter(None, [tag.get('title', ''), tag.get_text(' ', strip=True)])).lower()
+
+                score = 0
+                if tag.name == 'link' and 'alternate' in rel_text:
+                    score += 3
+                if any(marker in type_text for marker in ['rss', 'atom', 'xml']):
+                    score += 3
+                if any(marker in absolute_url_lower for marker in ['/feed', '/rss', '.xml', 'atom']):
+                    score += 2
+                if any(marker in label_text for marker in ['rss', 'feed', 'atom']):
+                    score += 1
+
+                if score > 0:
+                    candidates.append((score, absolute_url))
+
+            if candidates:
+                resolved_url = sorted(candidates, key=lambda item: item[0], reverse=True)[0][1]
+                logger.info(f"INFO Auto-discovered RSS/Atom feed for {feed_name}: {resolved_url}")
+                return resolved_url
+        except Exception as e:
+            logger.warning(f"WARN Could not auto-discover RSS for {feed_name}: {e}")
+
+        fallback_url = self._build_google_news_rss_url(feed)
+        logger.warning(
+            f"WARN URL for {feed_name} is not a valid RSS feed. Falling back to Bing News RSS search."
+        )
+        return fallback_url
 
     def _normalize_article(self, entry: Dict[str, Any], feed: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize feed entry into API format with AI processing"""
@@ -209,16 +316,20 @@ class RssWatcher:
 
     def _process_feed(self, feed: Dict[str, Any]) -> Dict[str, Any]:
         """Process a single RSS feed"""
-        feed_url = feed.get('url')
+        configured_feed_url = feed.get('url')
+        feed_url = configured_feed_url or self._build_google_news_rss_url(feed)
+        parse_url = self._resolve_feed_url(feed)
         feed_name = feed.get('name', feed_url)
         
         stats = {'processed': 0, 'new': 0, 'duplicates': 0, 'errors': 0}
         
         logger.info(f"INFO Fetching feed: {feed_name}")
+        if parse_url != feed_url:
+            logger.info(f"INFO Using resolved feed source for {feed_name}: {parse_url}")
         
         try:
             etag = self.state_manager.get_etag(feed_url)
-            feed_data = feedparser.parse(feed_url, etag=etag if etag else None)
+            feed_data = feedparser.parse(parse_url, etag=etag if etag and parse_url == feed_url else None)
             
             if hasattr(feed_data, 'status') and feed_data.status == 304:
                 logger.info(f"SKIP Feed not modified: {feed_name}")
@@ -283,8 +394,13 @@ class RssWatcher:
 
     def _process_all_feeds(self):
         """Process all configured feeds"""
+        latest_feeds = self._fetch_feeds_from_api()
+        if latest_feeds is not None:
+            self.feeds = latest_feeds
+
         logger.info(f"\n{'='*60}")
         logger.info(f"START Starting feed processing cycle at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"INFO Active feeds this cycle: {len(self.feeds)}")
         logger.info(f"{'='*60}")
         
         cycle_stats = {'processed': 0, 'new': 0, 'duplicates': 0, 'errors': 0}

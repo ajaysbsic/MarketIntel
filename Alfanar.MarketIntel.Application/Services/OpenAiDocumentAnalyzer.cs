@@ -100,46 +100,53 @@ public class OpenAiDocumentAnalyzer : IDocumentAnalyzer
             if (!response.IsSuccess)
                 return Result<ReportAnalysis>.Failure(response.Error ?? "Analysis failed");
 
-            var analysisData = response.Data!;
+            var rawContent = response.Data!.TryGetProperty("content", out var contentElement)
+                ? contentElement.GetString()
+                : response.Data!.GetRawText();
+
+            if (string.IsNullOrWhiteSpace(rawContent))
+                return Result<ReportAnalysis>.Failure("Empty response from OpenAI");
+
+            var jsonContent = ExtractJsonFromResponse(rawContent);
+            if (string.IsNullOrWhiteSpace(jsonContent))
+                return Result<ReportAnalysis>.Failure("Could not parse OpenAI response as JSON");
+
+            JsonElement analysisData;
+            try
+            {
+                analysisData = JsonSerializer.Deserialize<JsonElement>(jsonContent);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse OpenAI analysis JSON: {Content}", jsonContent);
+                return Result<ReportAnalysis>.Failure($"Invalid JSON in OpenAI response: {ex.Message}");
+            }
+
             var processingTime = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+            var executiveSummary = GetOptionalString(analysisData, "executive_summary", "executiveSummary", "summary") ?? string.Empty;
 
             // Create ReportAnalysis entity
             var analysis = new ReportAnalysis
             {
                 Id = Guid.NewGuid(),
-                ExecutiveSummary = analysisData.GetProperty("executive_summary").GetString() ?? "",
-                KeyHighlights = JsonSerializer.Serialize(analysisData.GetProperty("key_highlights")),
-                StrategicInitiatives = GetOptionalString(analysisData, "strategic_initiatives"),
-                MarketOutlook = GetOptionalString(analysisData, "market_outlook"),
-                RiskFactors = JsonSerializer.Serialize(GetOptionalArray(analysisData, "risk_factors")),
-                CompetitivePosition = GetOptionalString(analysisData, "competitive_position"),
-                InvestmentThesis = GetOptionalString(analysisData, "investment_thesis"),
-                SentimentScore = GetOptionalDouble(analysisData, "sentiment_score"),
-                SentimentLabel = GetOptionalString(analysisData, "sentiment_label") ?? "Neutral",
-                AnalysisConfidence = 0.85, // Default confidence
+                ExecutiveSummary = executiveSummary,
+                KeyHighlights = GetJsonValueOrDefault(analysisData, "[]", "key_highlights", "keyHighlights", "highlights"),
+                StrategicInitiatives = GetOptionalString(analysisData, "strategic_initiatives", "strategicInitiatives"),
+                MarketOutlook = GetOptionalString(analysisData, "market_outlook", "marketOutlook"),
+                RiskFactors = GetJsonValueOrDefault(analysisData, "[]", "risk_factors", "riskFactors", "main_risks"),
+                CompetitivePosition = GetOptionalString(analysisData, "competitive_position", "competitivePosition"),
+                InvestmentThesis = GetOptionalString(analysisData, "investment_thesis", "investmentThesis"),
+                SentimentScore = GetOptionalDouble(analysisData, "sentiment_score", "sentimentScore"),
+                SentimentLabel = GetOptionalString(analysisData, "sentiment_label", "sentimentLabel", "sentiment") ?? "Neutral",
+                AnalysisConfidence = 0.85,
                 AiModel = _model,
-                TokensUsed = GetOptionalInt(analysisData, "tokens_used"),
+                TokensUsed = GetOptionalInt(analysisData, "tokens_used", "tokensUsed"),
                 ProcessingTimeMs = processingTime,
-                CreatedUtc = DateTime.UtcNow
+                CreatedUtc = DateTime.UtcNow,
+                FinancialMetrics = GetJsonValueOrDefault(analysisData, "{}", "financial_metrics", "financialMetrics"),
+                Tags = GetJsonValueOrDefault(analysisData, "[]", "tags"),
+                RelatedEntities = GetJsonValueOrDefault(analysisData, "[]", "related_entities", "relatedEntities")
             };
-
-            // Extract financial metrics
-            if (analysisData.TryGetProperty("financial_metrics", out var metrics))
-            {
-                analysis.FinancialMetrics = metrics.GetRawText();
-            }
-
-            // Extract tags
-            if (analysisData.TryGetProperty("tags", out var tags))
-            {
-                analysis.Tags = tags.GetRawText();
-            }
-
-            // Extract related entities
-            if (analysisData.TryGetProperty("related_entities", out var entities))
-            {
-                analysis.RelatedEntities = entities.GetRawText();
-            }
 
             _logger.LogInformation(
                 "Analysis completed for {Company} {ReportType} in {Ms}ms",
@@ -627,6 +634,7 @@ Document text:
                     new { role = "system", content = "You are a financial analyst expert. Always return valid JSON." },
                     new { role = "user", content = prompt }
                 },
+                response_format = new { type = "json_object" },
                 temperature = _temperature,
                 max_tokens = maxTokens
             };
@@ -648,18 +656,8 @@ Document text:
                 return Result<JsonElement>.Failure("Empty response from OpenAI");
             }
 
-            // Try to parse as JSON
-            try
-            {
-                var jsonData = JsonSerializer.Deserialize<JsonElement>(content);
-                return Result<JsonElement>.Success(jsonData);
-            }
-            catch
-            {
-                // If not valid JSON, wrap it
-                var wrapped = JsonSerializer.Deserialize<JsonElement>($"{{\"content\": {JsonSerializer.Serialize(content)}}}");
-                return Result<JsonElement>.Success(wrapped);
-            }
+            var wrapped = JsonSerializer.Deserialize<JsonElement>($"{{\"content\": {JsonSerializer.Serialize(content)}}}");
+            return Result<JsonElement>.Success(wrapped);
         }
         catch (Exception ex)
         {
@@ -668,27 +666,75 @@ Document text:
         }
     }
 
-    private string? GetOptionalString(JsonElement element, string propertyName)
+    private bool TryGetPropertyAny(JsonElement element, out JsonElement value, params string[] propertyNames)
     {
-        return element.TryGetProperty(propertyName, out var prop) ? prop.GetString() : null;
+        foreach (var propertyName in propertyNames)
+        {
+            if (element.TryGetProperty(propertyName, out value))
+            {
+                return true;
+            }
+
+            foreach (var candidate in element.EnumerateObject())
+            {
+                if (string.Equals(candidate.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = candidate.Value;
+                    return true;
+                }
+            }
+        }
+
+        value = default;
+        return false;
     }
 
-    private double? GetOptionalDouble(JsonElement element, string propertyName)
+    private string? GetOptionalString(JsonElement element, params string[] propertyNames)
     {
-        return element.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.Number 
-            ? prop.GetDouble() 
+        return TryGetPropertyAny(element, out var prop, propertyNames) && prop.ValueKind == JsonValueKind.String
+            ? prop.GetString()
             : null;
     }
 
-    private int? GetOptionalInt(JsonElement element, string propertyName)
+    private double? GetOptionalDouble(JsonElement element, params string[] propertyNames)
     {
-        return element.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.Number 
-            ? prop.GetInt32() 
-            : null;
+        if (TryGetPropertyAny(element, out var prop, propertyNames))
+        {
+            if (prop.ValueKind == JsonValueKind.Number)
+                return prop.GetDouble();
+
+            if (prop.ValueKind == JsonValueKind.String && double.TryParse(prop.GetString(), out var parsed))
+                return parsed;
+        }
+
+        return null;
+    }
+
+    private int? GetOptionalInt(JsonElement element, params string[] propertyNames)
+    {
+        if (TryGetPropertyAny(element, out var prop, propertyNames))
+        {
+            if (prop.ValueKind == JsonValueKind.Number)
+                return prop.GetInt32();
+
+            if (prop.ValueKind == JsonValueKind.String && int.TryParse(prop.GetString(), out var parsed))
+                return parsed;
+        }
+
+        return null;
+    }
+
+    private string GetJsonValueOrDefault(JsonElement element, string defaultJson, params string[] propertyNames)
+    {
+        return TryGetPropertyAny(element, out var prop, propertyNames)
+            ? prop.GetRawText()
+            : defaultJson;
     }
 
     private JsonElement GetOptionalArray(JsonElement element, string propertyName)
     {
-        return element.TryGetProperty(propertyName, out var prop) ? prop : JsonSerializer.Deserialize<JsonElement>("[]");
+        return TryGetPropertyAny(element, out var prop, propertyName)
+            ? prop
+            : JsonSerializer.Deserialize<JsonElement>("[]");
     }
 }

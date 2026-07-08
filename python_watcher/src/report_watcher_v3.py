@@ -13,8 +13,10 @@ import logging
 import time
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 from datetime import datetime
+from urllib.parse import urlparse
+import re
 
 from pdf_scraper import PdfScraper
 from pdf_extractor import PdfExtractor
@@ -56,14 +58,18 @@ class ReportWatcherV3:
             request_timeout_seconds=self.config.get('request_timeout_seconds', 60)
         )
         
-        # Try to fetch targets from API, fallback to JSON file if API unavailable
-        self.targets = self._fetch_targets_from_api() or self._load_targets(targets_file)
+        # Try to fetch targets from API, but keep a fallback target list with curated IR URLs.
+        # Only fall back if the API is unavailable, not when the feeds table is intentionally empty.
+        self.fallback_targets = self._load_targets(targets_file)
+        api_targets = self._fetch_targets_from_api()
+        self.targets = api_targets if api_targets is not None else self.fallback_targets
         
         # Initialize crawler
         crawl_config = CrawlConfig(
             max_depth=self.config.get('crawler_max_depth', 3),
             max_pages=self.config.get('crawler_max_pages', 50),
             delay_seconds=self.config.get('crawler_delay_seconds', 1.0),
+            timeout=self.config.get('crawler_timeout_seconds', 20),
             follow_external=False
         )
         self.crawler = FinancialReportCrawler(crawl_config)
@@ -75,8 +81,13 @@ class ReportWatcherV3:
         provider = self.config.get('api_provider', 'google').lower()
         
         if provider == 'google':
-            api_key = os.getenv('GOOGLE_API_KEY') or self.config.get('google_api_key')
-            model = self.config.get('google_model', 'gemini-1.5-flash')
+            api_key = (
+                os.getenv('GOOGLE_AI_API_KEY')
+                or os.getenv('GOOGLE_API_KEY')
+                or self.config.get('google_ai_api_key')
+                or self.config.get('google_api_key')
+            )
+            model = self.config.get('google_model', 'gemini-2.5-flash')
         else:
             api_key = os.getenv('OPENAI_API_KEY') or self.config.get('openai_api_key')
             model = self.config.get('openai_model', 'gpt-4o-mini')
@@ -87,11 +98,10 @@ class ReportWatcherV3:
             provider=provider
         )
         
-        # Check if this is first run
+        # Track per-company initialization state instead of relying only on a global first run.
         self.state_file = Path('report_state.json')
-        self.is_first_run = not self.state_file.exists()
-        
         self.state_manager = StateManager(self.state_file)
+        self.is_first_run = not self.state_manager.state.get('companies')
         
         # FIX: Use the configured download_dir path from config, or default to actual storage
         # This should point to the same location where the API stores files
@@ -157,7 +167,7 @@ class ReportWatcherV3:
             logger.info(f"INFO Fetching feeds (source of truth for companies): {feeds_endpoint}")
             response = self.api_client.get_feeds(feeds_endpoint)
             
-            if response and isinstance(response, list):
+            if isinstance(response, list):
                 targets = []
                 for feed_data in response:
                     feed_name = feed_data.get('name') or feed_data.get('Name', 'Unknown')
@@ -186,7 +196,7 @@ class ReportWatcherV3:
                 logger.info(f"OK Fetched {len(targets)} companies from Feed Config (source of truth)")
                 return targets
             else:
-                logger.warning("No companies returned from API")
+                logger.warning("No valid company feed list returned from API")
                 return None
         except Exception as e:
             logger.warning(f"WARN Failed to fetch companies from API: {e}. Will try fallback target_urls.json")
@@ -207,29 +217,226 @@ class ReportWatcherV3:
     def _is_company_first_run(self, company_name: str) -> bool:
         """
         Check if this is the first time monitoring this company.
-        Returns True if company has never been processed before.
+        Returns True if the company has not yet been initialized with a baseline report.
         """
-        # Check if we have any processed URLs for this company in state
         state_data = self.state_manager.state.get('companies', {})
-        return company_name not in state_data or not state_data[company_name].get('urls')
-    
-    def _mark_company_initialized(self, company_name: str, url: str):
-        """Mark that a company has been initialized (first report fetched)"""
-        if 'companies' not in self.state_manager.state:
-            self.state_manager.state['companies'] = {}
-        
-        if company_name not in self.state_manager.state['companies']:
-            self.state_manager.state['companies'][company_name] = {
-                'initialized': True,
-                'first_fetch_date': datetime.now().isoformat(),
-                'urls': []
-            }
-        
-        if url not in self.state_manager.state['companies'][company_name]['urls']:
-            self.state_manager.state['companies'][company_name]['urls'].append(url)
-        
+        company_state = state_data.get(company_name, {})
+        return not company_state.get('initialized', False)
+
+    def _normalize_domain(self, url: str) -> str:
+        parsed = urlparse(url or '')
+        return parsed.netloc.lower().replace('www.', '')
+
+    def _extract_company_tokens(self, company_name: str, source_url: str) -> Set[str]:
+        stop_words = {
+            'company', 'corporation', 'corp', 'inc', 'limited', 'ltd', 'plc',
+            'group', 'global', 'holdings', 'holding', 'international', 'sa',
+            'the', 'and', 'for', 'electrical', 'engineering', 'electric', 'energy'
+        }
+
+        tokens = {
+            token for token in re.findall(r'[a-z0-9]+', company_name.lower())
+            if len(token) > 1 and token not in stop_words
+        }
+
+        domain_tokens = {
+            token for token in re.findall(r'[a-z0-9]+', self._normalize_domain(source_url))
+            if len(token) > 1 and token not in {'www', 'com', 'net', 'org', 'en', 'me'}
+        }
+        tokens.update(domain_tokens)
+
+        compact_name = re.sub(r'[^a-z0-9]+', '', company_name.lower())
+        if compact_name:
+            tokens.add(compact_name)
+
+        return tokens
+
+    def _is_supported_financial_report(self, pdf: Dict) -> bool:
+        combined = ' '.join([
+            pdf.get('title', ''),
+            pdf.get('url', ''),
+            pdf.get('link_context', '')
+        ]).lower()
+
+        positive_markers = [
+            'annual report', 'annual results', 'quarterly', 'quarter', 'financial results',
+            'financial report', 'earnings', 'interim report', 'half year', 'half-year',
+            'full year', 'full-year', 'revenue', '10-k', '10-q', 'results'
+        ]
+        negative_markers = [
+            'sustainability', 'esg', 'prospectus', 'consensus', 'presentation',
+            'articles of association', 'certificate', 'policy', 'vpat', 'soc 2', 'iso ',
+            'brochure', 'catalogue', 'catalog', 'preview', 'datasheet', 'whitepaper'
+        ]
+
+        if any(marker in combined for marker in negative_markers):
+            return False
+
+        return any(marker in combined for marker in positive_markers)
+
+    def _filter_company_pdfs(self, pdfs: List[Dict], company_name: str, source_url: str) -> List[Dict]:
+        if not pdfs:
+            return []
+
+        company_tokens = self._extract_company_tokens(company_name, source_url)
+        source_domain = self._normalize_domain(source_url)
+        supported = []
+
+        for pdf in pdfs:
+            if not self._is_supported_financial_report(pdf):
+                continue
+
+            title = (pdf.get('title') or '').lower()
+            pdf_url = (pdf.get('url') or '').lower()
+            context = (pdf.get('link_context') or '').lower()
+            combined = f"{title} {pdf_url} {context}"
+            pdf_domain = self._normalize_domain(pdf.get('url', ''))
+
+            same_domain = bool(source_domain) and pdf_domain.endswith(source_domain)
+            token_match = any(token in combined for token in company_tokens)
+
+            if same_domain or token_match:
+                supported.append(pdf)
+
+        if supported:
+            return supported
+
+        # Fallback: if the page only exposes same-domain documents, use those.
+        fallback = [
+            pdf for pdf in pdfs
+            if self._normalize_domain(pdf.get('url', '')).endswith(source_domain)
+            and self._is_supported_financial_report(pdf)
+        ]
+        return fallback
+
+    def _quarter_rank(self, quarter: Optional[str], report_type: Optional[str] = None) -> int:
+        quarter_map = {'Q1': 1, 'Q2': 2, 'Q3': 3, 'Q4': 4}
+        if quarter:
+            return quarter_map.get(str(quarter).upper(), 0)
+
+        report_type_value = (report_type or '').lower()
+        if 'annual' in report_type_value or 'full year' in report_type_value:
+            return 5
+        if 'half' in report_type_value or 'interim' in report_type_value:
+            return 2
+        return 0
+
+    def _report_rank(self, pdf: Dict) -> Tuple[int, int, int]:
+        fiscal_year = pdf.get('fiscal_year') or 0
+        try:
+            fiscal_year = int(fiscal_year)
+        except (TypeError, ValueError):
+            fiscal_year = 0
+
+        report_type = pdf.get('report_type', '')
+        quarter_rank = self._quarter_rank(pdf.get('fiscal_quarter'), report_type)
+        report_priority = {
+            'Quarterly Earnings': 4,
+            'Earnings Report': 4,
+            'Annual Report': 3,
+            'Financial Report': 2
+        }.get(report_type, 1)
+
+        return fiscal_year, quarter_rank, report_priority
+
+    def _select_latest_pdf(self, pdfs: List[Dict]) -> Optional[Dict]:
+        if not pdfs:
+            return None
+        return sorted(pdfs, key=self._report_rank, reverse=True)[0]
+
+    def _is_newer_than_checkpoint(self, company_name: str, pdf: Dict) -> bool:
+        company_state = self.state_manager.state.get('companies', {}).get(company_name, {})
+        if not company_state.get('initialized'):
+            return True
+
+        latest_pdf = {
+            'fiscal_year': company_state.get('latest_fiscal_year'),
+            'fiscal_quarter': company_state.get('latest_fiscal_quarter'),
+            'report_type': company_state.get('latest_report_type')
+        }
+
+        latest_rank = self._report_rank(latest_pdf)
+        incoming_rank = self._report_rank(pdf)
+
+        if latest_rank > (0, 0, 0) and incoming_rank > (0, 0, 0):
+            return incoming_rank > latest_rank
+
+        latest_url = company_state.get('latest_report_url')
+        latest_title = (company_state.get('latest_report_title') or '').strip().lower()
+        current_title = (pdf.get('title') or '').strip().lower()
+
+        if latest_url and latest_url == pdf.get('url'):
+            return False
+        if latest_title and latest_title == current_title:
+            return False
+
+        # If we cannot prove the document is newer, be conservative and skip it.
+        return latest_rank == (0, 0, 0)
+
+    def _mark_company_initialized(self, company_name: str, latest_pdf: Dict, known_urls: Optional[List[str]] = None):
+        """Mark that a company has been initialized and remember its checkpoint state."""
+        companies = self.state_manager.state.setdefault('companies', {})
+        company_state = companies.setdefault(company_name, {
+            'initialized': False,
+            'first_fetch_date': None,
+            'urls': []
+        })
+
+        company_state['initialized'] = True
+        company_state['first_fetch_date'] = company_state.get('first_fetch_date') or datetime.now().isoformat()
+        company_state['last_seen_at'] = datetime.now().isoformat()
+        company_state['latest_report_url'] = latest_pdf.get('url')
+        company_state['latest_report_title'] = latest_pdf.get('title')
+        company_state['latest_fiscal_year'] = latest_pdf.get('fiscal_year')
+        company_state['latest_fiscal_quarter'] = latest_pdf.get('fiscal_quarter')
+        company_state['latest_report_type'] = latest_pdf.get('report_type')
+
+        remembered_urls = company_state.setdefault('urls', [])
+        for item_url in known_urls or [latest_pdf.get('url')]:
+            if item_url and item_url not in remembered_urls:
+                remembered_urls.append(item_url)
+
         self.state_manager._save_state()
     
+    def _resolve_target_url(self, target: Dict) -> str:
+        """Prefer a more specific investor-relations URL from the fallback list when the configured URL is generic."""
+        configured_url = target.get('url', '')
+        url_lower = configured_url.lower()
+        if any(marker in url_lower for marker in ['/investor', '/financial', '/reports', 'investor-relations', '/ir']):
+            return configured_url
+
+        company_name = (target.get('company', '') or '').strip()
+        normalized_company_name = company_name.lower()
+        company_tokens = {token for token in self._extract_company_tokens(company_name, configured_url) if len(token) > 2}
+
+        # First prefer exact company-name matches from the curated fallback list.
+        for fallback in self.fallback_targets:
+            fallback_company = (fallback.get('company', '') or '').strip().lower()
+            fallback_url = fallback.get('url', '')
+            if fallback_url and (fallback_company == normalized_company_name or normalized_company_name == fallback_company):
+                return fallback_url
+
+        # Then fall back to a stricter token-overlap match to avoid false positives
+        # like mapping Schneider Electric to ABB because of partial 'electric*' matches.
+        best_match_url = ''
+        best_match_score = 0
+        for fallback in self.fallback_targets:
+            fallback_company = fallback.get('company', '')
+            fallback_url = fallback.get('url', '')
+            if not fallback_url:
+                continue
+
+            fallback_tokens = {token for token in self._extract_company_tokens(fallback_company, fallback_url) if len(token) > 2}
+            overlap_score = len(company_tokens.intersection(fallback_tokens))
+            if overlap_score > best_match_score:
+                best_match_score = overlap_score
+                best_match_url = fallback_url
+
+        if best_match_url and best_match_score > 0:
+            return best_match_url
+
+        return configured_url
+
     def _filter_pdfs_by_year(self, pdfs: List[Dict], company_name: str, current_year: int) -> List[Dict]:
         """
         Filter PDFs to prefer current year, then recent years (within 2 years).
@@ -262,6 +469,67 @@ class ReportWatcherV3:
         
         return filtered
     
+    def _initialize_company(self, target: Dict) -> bool:
+        """Create a one-time baseline by ingesting only the latest currently visible report for a company."""
+        company_name = target['company']
+        url = self._resolve_target_url(target)
+
+        logger.info(f"\n? INITIALIZING COMPANY: {company_name}")
+        logger.info(f"?? Will fetch only the latest current financial report and checkpoint the rest")
+        logger.info(f"???  Crawling investor relations: {url}")
+
+        try:
+            if self.use_crawler:
+                pdfs = self.crawler.crawl(url)
+                self.stats['pages_crawled'] += len(self.crawler.visited)
+                self.stats['pdfs_found'] += len(pdfs)
+            else:
+                pdfs = self.scraper.scrape_page(url)
+
+            if not pdfs:
+                logger.warning(f"??  No PDFs found for {company_name}")
+                return False
+
+            logger.info(f"?? Found {len(pdfs)} candidate documents")
+
+            current_year = datetime.now().year
+            filtered_pdfs = self._filter_company_pdfs(pdfs, company_name, url)
+            filtered_pdfs = self._filter_pdfs_by_year(filtered_pdfs, company_name, current_year)
+
+            if not filtered_pdfs:
+                logger.warning(f"??  No valid financial reports found for {company_name}")
+                return False
+
+            latest_pdf = self._select_latest_pdf(filtered_pdfs)
+            if not latest_pdf:
+                logger.warning(f"??  Could not determine latest report for {company_name}")
+                return False
+
+            known_urls = [pdf.get('url') for pdf in filtered_pdfs if pdf.get('url')]
+            logger.info(f"?? Processing ONLY the latest baseline report:")
+            logger.info(f"   ?? {latest_pdf['title'][:60]}")
+            logger.info(f"   ?? {latest_pdf.get('fiscal_quarter', 'N/A')} {latest_pdf.get('fiscal_year', 'N/A')}")
+
+            latest_pdf['company'] = company_name
+            latest_pdf['region'] = target.get('region', 'Global')
+            latest_pdf['sector'] = target.get('sector', 'Unknown')
+
+            success = self._process_single_pdf(latest_pdf, is_existing=True)
+            if success:
+                for item_url in known_urls:
+                    self.state_manager.mark_as_processed(url, item_url)
+                self._mark_company_initialized(company_name, latest_pdf, known_urls=known_urls)
+                logger.info(f"? Successfully initialized {company_name} with latest report")
+                logger.info(f"?? {company_name} now in MONITORING MODE for future reports")
+                self.stats['existing_processed'] += 1
+                return True
+
+            logger.error(f"? Failed to ingest report for {company_name}")
+            return False
+        except Exception as e:
+            logger.error(f"? Error processing existing reports for {company_name}: {e}", exc_info=True)
+            return False
+
     def _process_existing_reports(self):
         """Process latest historical report for NEW companies, then monitor for future reports"""
         if not self.process_existing_on_startup:
@@ -277,110 +545,12 @@ class ReportWatcherV3:
         
         for target in self.targets:
             company_name = target['company']
-            url = target['url']
-            
-            # Check if this is a NEW company (never monitored before)
-            is_new_company = self._is_company_first_run(company_name)
-            
-            if is_new_company:
-                logger.info(f"\n? NEW COMPANY: {company_name}")
-                logger.info(f"?? Will fetch LATEST historical report (one-time initialization)")
+            if self._is_company_first_run(company_name):
+                self._initialize_company(target)
             else:
                 logger.info(f"\n? EXISTING COMPANY: {company_name}")
                 logger.info(f"?? Monitoring for NEW reports only (skip historical lookup)")
-                continue  # Skip to next company - only check for new reports in monitoring cycle
-            
-            logger.info(f"???  Crawling investor relations: {url}")
-            
-            try:
-                # Use web crawler to find PDFs
-                if self.use_crawler:
-                    pdfs = self.crawler.crawl(url)
-                    self.stats['pages_crawled'] += len(self.crawler.visited)
-                    self.stats['pdfs_found'] += len(pdfs)
-                else:
-                    # Fallback to basic scraper
-                    pdfs = self.scraper.scrape_page(url)
-                
-                if not pdfs:
-                    logger.warning(f"??  No PDFs found for {company_name}")
-                    continue
-                
-                logger.info(f"?? Found {len(pdfs)} financial documents")
-                
-                # Filter PDFs:
-                # 1. Only include files that likely belong to this company (by filename/title matching)
-                # 2. Skip documents from other companies (cross-company links)
-                # 3. Prefer current/recent year documents
-                company_lower = company_name.lower()
-                filtered_pdfs = []
-                
-                for pdf in pdfs:
-                    pdf_title = pdf.get('title', '').lower()
-                    pdf_url = pdf.get('url', '').lower()
-                    
-                    # Skip if document is clearly from different company
-                    # (Check if company name NOT in title AND NOT in URL)
-                    if company_lower not in pdf_title and company_lower not in pdf_url:
-                        logger.debug(f"?? Skipping PDF (different company): {pdf.get('title', 'Unknown')}")
-                        continue
-                    
-                    filtered_pdfs.append(pdf)
-                
-                # This is a ONE-TIME initialization per company
-                current_year = datetime.now().year
-                filtered_pdfs = self._filter_pdfs_by_year(filtered_pdfs, company_name, current_year)
-                
-                if not filtered_pdfs:
-                    logger.warning(f"??  No reports from recent years for {company_name}")
-                    continue
-                
-                logger.info(f"?? NEW COMPANY: Filtered to {len(filtered_pdfs)} reports from {current_year - 2} onwards")
-                
-                pdfs_sorted = sorted(
-                    filtered_pdfs,
-                    key=lambda x: (
-                        int(x.get('fiscal_year', 0)) if x.get('fiscal_year') else 0,
-                        x.get('fiscal_quarter', 'Q0')  # Q4 > Q3 > Q2 > Q1
-                    ),
-                    reverse=True
-                )
-                
-                # Take ONLY the most recent report
-                latest_pdf = pdfs_sorted[0] if pdfs_sorted else None
-                
-                if not latest_pdf:
-                    logger.warning(f"??  Could not determine latest report for {company_name}")
-                    continue
-                
-                logger.info(f"?? Processing ONLY the latest report:")
-                logger.info(f"   ?? {latest_pdf['title'][:60]}")
-                logger.info(f"   ?? {latest_pdf.get('fiscal_quarter', 'N/A')} {latest_pdf.get('fiscal_year', 'N/A')}")
-                
-                # Enhance pdf_info with target data
-                latest_pdf['company'] = company_name
-                latest_pdf['region'] = target.get('region', 'Global')
-                latest_pdf['sector'] = target.get('sector', 'Unknown')
-                
-                # Process this PDF
-                logger.info(f"\n?? Processing: {latest_pdf['title'][:60]}...")
-                success = self._process_single_pdf(latest_pdf, is_existing=True)
-                if success:
-                    self.state_manager.mark_as_processed(url, latest_pdf['url'])
-                    self._mark_company_initialized(company_name, latest_pdf['url'])
-                    logger.info(f"? Successfully initialized {company_name} with latest report")
-                    logger.info(f"?? {company_name} now in MONITORING MODE for future reports")
-                    self.stats['existing_processed'] += 1
-                else:
-                    logger.error(f"? Failed to ingest report for {company_name}")
-                
-                # Delay between companies
-                time.sleep(3)
-                
-            except Exception as e:
-                logger.error(f"? Error processing existing reports for {company_name}: {e}", exc_info=True)
-            
-            # Delay between companies
+
             time.sleep(5)
         
         logger.info(f"\n{'='*60}")
@@ -496,7 +666,9 @@ class ReportWatcherV3:
             'companyName': pdf_info.get('company', 'Unknown'),
             'reportType': pdf_info.get('report_type', 'Financial Report'),
             'title': pdf_info['title'],
-            'sourceUrl': pdf_info.get('source_url', pdf_info['url']),
+            # Persist the unique document URL to avoid duplicate-key conflicts when many PDFs
+            # are discovered from the same investor-relations landing page.
+            'sourceUrl': pdf_info['url'],
             'downloadUrl': pdf_info['url'],
             'pageCount': extraction['page_count'],
             'publishedDate': pdf_info.get('published_date'),
@@ -527,7 +699,8 @@ class ReportWatcherV3:
             'scrape_date': datetime.utcnow().isoformat(),
             'watcher_version': '3.0',
             'crawler_used': self.use_crawler,
-            'link_context': pdf_info.get('link_context', '')
+            'link_context': pdf_info.get('link_context', ''),
+            'landingPageUrl': pdf_info.get('source_url', pdf_info['url'])
         }
         
         if analysis:
@@ -540,12 +713,15 @@ class ReportWatcherV3:
     def _process_target(self, target: Dict):
         """Process a single target company (regular monitoring)"""
         company_name = target['company']
-        url = target['url']
+        url = self._resolve_target_url(target)
+
+        if self._is_company_first_run(company_name):
+            self._initialize_company(target)
+            return
         
         logger.info(f"\n?? Monitoring: {company_name}")
         
         try:
-            # Use crawler or basic scraper
             if self.use_crawler:
                 pdfs = self.crawler.crawl(url)
                 self.stats['pages_crawled'] += len(self.crawler.visited)
@@ -553,30 +729,41 @@ class ReportWatcherV3:
                 pdfs = self.scraper.scrape_page(url)
             
             if not pdfs:
-                logger.info(f"??  No new PDFs found")
+                logger.info(f"??  No PDFs found")
+                return
+
+            filtered_pdfs = self._filter_company_pdfs(pdfs, company_name, url)
+            if not filtered_pdfs:
+                logger.info(f"??  No new financial reports found")
                 return
             
             new_count = 0
-            for pdf_info in pdfs:
-                # Check if already processed
-                if self.state_manager.is_processed(url, pdf_info['url']):
+            for pdf_info in sorted(filtered_pdfs, key=self._report_rank):
+                pdf_url = pdf_info.get('url')
+                if not pdf_url:
+                    continue
+
+                if self.state_manager.is_processed(url, pdf_url):
+                    continue
+
+                if not self._is_newer_than_checkpoint(company_name, pdf_info):
+                    logger.info(f"?? Skipping older historical report: {pdf_info.get('title', 'Unknown')[:60]}")
+                    self.state_manager.mark_as_processed(url, pdf_url)
                     continue
                 
                 logger.info(f"\n?? New report detected: {pdf_info['title'][:60]}")
                 
-                # Enhance pdf_info
                 pdf_info['company'] = company_name
                 pdf_info['region'] = target.get('region', 'Global')
                 pdf_info['sector'] = target.get('sector', 'Unknown')
                 
-                # Process new PDF
                 success = self._process_single_pdf(pdf_info, is_existing=False)
                 
                 if success:
                     new_count += 1
-                    self.state_manager.mark_as_processed(url, pdf_info['url'])
+                    self.state_manager.mark_as_processed(url, pdf_url)
+                    self._mark_company_initialized(company_name, pdf_info, known_urls=[pdf_url])
                 
-                # Delay between reports
                 time.sleep(2)
             
             if new_count > 0:
@@ -590,8 +777,15 @@ class ReportWatcherV3:
     
     def _process_all_targets(self):
         """Process all target URLs (regular monitoring)"""
+        latest_targets = self._fetch_targets_from_api()
+        if latest_targets is not None:
+            self.targets = latest_targets
+        elif self.fallback_targets:
+            self.targets = self.fallback_targets
+
         logger.info(f"\n{'='*60}")
         logger.info(f"?? Starting monitoring cycle at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"?? Active companies in monitoring list: {len(self.targets)}")
         logger.info(f"{'='*60}")
         
         for target in self.targets:

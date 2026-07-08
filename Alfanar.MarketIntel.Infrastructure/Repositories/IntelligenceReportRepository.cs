@@ -67,13 +67,18 @@ public class IntelligenceReportRepository : IIntelligenceReportRepository
 
     public async Task<List<IntelligenceReport>> GetReportsByKeywordAsync(string keyword, int pageNumber = 1, int pageSize = 10)
     {
-        return await _context.IntelligenceReports
-            .Where(r => r.Keyword == keyword)
+        var normalizedKeyword = NormalizeKeyword(keyword);
+
+        var reports = await _context.IntelligenceReports
             .OrderByDescending(r => r.GeneratedUtc)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
             .AsNoTracking()
             .ToListAsync();
+
+        return reports
+            .Where(r => NormalizeKeyword(r.Keyword) == normalizedKeyword)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
     }
 
     public async Task<List<IntelligenceReport>> GetReportsByStatusAsync(string status, int pageNumber = 1, int pageSize = 10)
@@ -89,10 +94,14 @@ public class IntelligenceReportRepository : IIntelligenceReportRepository
 
     public async Task<IntelligenceReport?> GetMostRecentForKeywordAsync(string keyword)
     {
-        return await _context.IntelligenceReports
-            .Where(r => r.Keyword == keyword)
+        var normalizedKeyword = NormalizeKeyword(keyword);
+
+        var reports = await _context.IntelligenceReports
+            .AsNoTracking()
             .OrderByDescending(r => r.GeneratedUtc)
-            .FirstOrDefaultAsync();
+            .ToListAsync();
+
+        return reports.FirstOrDefault(r => NormalizeKeyword(r.Keyword) == normalizedKeyword);
     }
 
     public async Task<int> GetReportsCountAsync()
@@ -102,8 +111,22 @@ public class IntelligenceReportRepository : IIntelligenceReportRepository
 
     public async Task<int> GetReportsCountByKeywordAsync(string keyword)
     {
-        return await _context.IntelligenceReports
-            .Where(r => r.Keyword == keyword)
-            .CountAsync();
+        var normalizedKeyword = NormalizeKeyword(keyword);
+
+        var reports = await _context.IntelligenceReports
+            .AsNoTracking()
+            .ToListAsync();
+
+        return reports.Count(r => NormalizeKeyword(r.Keyword) == normalizedKeyword);
+    }
+
+    private static string NormalizeKeyword(string? keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return string.Empty;
+
+        return string.Join(' ', keyword
+            .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            .ToLowerInvariant();
     }
 }

@@ -59,11 +59,42 @@ public class ReportService : IReportService
     {
         try
         {
-            // Check for duplicates
-            if (await _reportRepository.ExistsBySourceUrlAsync(request.SourceUrl))
+            request.CompanyName = NormalizeCompanyName(request.CompanyName);
+            request.Title = (request.Title ?? string.Empty).Trim();
+            request.SourceUrl = (request.SourceUrl ?? string.Empty).Trim();
+            request.DownloadUrl = string.IsNullOrWhiteSpace(request.DownloadUrl)
+                ? request.SourceUrl
+                : request.DownloadUrl.Trim();
+
+            // Use the unique document URL as the canonical persisted source URL.
+            // The landing page can still be preserved in metadata, but this avoids duplicate-key
+            // failures when multiple reports are found on the same investor-relations page.
+            if (!string.IsNullOrWhiteSpace(request.DownloadUrl))
             {
-                _logger.LogWarning("Duplicate report URL attempted: {Url}", request.SourceUrl);
-                return Result<FinancialReportDto>.Failure("Report with this source URL already exists");
+                request.SourceUrl = request.DownloadUrl;
+            }
+
+            var existingReportsForCompany = await _context.FinancialReports
+                .AsNoTracking()
+                .Where(r => r.CompanyName.ToLower() == request.CompanyName.ToLower())
+                .OrderByDescending(r => r.PublishedDate ?? r.CreatedUtc)
+                .ToListAsync();
+
+            if (existingReportsForCompany.Any(existing => IsSameReport(existing, request)))
+            {
+                _logger.LogWarning("Duplicate report suppressed for {Company}: {Title}", request.CompanyName, request.Title);
+                return Result<FinancialReportDto>.Failure("Report already exists for this company or fiscal period");
+            }
+
+            var latestExisting = existingReportsForCompany.FirstOrDefault();
+            if (latestExisting != null && IsHistoricalBackfill(latestExisting, request))
+            {
+                _logger.LogInformation(
+                    "Historical backfill suppressed for {Company}: incoming {Title} is older than latest known report {LatestTitle}",
+                    request.CompanyName,
+                    request.Title,
+                    latestExisting.Title);
+                return Result<FinancialReportDto>.Failure($"Report already exists or is older than latest known report for {request.CompanyName}");
             }
 
             var storedFileResult = await DownloadAndStoreReportAsync(request);
@@ -315,7 +346,10 @@ public class ReportService : IReportService
             report.CompanyName = request.CompanyName;
             report.ReportType = request.ReportType;
             report.Title = request.Title;
-            report.SourceUrl = request.SourceUrl;
+            var canonicalUrl = !string.IsNullOrWhiteSpace(request.DownloadUrl)
+                ? request.DownloadUrl
+                : request.SourceUrl;
+            report.SourceUrl = canonicalUrl;
             report.DownloadUrl = request.DownloadUrl ?? report.DownloadUrl;
             if (request.FileSizeBytes.HasValue)
             {
@@ -1032,6 +1066,124 @@ public class ReportService : IReportService
         var invalidChars = Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()).ToArray();
         var sanitized = string.Join("_", segment.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
         return sanitized.Replace("/", "_").Replace("\\", "_");
+    }
+
+    private static string NormalizeCompanyName(string? companyName)
+    {
+        if (string.IsNullOrWhiteSpace(companyName))
+            return "Unknown";
+
+        return string.Join(' ', companyName
+            .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    private static string NormalizeReportTitle(string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return string.Empty;
+
+        var cleaned = new string(title
+            .ToLowerInvariant()
+            .Select(ch => char.IsLetterOrDigit(ch) || char.IsWhiteSpace(ch) ? ch : ' ')
+            .ToArray());
+
+        return string.Join(' ', cleaned.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    private static int GetQuarterRank(string? fiscalQuarter, string? reportType = null)
+    {
+        if (!string.IsNullOrWhiteSpace(fiscalQuarter))
+        {
+            return fiscalQuarter.Trim().ToUpperInvariant() switch
+            {
+                "Q1" => 1,
+                "Q2" => 2,
+                "Q3" => 3,
+                "Q4" => 4,
+                _ => 0
+            };
+        }
+
+        var reportTypeValue = (reportType ?? string.Empty).ToLowerInvariant();
+        if (reportTypeValue.Contains("annual") || reportTypeValue.Contains("full year"))
+            return 5;
+        if (reportTypeValue.Contains("half") || reportTypeValue.Contains("interim"))
+            return 2;
+
+        return 0;
+    }
+
+    private static int GetPeriodRank(int? fiscalYear, string? fiscalQuarter, string? reportType, DateTime? publishedDate, DateTime createdUtc)
+    {
+        if (fiscalYear.HasValue && fiscalYear.Value > 0)
+        {
+            return fiscalYear.Value * 10 + GetQuarterRank(fiscalQuarter, reportType);
+        }
+
+        if (publishedDate.HasValue)
+        {
+            var quarter = ((publishedDate.Value.Month - 1) / 3) + 1;
+            return publishedDate.Value.Year * 10 + quarter;
+        }
+
+        return createdUtc.Year * 10 + (((createdUtc.Month - 1) / 3) + 1);
+    }
+
+    private static bool IsSameReport(FinancialReport existing, IngestReportRequest request)
+    {
+        if (!string.IsNullOrWhiteSpace(request.DownloadUrl)
+            && string.Equals(existing.DownloadUrl, request.DownloadUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.SourceUrl)
+            && string.Equals(existing.SourceUrl, request.SourceUrl, StringComparison.OrdinalIgnoreCase)
+            && NormalizeReportTitle(existing.Title) == NormalizeReportTitle(request.Title))
+        {
+            return true;
+        }
+
+        var samePeriod = existing.FiscalYear.HasValue
+            && request.FiscalYear.HasValue
+            && existing.FiscalYear == request.FiscalYear
+            && string.Equals(existing.FiscalQuarter ?? string.Empty, request.FiscalQuarter ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+
+        if (samePeriod)
+        {
+            return true;
+        }
+
+        return NormalizeReportTitle(existing.Title) == NormalizeReportTitle(request.Title);
+    }
+
+    private static bool IsHistoricalBackfill(FinancialReport latestExisting, IngestReportRequest request)
+    {
+        var latestRank = GetPeriodRank(
+            latestExisting.FiscalYear,
+            latestExisting.FiscalQuarter,
+            latestExisting.ReportType,
+            latestExisting.PublishedDate,
+            latestExisting.CreatedUtc);
+
+        var incomingRank = GetPeriodRank(
+            request.FiscalYear,
+            request.FiscalQuarter,
+            request.ReportType,
+            request.PublishedDate,
+            DateTime.UtcNow);
+
+        if (latestRank > 0 && incomingRank > 0)
+        {
+            return incomingRank < latestRank;
+        }
+
+        if (latestExisting.PublishedDate.HasValue && request.PublishedDate.HasValue)
+        {
+            return request.PublishedDate.Value < latestExisting.PublishedDate.Value;
+        }
+
+        return false;
     }
 
     private record StoredFile(string Path, long SizeBytes);

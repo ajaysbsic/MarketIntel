@@ -65,6 +65,8 @@ public class TenderNotificationRuleDto
     public string? CountryFilter { get; set; }
     public string? SectorFilter { get; set; }
     public string? AuthorityFilter { get; set; }
+    /// <summary>Comma-separated entity/company name aliases for filtering.</summary>
+    public string? EntityFilter { get; set; }
     public decimal? ValueMin { get; set; }
     public decimal? ValueMax { get; set; }
     public string? Keywords { get; set; }
@@ -80,10 +82,38 @@ public class CreateTenderNotificationRuleDto
     public string? CountryFilter { get; set; }
     public string? SectorFilter { get; set; }
     public string? AuthorityFilter { get; set; }
+    /// <summary>Comma-separated entity/company name aliases for entity-level filtering.</summary>
+    public string? EntityFilter { get; set; }
     public decimal? ValueMin { get; set; }
     public decimal? ValueMax { get; set; }
     public string? Keywords { get; set; }
     public bool IsActive { get; set; } = true;
+}
+
+/// <summary>Represents a single tender notification in the user's inbox.</summary>
+public class TenderNotificationInboxItemDto
+{
+    public Guid Id { get; set; }
+    public Guid TenderNoticeId { get; set; }
+    public string Channel { get; set; } = "InApp";
+    public string DeliveryStatus { get; set; } = string.Empty;
+    public string? NotificationTitle { get; set; }
+    public string? NotificationBody { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime? ReadAt { get; set; }
+    public DateTime SentAt { get; set; }
+    // Tender snapshot for quick display
+    public string TenderTitle { get; set; } = string.Empty;
+    public string? AuthorityName { get; set; }
+    public string? Sector { get; set; }
+    public string SourceUrl { get; set; } = string.Empty;
+    public DateTime? Deadline { get; set; }
+}
+
+public class TenderNotificationInboxResponseDto
+{
+    public int UnreadCount { get; set; }
+    public List<TenderNotificationInboxItemDto> Items { get; set; } = new();
 }
 
 public class TenderIngestionRunDto
@@ -148,6 +178,19 @@ public class TenderFeatureFlagsDto
     public bool GlobalEnabled { get; set; } = true;
     public List<string> AllowedSources { get; set; } = new();
     public List<string> AllowedCountries { get; set; } = new();
+}
+
+/// <summary>Query-time filter applied when listing tenders.</summary>
+public class TenderQueryFilterDto
+{
+    /// <summary>Comma-separated entity/company alias tokens for substring match against title/authority/source.</summary>
+    public string? EntityFilter { get; set; }
+    /// <summary>Exact sector match filter.</summary>
+    public string? SectorFilter { get; set; }
+    /// <summary>Tender status filter (e.g. "Open").</summary>
+    public string? StatusFilter { get; set; }
+    /// <summary>When true, include GCC/ME results alongside Saudi in the Saudi view.</summary>
+    public bool IncludeGcc { get; set; } = false;
 }
 
 public class UpdateTenderSourceRolloutDto

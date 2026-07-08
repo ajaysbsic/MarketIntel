@@ -847,10 +847,13 @@ export class KeywordMonitorsComponent implements OnInit, OnDestroy {
   }
 
   createMonitor(): void {
-    if (!this.newMonitor.keyword?.trim()) {
+    const normalizedKeyword = this.normalizeKeyword(this.newMonitor.keyword);
+    if (!normalizedKeyword) {
       this.errorMessage = 'Keyword cannot be empty';
       return;
     }
+
+    this.newMonitor.keyword = normalizedKeyword;
 
     this.api.createKeywordMonitor(this.newMonitor).subscribe({
       next: (monitor) => {
@@ -900,15 +903,16 @@ export class KeywordMonitorsComponent implements OnInit, OnDestroy {
   }
 
   viewResults(keyword: string): void {
+    const normalizedKeyword = this.normalizeKeyword(keyword);
     this.showingResults = true;
-    this.currentKeyword = keyword;
+    this.currentKeyword = normalizedKeyword;
     this.loadingResults = true;
     this.curationError = '';
     this.curatedInsight = null;
     this.latestReport = null;
 
     const request: CurateIntelligenceRequest = {
-      keyword: keyword,
+      keyword: normalizedKeyword,
       maxArticles: 30
     };
 
@@ -924,7 +928,7 @@ export class KeywordMonitorsComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.api.getIntelligenceReportsByKeyword(keyword, 1, 1).subscribe({
+    this.api.getIntelligenceReportsByKeyword(normalizedKeyword, 1, 1).subscribe({
       next: (data) => {
         this.latestReport = data.items?.[0] || null;
       },
@@ -963,6 +967,10 @@ export class KeywordMonitorsComponent implements OnInit, OnDestroy {
         console.error('Error downloading report PDF:', err);
       }
     });
+  }
+
+  private normalizeKeyword(value: string | undefined): string {
+    return (value ?? '').replace(/\s+/g, ' ').trim();
   }
 
   resetForm(): void {

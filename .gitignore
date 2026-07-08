@@ -19,6 +19,9 @@ node_modules/
 **/logs/
 **/*.log
 python_watcher/state.json
+python_watcher/*_state.json
+state.json
+Alfanar.MarketIntel.Api/storage/reports/
 python_watcher/downloads/
 Alfanar.MarketIntel.Api/publish/
 Alfanar.MarketIntel.Api/*.zip

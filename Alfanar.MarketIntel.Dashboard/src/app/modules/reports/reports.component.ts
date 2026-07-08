@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../shared/services/api.service';
+import { SignalRService } from '../../shared/services/signalr.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -86,7 +87,18 @@ import { environment } from '../../../environments/environment';
 
             <!-- Right Section: AI Summary -->
             <div class="report-summary-panel">
-              <h4>🤖 AI Summary</h4>
+              <div class="summary-header">
+                <h4>🤖 AI Summary</h4>
+                <button
+                  type="button"
+                  class="icon-btn"
+                  [title]="isAnalyzing(report) ? 'Refreshing summary...' : 'Refresh AI summary'"
+                  [attr.aria-label]="isAnalyzing(report) ? 'Refreshing AI summary' : 'Refresh AI summary'"
+                  [disabled]="isAnalyzing(report)"
+                  (click)="refreshAnalysis(report)">
+                  <span class="material-icons" [class.spin]="isAnalyzing(report)">refresh</span>
+                </button>
+              </div>
               <div class="summary-content">
                 {{ getAISummary(report) }}
               </div>
@@ -300,10 +312,52 @@ import { environment } from '../../../environments/environment';
       border-radius: 4px;
     }
 
+    .summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
     .report-summary-panel h4 {
-      margin: 0 0 1rem 0;
+      margin: 0;
       color: #333;
       font-size: 1rem;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      background: #fff;
+      color: #667eea;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(102, 126, 234, 0.25);
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    .material-icons {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
     }
 
     .summary-content {
@@ -328,23 +382,35 @@ import { environment } from '../../../environments/environment';
     }
   `],
 })
-export class ReportsComponent implements OnInit {
+export class ReportsComponent implements OnInit, OnDestroy {
   reports: any[] = [];
   isLoading = false;
   error: string = '';
   apiBaseUrl = environment.apiUrl;
   pageNumber = 1;
-  pageSize = 10;
+  pageSize = 20;
   totalCount = 0;
   totalPages = 1;
+  private readonly analyzingReportIds = new Set<string>();
+  private reportAnalysisSub?: Subscription;
 
   constructor(
     private apiService: ApiService,
-    private sanitizer: DomSanitizer
+    private signalRService: SignalRService
   ) {}
 
   ngOnInit(): void {
+    this.reportAnalysisSub = this.signalRService.getReportAnalysisUpdates$().subscribe((payload) => {
+      if (payload?.reportId) {
+        this.applyAnalysisUpdate(payload.reportId, payload.analysis);
+      }
+    });
+
     this.loadReports();
+  }
+
+  ngOnDestroy(): void {
+    this.reportAnalysisSub?.unsubscribe();
   }
 
   loadReports(): void {
@@ -405,7 +471,52 @@ export class ReportsComponent implements OnInit {
     return `${quarter} ${fiscalYear}`.trim();
   }
 
+  refreshAnalysis(report: any): void {
+    const reportId = String(report.id || report.Id || '');
+    if (!reportId || this.analyzingReportIds.has(reportId)) {
+      return;
+    }
+
+    this.analyzingReportIds.add(reportId);
+    delete report._analysisError;
+
+    this.apiService.generateReportAnalysis(reportId).subscribe({
+      next: (analysis) => {
+        this.applyAnalysisUpdate(reportId, analysis);
+      },
+      error: (err) => {
+        console.error('Failed to refresh AI summary:', err);
+        report._analysisError = '⚠️ Failed to refresh AI summary. Please try again.';
+        this.analyzingReportIds.delete(reportId);
+      },
+    });
+  }
+
+  isAnalyzing(report: any): boolean {
+    const reportId = String(report.id || report.Id || '');
+    return this.analyzingReportIds.has(reportId);
+  }
+
+  private applyAnalysisUpdate(reportId: string, analysis: any): void {
+    const target = this.reports.find((item) => String(item.id || item.Id || '') === String(reportId));
+    if (target) {
+      target.analysis = analysis;
+      target.Analysis = analysis;
+      delete target._analysisError;
+    }
+
+    this.analyzingReportIds.delete(String(reportId));
+  }
+
   getAISummary(report: any): string {
+    if (report._analysisError) {
+      return report._analysisError;
+    }
+
+    if (this.isAnalyzing(report)) {
+      return '⏳ Refreshing AI summary with OpenAI...';
+    }
+
     const analysis = report.analysis || report.Analysis;
     if (analysis) {
       const summary = analysis.executiveSummary || analysis.ExecutiveSummary;
@@ -413,7 +524,8 @@ export class ReportsComponent implements OnInit {
         return summary;
       }
     }
-    return '⏳ AI summary being generated...';
+
+    return 'No AI summary saved yet. Click the refresh icon to generate it now.';
   }
 
   getSentimentClass(label: string): string {

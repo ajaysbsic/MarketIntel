@@ -60,9 +60,22 @@ public class TenderMonitoringController : ControllerBase
 
     [HttpGet("saudi")]
     [ProducesResponseType(typeof(List<TenderNoticeDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSaudi([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetSaudi(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? entity = null,
+        [FromQuery] string? sector = null,
+        [FromQuery] string? status = null,
+        [FromQuery] bool includeGcc = false)
     {
-        var result = await _service.GetSaudiNoticesAsync(pageNumber, pageSize);
+        var filter = new TenderQueryFilterDto
+        {
+            EntityFilter = entity,
+            SectorFilter = sector,
+            StatusFilter = status,
+            IncludeGcc = includeGcc
+        };
+        var result = await _service.GetSaudiNoticesAsync(pageNumber, pageSize, filter);
         if (!result.IsSuccess)
             return BadRequest(new { message = result.Error });
 
@@ -71,13 +84,68 @@ public class TenderMonitoringController : ControllerBase
 
     [HttpGet("middle-east")]
     [ProducesResponseType(typeof(List<TenderNoticeDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMiddleEast([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetMiddleEast(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? entity = null,
+        [FromQuery] string? sector = null,
+        [FromQuery] string? status = null)
     {
-        var result = await _service.GetMiddleEastNoticesAsync(pageNumber, pageSize);
+        var filter = new TenderQueryFilterDto
+        {
+            EntityFilter = entity,
+            SectorFilter = sector,
+            StatusFilter = status,
+            IncludeGcc = false
+        };
+        var result = await _service.GetMiddleEastNoticesAsync(pageNumber, pageSize, filter);
         if (!result.IsSuccess)
             return BadRequest(new { message = result.Error });
 
         return Ok(result.Data);
+    }
+
+    // ─── Tender Notification Inbox ───────────────────────────────────────────
+
+    [HttpGet("notifications")]
+    [ProducesResponseType(typeof(TenderNotificationInboxResponseDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyNotifications([FromQuery] int pageSize = 50)
+    {
+        var logs = await _noticeRepository.GetRecentInAppLogsAsync(pageSize);
+        var items = logs.Select(MapInboxItem).ToList();
+        return Ok(new TenderNotificationInboxResponseDto
+        {
+            UnreadCount = items.Count(x => !x.IsRead),
+            Items = items
+        });
+    }
+
+    [HttpGet("notifications/unread-count")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUnreadCount()
+    {
+        var count = await _noticeRepository.GetUnreadInAppCountAsync();
+        return Ok(new { count });
+    }
+
+    [HttpPost("notifications/{id:guid}/read")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> MarkRead(Guid id)
+    {
+        var log = await _noticeRepository.GetNotificationLogByIdAsync(id);
+        if (log == null) return NotFound();
+        log.IsRead = true;
+        log.ReadAt = DateTime.UtcNow;
+        await _noticeRepository.SaveNotificationLogAsync();
+        return NoContent();
+    }
+
+    [HttpPost("notifications/read-all")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> MarkAllRead()
+    {
+        await _noticeRepository.MarkAllInAppLogsReadAsync();
+        return NoContent();
     }
 
     [HttpGet("sources")]
@@ -526,6 +594,7 @@ public class TenderMonitoringController : ControllerBase
             CountryFilter = request.CountryFilter,
             SectorFilter = request.SectorFilter,
             AuthorityFilter = request.AuthorityFilter,
+            EntityFilter = request.EntityFilter,
             ValueMin = request.ValueMin,
             ValueMax = request.ValueMax,
             Keywords = request.Keywords,
@@ -554,6 +623,7 @@ public class TenderMonitoringController : ControllerBase
         existing.CountryFilter = request.CountryFilter;
         existing.SectorFilter = request.SectorFilter;
         existing.AuthorityFilter = request.AuthorityFilter;
+        existing.EntityFilter = request.EntityFilter;
         existing.ValueMin = request.ValueMin;
         existing.ValueMax = request.ValueMax;
         existing.Keywords = request.Keywords;
@@ -620,11 +690,33 @@ public class TenderMonitoringController : ControllerBase
             CountryFilter = entity.CountryFilter,
             SectorFilter = entity.SectorFilter,
             AuthorityFilter = entity.AuthorityFilter,
+            EntityFilter = entity.EntityFilter,
             ValueMin = entity.ValueMin,
             ValueMax = entity.ValueMax,
             Keywords = entity.Keywords,
             IsActive = entity.IsActive,
             CreatedUtc = entity.CreatedUtc
+        };
+    }
+
+    private static TenderNotificationInboxItemDto MapInboxItem(Alfanar.MarketIntel.Domain.Entities.TenderNotificationLog log)
+    {
+        return new TenderNotificationInboxItemDto
+        {
+            Id = log.Id,
+            TenderNoticeId = log.TenderNoticeId,
+            Channel = log.Channel,
+            DeliveryStatus = log.DeliveryStatus,
+            NotificationTitle = log.NotificationTitle,
+            NotificationBody = log.NotificationBody,
+            IsRead = log.IsRead,
+            ReadAt = log.ReadAt,
+            SentAt = log.SentAt,
+            TenderTitle = log.TenderNotice?.Title ?? string.Empty,
+            AuthorityName = log.TenderNotice?.Authority?.Name,
+            Sector = log.TenderNotice?.Sector,
+            SourceUrl = log.TenderNotice?.SourceUrl ?? string.Empty,
+            Deadline = log.TenderNotice?.Deadline
         };
     }
 

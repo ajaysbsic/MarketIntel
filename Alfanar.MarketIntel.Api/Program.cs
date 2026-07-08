@@ -112,13 +112,15 @@ builder.Services.AddScoped<IKeywordMonitorService, KeywordMonitorService>();
 builder.Services.AddScoped<ITechnologyReportService, TechnologyReportService>();
 
 var useAzureBlobStorage = builder.Configuration.GetValue<bool>("AzureStorage:UseAzureBlobStorage");
-if (useAzureBlobStorage)
+var azureStorageConnectionString = builder.Configuration["AzureStorage:ConnectionString"];
+if (useAzureBlobStorage && !string.IsNullOrWhiteSpace(azureStorageConnectionString))
 {
     builder.Services.AddScoped<IFileStorageService, AzureBlobStorageService>();
 }
 else
 {
     builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+    Log.Information("Using local file storage for reports (Azure blob storage is disabled or not configured)");
 }
 builder.Services.AddScoped<MetricExtractionService>(); // Metric extraction
 builder.Services.AddScoped<AlertRulesEngine>(); // NEW: Alert rules engine
@@ -127,6 +129,7 @@ builder.Services.AddScoped<PdfReportGenerator>(); // NEW: PDF report generation
 builder.Services.AddScoped<IContactFormSubmissionRepository, ContactFormSubmissionRepository>();
 builder.Services.AddScoped<ICompanyContactInfoRepository, CompanyContactInfoRepository>();
 builder.Services.AddScoped<ISmartAlertNotifier, SignalRAlertNotifier>(); // NEW
+builder.Services.AddScoped<ITenderNotificationBroadcaster, SignalRTenderBroadcaster>(); // NEW
 builder.Services.AddScoped<IJobOrchestrationService, JobOrchestrationService>();
 builder.Services.AddScoped<IRssFeedPollerJob, RssFeedPollerJob>();
 builder.Services.AddScoped<IKeywordMonitorJob, KeywordMonitorJob>();

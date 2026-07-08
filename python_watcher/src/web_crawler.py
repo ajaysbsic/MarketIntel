@@ -133,6 +133,10 @@ class FinancialReportCrawler:
             List of dictionaries containing PDF information
         """
         logger.info(f"Starting crawl from: {start_url}")
+
+        # Reset per-run state so results from one company don't leak into another crawl.
+        self.visited = set()
+        self.found_pdfs = []
         
         # Normalize start URL
         base_domain = self._get_domain(start_url)
@@ -368,11 +372,10 @@ class FinancialReportCrawler:
         for pattern in self.config.exclude_patterns:
             if re.search(pattern, url_lower):
                 return False
-        
-        # CHANGED: Follow ALL internal links (don't require include_patterns match)
-        # This allows discovery of investor relations pages from homepage
-        # The include_patterns are still used to extract PDFs (_is_relevant_document)
-        return True
+
+        # Keep the crawl focused on investor-relations and financial-report paths.
+        # This avoids wandering through unrelated regional/product pages and timing out.
+        return any(re.search(pattern, url_lower) for pattern in self.config.include_patterns)
     
     def _classify_report_type(self, text: str, url: str) -> str:
         """Classify the type of financial report"""

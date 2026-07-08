@@ -537,14 +537,16 @@ export class IntelligenceReportsComponent implements OnInit, OnDestroy {
   }
 
   generateReport(): void {
-    if (!this.request.keyword?.trim()) {
+    const normalizedKeyword = this.normalizeKeyword(this.request.keyword);
+    if (!normalizedKeyword) {
       return;
     }
 
+    this.request.keyword = normalizedKeyword;
     this.generating = true;
     this.errorMessage = '';
     this.api.generateIntelligenceReport({
-      keyword: this.request.keyword.trim(),
+      keyword: normalizedKeyword,
       fromDate: this.request.fromDate || undefined,
       toDate: this.request.toDate || undefined,
       maxArticles: this.request.maxArticles || 20
@@ -563,6 +565,10 @@ export class IntelligenceReportsComponent implements OnInit, OnDestroy {
           this.errorMessage = err?.error?.message || 'Failed to generate report. Please try with a keyword that has search results.';
         }
       });
+  }
+
+  private normalizeKeyword(value: string | undefined): string {
+    return (value ?? '').replace(/\s+/g, ' ').trim();
   }
 
   downloadPdf(report: IntelligenceReport): void {

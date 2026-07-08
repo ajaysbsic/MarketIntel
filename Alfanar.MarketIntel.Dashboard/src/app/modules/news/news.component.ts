@@ -48,13 +48,17 @@ import { takeUntil } from 'rxjs/operators';
           </div>
 
           <!-- Use BodyText if available (may contain HTML/images), otherwise use summary -->
-          <div class="article-content">
-            <!-- Priority 1: Use summary if it contains HTML with images -->
-            <div class="article-body" *ngIf="isSummaryHtml(article.summary)" [innerHTML]="sanitizeHtml(article.summary)"></div>
-            <!-- Priority 2: Use bodyText if available -->
-            <div class="article-body" *ngIf="article.bodyText && !isSummaryHtml(article.summary)" [innerHTML]="sanitizeHtml(article.bodyText)"></div>
-            <!-- Fallback: Plain text summary -->
-            <p class="summary" *ngIf="!isSummaryHtml(article.summary) && !article.bodyText">{{ article.summary }}</p>
+          <div class="article-content" *ngIf="getPreferredArticleContent(article)">
+            <div
+              class="article-body"
+              *ngIf="isHtmlContent(getPreferredArticleContent(article))"
+              [innerHTML]="sanitizeHtml(getPreferredArticleContent(article))">
+            </div>
+            <p
+              class="summary"
+              *ngIf="!isHtmlContent(getPreferredArticleContent(article))">
+              {{ getPreferredArticleContent(article) }}
+            </p>
           </div>
 
           <div class="article-footer">
@@ -417,6 +421,15 @@ export class NewsComponent implements OnInit, OnDestroy {
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
+  getPreferredArticleContent(article: any): string {
+    const summary = (article?.summary || '').trim();
+    if (summary) {
+      return summary;
+    }
+
+    return (article?.bodyText || '').trim();
+  }
+
   formatDate(dateString: string): string {
     if (!dateString) return 'Unknown date';
     const date = new Date(dateString);
@@ -430,9 +443,8 @@ export class NewsComponent implements OnInit, OnDestroy {
     return date.toLocaleDateString();
   }
 
-  isSummaryHtml(summary: string): boolean {
-    if (!summary) return false;
-    // Check if summary contains HTML tags (especially img tags)
-    return /<[^>]*>/.test(summary) && (/<img/.test(summary) || /<div/.test(summary) || /<p/.test(summary));
+  isHtmlContent(content: string): boolean {
+    if (!content) return false;
+    return /<[^>]*>/.test(content) && (/<img/.test(content) || /<div/.test(content) || /<p/.test(content));
   }
 }

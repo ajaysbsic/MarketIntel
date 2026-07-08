@@ -59,6 +59,9 @@ public class WebSearchService : IWebSearchService
     {
         try
         {
+            request.Keyword = string.Join(' ', (request.Keyword ?? string.Empty)
+                .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
+
             // Validate input
             if (string.IsNullOrWhiteSpace(request.Keyword))
                 return Result<List<WebSearchResultDto>>.Failure("Keyword cannot be empty");

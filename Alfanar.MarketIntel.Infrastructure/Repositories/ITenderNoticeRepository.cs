@@ -14,4 +14,10 @@ public interface ITenderNoticeRepository
     Task<IEnumerable<TenderNotice>> GetBySourceNameAsync(string sourceName);
     Task DeleteRangeAsync(IEnumerable<TenderNotice> entities);
     Task SaveChangesAsync();
+    // Notification inbox helpers
+    Task<List<TenderNotificationLog>> GetRecentInAppLogsAsync(int pageSize = 50);
+    Task<int> GetUnreadInAppCountAsync();
+    Task<TenderNotificationLog?> GetNotificationLogByIdAsync(Guid id);
+    Task MarkAllInAppLogsReadAsync();
+    Task SaveNotificationLogAsync();
 }

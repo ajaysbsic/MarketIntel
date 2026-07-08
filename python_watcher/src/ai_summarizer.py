@@ -35,13 +35,13 @@ class AiSummarizer:
     Uses Google Generative AI (Gemini) for efficient and cost-effective processing.
     """
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash"):
         """
         Initialize AI Summarizer
         
         Args:
             api_key: Google AI API key
-            model: Model to use (gemini-1.5-flash, gemini-pro, etc.)
+            model: Model to use (for example gemini-2.5-flash)
         """
         self.api_key = api_key or os.getenv('GOOGLE_AI_API_KEY')
         self.model = model
@@ -207,11 +207,16 @@ class AiSummarizer:
     def _build_summary_prompt(self, title: str, body_text: str, max_length: int) -> str:
         """Build prompt for summary generation"""
         return f"""Please analyze this article and provide:
-1. A concise summary (max {max_length} characters)
+1. A concise summary in clear English (max {max_length} characters)
 2. Overall sentiment (positive, neutral, or negative)
 3. Sentiment score (-1.0 to 1.0)
 
 Format your response as JSON with keys: "summary", "sentiment_label", "sentiment_score"
+
+Rules:
+- Always write the "summary" in English, even if the source article is in Arabic or another language.
+- Preserve company names, product names, figures, dates, and currencies accurately.
+- Use one of these sentiment labels only: "positive", "neutral", or "negative".
 
 Article Title: {title}
 
@@ -305,9 +310,9 @@ class SummaryAndSentimentProcessor:
     for news articles and reports at ingestion time.
     """
     
-    def __init__(self, google_ai_key: Optional[str] = None):
+    def __init__(self, google_ai_key: Optional[str] = None, model: str = "gemini-2.5-flash"):
         """Initialize processor"""
-        self.summarizer = AiSummarizer(api_key=google_ai_key)
+        self.summarizer = AiSummarizer(api_key=google_ai_key, model=model)
         self.logger = logging.getLogger(__name__)
     
     def process_article(self, title: str, body_text: str, source: str = "") -> Dict:

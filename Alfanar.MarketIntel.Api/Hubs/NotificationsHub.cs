@@ -98,6 +98,36 @@ public class NotificationsHub : Hub
         _logger.LogDebug("Notification sent to company channel: {Company}", companyName);
     }
 
+    // ─── Tender channels ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Notify all connected clients of a new or updated Saudi/GCC tender.
+    /// Payload: { id, title, authorityName, sector, deadline, sourceUrl, countryIsoCode }
+    /// </summary>
+    public async Task NotifyNewTender(object tender)
+    {
+        await Clients.All.SendAsync("newTender", tender);
+        _logger.LogInformation("New tender notification broadcast to all clients");
+    }
+
+    /// <summary>
+    /// Join the tender feed group so clients only receive tender pushes while subscribed.
+    /// </summary>
+    public async Task JoinTenderFeed()
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, "tenderFeed");
+        _logger.LogDebug("Client {ConnectionId} joined tenderFeed group", Context.ConnectionId);
+    }
+
+    /// <summary>
+    /// Leave the tender feed group.
+    /// </summary>
+    public async Task LeaveTenderFeed()
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, "tenderFeed");
+        _logger.LogDebug("Client {ConnectionId} left tenderFeed group", Context.ConnectionId);
+    }
+
     public override async Task OnConnectedAsync()
     {
         await base.OnConnectedAsync();

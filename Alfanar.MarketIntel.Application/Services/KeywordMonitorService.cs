@@ -30,13 +30,14 @@ public class KeywordMonitorService : IKeywordMonitorService
     {
         try
         {
+            dto.Keyword = NormalizeKeyword(dto.Keyword);
+
             // Validate keyword
             if (string.IsNullOrWhiteSpace(dto.Keyword))
                 return Result<KeywordMonitorDto>.Failure("Keyword cannot be empty");
 
             // Check for duplicates (case-insensitive)
-            var normalizedKeyword = dto.Keyword.Trim().ToLower();
-            var existing = await _repository.GetByKeywordAsync(normalizedKeyword);
+            var existing = await _repository.GetByKeywordAsync(dto.Keyword);
             if (existing != null)
                 return Result<KeywordMonitorDto>.Failure($"Monitor already exists for keyword '{dto.Keyword}'");
 
@@ -46,7 +47,7 @@ public class KeywordMonitorService : IKeywordMonitorService
 
             var entity = new Domain.Entities.KeywordMonitor
             {
-                Keyword = dto.Keyword.Trim(),
+                Keyword = dto.Keyword,
                 CheckIntervalMinutes = dto.CheckIntervalMinutes,
                 MaxResultsPerCheck = Math.Min(dto.MaxResultsPerCheck, 100), // Cap at 100
                 Tags = dto.Tags.Any() ? System.Text.Json.JsonSerializer.Serialize(dto.Tags) : null,
@@ -72,19 +73,21 @@ public class KeywordMonitorService : IKeywordMonitorService
     {
         try
         {
+            dto.Keyword = NormalizeKeyword(dto.Keyword);
+
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null)
                 return Result<KeywordMonitorDto>.Failure("Monitor not found");
 
             // Don't allow changing keyword to an existing one (case-insensitive check)
-            if (entity.Keyword.ToLower() != dto.Keyword.Trim().ToLower())
+            if (!string.Equals(NormalizeKeyword(entity.Keyword), dto.Keyword, StringComparison.OrdinalIgnoreCase))
             {
-                var existing = await _repository.GetByKeywordAsync(dto.Keyword.Trim().ToLower());
+                var existing = await _repository.GetByKeywordAsync(dto.Keyword);
                 if (existing != null)
                     return Result<KeywordMonitorDto>.Failure($"Monitor already exists for keyword '{dto.Keyword}'");
             }
 
-            entity.Keyword = dto.Keyword.Trim();
+            entity.Keyword = dto.Keyword;
             entity.CheckIntervalMinutes = dto.CheckIntervalMinutes;
             entity.MaxResultsPerCheck = Math.Min(dto.MaxResultsPerCheck, 100);
             entity.Tags = dto.Tags.Any() ? System.Text.Json.JsonSerializer.Serialize(dto.Tags) : null;
@@ -208,6 +211,14 @@ public class KeywordMonitorService : IKeywordMonitorService
             _logger.LogError(ex, "Error retrieving monitors due for check");
             return Result<List<KeywordMonitorDto>>.Failure($"Error retrieving monitors: {ex.Message}");
         }
+    }
+
+    private static string NormalizeKeyword(string? keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return string.Empty;
+
+        return string.Join(' ', keyword.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
     }
 
     private KeywordMonitorDto MapToDto(Domain.Entities.KeywordMonitor entity)

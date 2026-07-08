@@ -118,23 +118,23 @@ All watchers containerized, pushed to Azure Container Registry, and deployed to 
 Server: alfanar-sql-server-market-intel.database.windows.net
 Database: sql-db-MarketIntel
 Username: ajayadmin
-Password: [REDACTED - Use Azure Key Vault]
+Password: <REDACTED>
 Connection Timeout: 30 seconds
 ```
 
 ### API Keys (In App Service Settings)
-- **Google Gemini AI**: [REDACTED - Store in Azure Key Vault]
-- **Google Search API**: [REDACTED - Store in Azure Key Vault]
-- **Google Search Engine ID**: [REDACTED - Store in Azure Key Vault]
-- **NewsAPI**: [REDACTED - Store in Azure Key Vault]
+- **Google Gemini AI**: <REDACTED>
+- **Google Search API**: <REDACTED>
+- **Google Search Engine ID**: 50edacb13c3074780
+- **NewsAPI**: <REDACTED>
 
 ### Azure Blob Storage
 - **Account**: ajaymarketstorage
-- **Account Key**: hJo6Uts/BUPHwvcPknRoNKUzOcocz5ZFqzN/Ej+9bosOfrSgl080u6uV6RJjZtAxKfkkaVR6+Jdv+AStBFYxGg==
-- **Connection String**: DefaultEndpointsProtocol=https;AccountName=ajaymarketstorage;AccountKey=hJo6Uts/BUPHwvcPknRoNKUzOcocz5ZFqzN/Ej+9bosOfrSgl080u6uV6RJjZtAxKfkkaVR6+Jdv+AStBFYxGg==;EndpointSuffix=core.windows.net
+- **Account Key**: <REDACTED>
+- **Connection String**: <REDACTED>
 
 ### Static Web App Deployment Token
-- **Token**: c1b40caa4650d94af9558b316f03154fa2111027fcae71409209711a923ac53206-11d65b22-8e59-4a4a-af56-9471151a6ffd000002004a377100
+- **Token**: <REDACTED>
 
 ---
 
@@ -148,7 +148,7 @@ cd "d:\Storage Market Intel\Alfanar.MarketIntel\Alfanar.MarketIntel.Infrastructu
 # Apply migrations
 dotnet ef database update `
   --startup-project ../Alfanar.MarketIntel.Api `
-  --connection "Server=tcp:alfanar-sql-server-market-intel.database.windows.net,1433;Initial Catalog=sql-db-MarketIntel;Persist Security Info=False;User ID=ajayadmin;Password=Ajk@123!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;" `
+  --connection "Server=tcp:alfanar-sql-server-market-intel.database.windows.net,1433;Initial Catalog=sql-db-MarketIntel;Persist Security Info=False;User ID=<DB_USER>;Password=<DB_PASSWORD>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;" `
   --configuration Release
 ```
 
@@ -169,11 +169,11 @@ az webapp config appsettings set `
   --resource-group ajay-apps `
   --name market-intel-api `
   --settings `
-    ConnectionStrings__Default="Server=tcp:alfanar-sql-server-market-intel.database.windows.net,1433;Initial Catalog=sql-db-MarketIntel;Persist Security Info=False;User ID=ajayadmin;Password=Ajk@123!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;" `
-    ApiKeys__GoogleGemini="AIzaSyCl7q_SzMw9Nvi6VL4DOy4PJ-sjZ5hkkoU" `
-    ApiKeys__GoogleSearch="AIzaSyCD8iVcQYMZJM4MYKDaYFDAg0iBHzAwAaQ" `
-    ApiKeys__NewsAPI="f97e61f347444bcd97c089996120f152" `
-    Storage__ConnectionString="DefaultEndpointsProtocol=https;AccountName=ajaymarketstorage;AccountKey=hJo6Uts/BUPHwvcPknRoNKUzOcocz5ZFqzN/Ej+9bosOfrSgl080u6uV6RJjZtAxKfkkaVR6+Jdv+AStBFYxGg==;EndpointSuffix=core.windows.net"
+    ConnectionStrings__Default="Server=tcp:alfanar-sql-server-market-intel.database.windows.net,1433;Initial Catalog=sql-db-MarketIntel;Persist Security Info=False;User ID=<DB_USER>;Password=<DB_PASSWORD>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;" `
+    ApiKeys__GoogleGemini="<GOOGLE_GEMINI_API_KEY>" `
+    ApiKeys__GoogleSearch="<GOOGLE_SEARCH_API_KEY>" `
+    ApiKeys__NewsAPI="<NEWSAPI_KEY>" `
+    Storage__ConnectionString="<AZURE_STORAGE_CONNECTION_STRING>"
 ```
 
 ### Phase 3: Dashboard Deployment
@@ -185,7 +185,7 @@ ng build --configuration production
 
 # Deploy with SWA CLI
 swa deploy `
-  --deployment-token "c1b40caa4650d94af9558b316f03154fa2111027fcae71409209711a923ac53206-11d65b22-8e59-4a4a-af56-9471151a6ffd000002004a377100" `
+  --deployment-token "<SWA_DEPLOYMENT_TOKEN>" `
   --env production `
   --app-location ./dist/alfanar-dashboard
 ```
@@ -246,7 +246,7 @@ az container create `
 ### Check System Status
 ```powershell
 # Check all containers
-.\scripts\check-status.ps1
+.\check-status.ps1
 
 # View container logs
 az container logs --resource-group ajay-apps --name rss-watcher-instance
@@ -332,7 +332,7 @@ az container logs --resource-group ajay-apps --name keyword-monitor-instance
 | Dockerfile | RSS watcher image | python_watcher/ |
 | Dockerfile.report | Reports watcher image | python_watcher/ |
 | Dockerfile.keyword | Keyword monitor image | python_watcher/ |
-| check-status.ps1 | Health check script | scripts/ |
+| check-status.ps1 | Health check script | python_watcher/ |
 
 ---
 

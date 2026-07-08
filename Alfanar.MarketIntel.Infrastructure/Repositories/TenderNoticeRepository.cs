@@ -93,4 +93,45 @@ public class TenderNoticeRepository : ITenderNoticeRepository
     {
         await _context.SaveChangesAsync();
     }
+
+    public async Task<List<TenderNotificationLog>> GetRecentInAppLogsAsync(int pageSize = 50)
+    {
+        return await _context.TenderNotificationLogs
+            .Include(x => x.TenderNotice)
+                .ThenInclude(n => n.Authority)
+            .Where(x => x.Channel == "InApp" && x.DeliveryStatus == "Sent")
+            .OrderByDescending(x => x.SentAt)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<int> GetUnreadInAppCountAsync()
+    {
+        return await _context.TenderNotificationLogs
+            .CountAsync(x => x.Channel == "InApp" && x.DeliveryStatus == "Sent" && !x.IsRead);
+    }
+
+    public async Task<TenderNotificationLog?> GetNotificationLogByIdAsync(Guid id)
+    {
+        return await _context.TenderNotificationLogs.FindAsync(id);
+    }
+
+    public async Task MarkAllInAppLogsReadAsync()
+    {
+        var unread = await _context.TenderNotificationLogs
+            .Where(x => x.Channel == "InApp" && !x.IsRead)
+            .ToListAsync();
+        var now = DateTime.UtcNow;
+        foreach (var log in unread)
+        {
+            log.IsRead = true;
+            log.ReadAt = now;
+        }
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task SaveNotificationLogAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
 }
